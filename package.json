@@ -1,0 +1,29 @@
+{
+  "name": "erp-floreria",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "build:shared": "pnpm --filter @erp/shared build",
+    "api:dev": "pnpm run build:shared && pnpm --filter api start:dev",
+    "web:dev": "pnpm run build:shared && pnpm --filter web start",
+    "db:generate": "pnpm --filter api db:generate",
+    "db:migrate": "pnpm --filter api db:migrate",
+    "db:studio": "pnpm --filter api db:studio",
+    "db:seed": "pnpm run build:shared && pnpm --filter api db:seed",
+    "lint": "pnpm -r lint",
+    "test": "pnpm -r test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@10.27.0",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@nestjs/core",
+      "@parcel/watcher",
+      "esbuild",
+      "lmdb",
+      "msgpackr-extract"
+    ]
+  }
+}

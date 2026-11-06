@@ -1,0 +1,27 @@
+<div class="flex min-h-screen bg-bg">
+  <aside class="w-56 shrink-0 bg-sidebar border-r border-line flex flex-col">
+    <div class="px-4 py-4 font-medium">ERP Florería</div>
+    <nav class="flex-1 overflow-y-auto">
+      @for (item of navItems(); track item.path) {
+        <a
+          [routerLink]="item.path"
+          routerLinkActive="bg-sidebar-act"
+          class="block px-4 py-2 hover:bg-sidebar-act"
+        >
+          {{ item.label }}
+        </a>
+      }
+    </nav>
+    <div class="px-4 py-3 border-t border-line text-muted">
+      <div class="font-medium text-text">{{ user()?.nombre }}</div>
+      <div class="mb-2">{{ user()?.rol }}</div>
+      <button type="button" (click)="logout()" class="text-accent-2 hover:underline">
+        Cerrar sesión
+      </button>
+    </div>
+  </aside>
+
+  <main class="flex-1 min-w-0">
+    <router-outlet></router-outlet>
+  </main>
+</div>
