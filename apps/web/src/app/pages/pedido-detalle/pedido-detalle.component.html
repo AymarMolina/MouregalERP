@@ -1,0 +1,93 @@
+<div class="p-6">
+  @if (loading()) {
+    <p class="text-muted">Cargando...</p>
+  } @else if (error()) {
+    <p class="text-accent-2">{{ error() }}</p>
+  } @else if (pedido()) {
+    @let p = pedido()!;
+    <div class="page-header">
+      <div>
+        <h1 class="panel-title">Pedido #{{ p.numero }}</h1>
+        <p class="panel-subtitle">{{ p.fechaEntrega }} · {{ p.horaEntrega }} · {{ p.canal }}</p>
+      </div>
+      <span class="badge badge-info text-sm capitalize">{{ p.estado }}</span>
+    </div>
+
+    <div class="grid grid-cols-3 gap-6">
+      <div class="col-span-2 space-y-6">
+        <div class="card">
+          <h2 class="panel-title text-base mb-3">Ítems</h2>
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Cantidad</th>
+                  <th class="text-right">Precio unitario</th>
+                  <th class="text-right">Subtotal</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of p.items; track item.id) {
+                  <tr>
+                    <td>{{ item.cantidad }}</td>
+                    <td class="text-right">S/ {{ item.precioUnitario }}</td>
+                    <td class="text-right">S/ {{ item.subtotal }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2 class="panel-title text-base mb-3">Entrega</h2>
+          <dl class="grid grid-cols-2 gap-y-2">
+            <dt class="text-muted">Receptor</dt>
+            <dd>{{ p.nombreReceptor }} · {{ p.telefonoReceptor }}</dd>
+            <dt class="text-muted">Dirección</dt>
+            <dd>{{ p.direccion }}@if (p.referencia) {, {{ p.referencia }}}</dd>
+            <dt class="text-muted">Vehículo</dt>
+            <dd class="capitalize">{{ p.vehiculo }}</dd>
+            @if (p.dedicatoria) {
+              <dt class="text-muted">Dedicatoria</dt>
+              <dd>{{ p.dedicatoria }}</dd>
+            }
+          </dl>
+        </div>
+
+        <div class="card">
+          <h2 class="panel-title text-base mb-3">Historial</h2>
+          <ul class="space-y-2">
+            @for (h of historial(); track h.id) {
+              <li class="flex items-center gap-2 text-muted">
+                <span class="badge badge-neutral capitalize">{{ h.estadoNuevo }}</span>
+                <span>{{ h.createdAt | date: "short" }}</span>
+                @if (h.nota) { <span>— {{ h.nota }}</span> }
+              </li>
+            }
+          </ul>
+        </div>
+      </div>
+
+      <div class="card h-fit space-y-2">
+        <h2 class="panel-title text-base mb-1">Resumen</h2>
+        <div class="flex justify-between">
+          <span class="text-muted">Subtotal productos</span>
+          <span>S/ {{ p.subtotalProductos }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-muted">Envío</span>
+          <span>S/ {{ p.costoEnvio }}</span>
+        </div>
+        <div class="flex justify-between border-t border-line pt-2 font-semibold">
+          <span>Total</span>
+          <span>S/ {{ p.total }}</span>
+        </div>
+        <div class="flex justify-between text-muted">
+          <span>Pagado</span>
+          <span>S/ {{ p.totalPagado }}</span>
+        </div>
+      </div>
+    </div>
+  }
+</div>

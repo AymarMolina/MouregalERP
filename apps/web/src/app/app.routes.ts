@@ -6,8 +6,11 @@ import { ShellComponent } from "./layout/shell/shell.component";
 import { ConfigRecetasComponent } from "./pages/config-recetas/config-recetas.component";
 import { ConfigReglasComponent } from "./pages/config-reglas/config-reglas.component";
 import { ConfigTarifarioComponent } from "./pages/config-tarifario/config-tarifario.component";
+import { HoyComponent } from "./pages/hoy/hoy.component";
 import { InventarioComponent } from "./pages/inventario/inventario.component";
 import { LoginComponent } from "./pages/login/login.component";
+import { PedidoDetalleComponent } from "./pages/pedido-detalle/pedido-detalle.component";
+import { PedidoNuevoComponent } from "./pages/pedido-nuevo/pedido-nuevo.component";
 import { PlaceholderComponent } from "./pages/placeholder/placeholder.component";
 
 const TODOS: RolUsuario[] = ["admin", "vendedora", "produccion", "almacen", "delivery"];
@@ -28,21 +31,21 @@ export const routes: Routes = [
       },
       {
         path: "hoy",
-        component: PlaceholderComponent,
+        component: HoyComponent,
         canActivate: [roleGuard],
-        data: { titulo: "Hoy", roles: ["admin", "vendedora", "produccion"] },
+        data: { roles: ["admin", "vendedora", "produccion"] },
       },
       {
         path: "pedidos/nuevo",
-        component: PlaceholderComponent,
+        component: PedidoNuevoComponent,
         canActivate: [roleGuard],
-        data: { titulo: "Nuevo pedido", roles: ["admin", "vendedora"] },
+        data: { roles: ["admin", "vendedora"] },
       },
       {
         path: "pedidos/:id",
-        component: PlaceholderComponent,
+        component: PedidoDetalleComponent,
         canActivate: [roleGuard],
-        data: { titulo: "Detalle de pedido", roles: ["admin", "vendedora"] },
+        data: { roles: ["admin", "vendedora", "produccion", "delivery"] },
       },
       {
         path: "produccion",

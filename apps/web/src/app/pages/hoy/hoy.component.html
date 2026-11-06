@@ -1,0 +1,120 @@
+<div class="p-6">
+  <div class="page-header">
+    <div>
+      <h1 class="panel-title">Hoy</h1>
+      <p class="panel-subtitle">{{ data()?.fecha }}</p>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <p class="text-muted">Cargando...</p>
+  } @else if (data()) {
+    @let d = data()!;
+    <div class="mb-6 grid grid-cols-4 gap-4">
+      <div class="card">
+        <div class="text-muted">Pedidos hoy</div>
+        <div class="text-2xl font-semibold">{{ d.kpis.pedidosHoy }}</div>
+      </div>
+      <div class="card">
+        <div class="text-muted">Total del día</div>
+        <div class="text-2xl font-semibold">S/ {{ d.kpis.totalHoy.toFixed(2) }}</div>
+      </div>
+      <div class="card">
+        <div class="text-muted">Consultas abiertas</div>
+        <div class="text-2xl font-semibold" [class.text-accent-2]="d.kpis.consultasAbiertas > 0">
+          {{ d.kpis.consultasAbiertas }}
+        </div>
+      </div>
+      <div class="card">
+        <div class="text-muted">Insumos con stock bajo</div>
+        <div class="text-2xl font-semibold" [class.text-accent-2]="d.kpis.stockBajo > 0">{{ d.kpis.stockBajo }}</div>
+      </div>
+    </div>
+
+    <div class="mb-6 flex flex-wrap gap-2">
+      @for (estado of ["pendiente", "en_armado", "listo", "en_camino", "entregado"]; track estado) {
+        <span class="badge badge-neutral capitalize">{{ estado }}: {{ d.kpis.conteoPorEstado[estado] ?? 0 }}</span>
+      }
+    </div>
+
+    <div class="mb-6">
+      <h2 class="mb-3 font-medium">Pedidos por hora de entrega</h2>
+      @if (!d.pedidosPorHora.length) {
+        <div class="card text-muted">No hay pedidos para hoy todavía.</div>
+      } @else {
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Hora</th>
+                <th>Receptor</th>
+                <th>Estado</th>
+                <th class="text-right">Total</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (p of d.pedidosPorHora; track p.id) {
+                <tr>
+                  <td class="font-medium">#{{ p.numero }}</td>
+                  <td>{{ p.horaEntrega }}</td>
+                  <td>{{ p.nombreReceptor }}</td>
+                  <td><span class="badge badge-info capitalize">{{ p.estado }}</span></td>
+                  <td class="text-right">S/ {{ p.total }}</td>
+                  <td><a [routerLink]="['/pedidos', p.id]" class="btn-text">Ver</a></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+
+    <div class="grid grid-cols-2 gap-6">
+      <div>
+        <h2 class="mb-3 font-medium">Consultas abiertas</h2>
+        @if (!d.consultasAbiertas.length) {
+          <div class="card text-muted">Sin consultas pendientes.</div>
+        } @else {
+          <div class="space-y-2">
+            @for (c of d.consultasAbiertas; track c.id) {
+              <div class="card">
+                <p>{{ c.descripcion }}</p>
+                <a [routerLink]="['/pedidos', c.pedidoId]" class="btn-text">Ver pedido</a>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <div>
+        <h2 class="mb-3 font-medium">Stock bajo</h2>
+        @if (!d.stockBajo.length) {
+          <div class="card text-muted">Todo el stock está sobre el mínimo.</div>
+        } @else {
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Insumo</th>
+                  <th class="text-right">Actual</th>
+                  <th class="text-right">Mínimo</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (i of d.stockBajo; track i.id) {
+                  <tr>
+                    <td>{{ i.nombre }}</td>
+                    <td class="text-right text-accent-2">{{ i.stockActual }}</td>
+                    <td class="text-right text-muted">{{ i.stockMinimo }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>

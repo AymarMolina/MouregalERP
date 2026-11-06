@@ -6,7 +6,9 @@ import { RolesGuard } from './common/guards/roles.guard';
 import { DbModule } from './db/db.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CatalogoModule } from './modules/catalogo/catalogo.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { InventarioModule } from './modules/inventario/inventario.module';
+import { PedidosModule } from './modules/pedidos/pedidos.module';
 
 @Module({
   imports: [
@@ -15,6 +17,8 @@ import { InventarioModule } from './modules/inventario/inventario.module';
     AuthModule,
     CatalogoModule,
     InventarioModule,
+    PedidosModule,
+    DashboardModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
