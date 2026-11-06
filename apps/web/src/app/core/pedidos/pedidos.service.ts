@@ -43,6 +43,41 @@ export class PedidosService {
   crear(input: PedidoInput): Promise<PedidoDetalle> {
     return firstValueFrom(this.http.post<PedidoDetalle>(this.base, input));
   }
+
+  asignar(id: string, input: { encargadaId?: string | null; repartidorId?: string | null }): Promise<PedidoDetalle> {
+    return firstValueFrom(this.http.patch<PedidoDetalle>(`${this.base}/${id}/asignar`, input));
+  }
+
+  transicion(id: string, a: string, nota?: string): Promise<PedidoDetalle> {
+    return firstValueFrom(this.http.post<PedidoDetalle>(`${this.base}/${id}/transicion`, { a, nota }));
+  }
+
+  confirmarConsumo(id: string, lineas: { insumoId: string; cantidadUsada: number }[]): Promise<PedidoDetalle> {
+    return firstValueFrom(this.http.post<PedidoDetalle>(`${this.base}/${id}/consumo`, { lineas }));
+  }
+
+  recetaEfectiva(id: string): Promise<{ insumoId: string; nombre: string; cantidad: number }[]> {
+    return firstValueFrom(
+      this.http.get<{ insumoId: string; nombre: string; cantidad: number }[]>(`${this.base}/${id}/receta-efectiva`),
+    );
+  }
+}
+
+export interface Usuario {
+  id: string;
+  nombre: string;
+  rol: string;
+  activo: boolean;
+}
+
+@Injectable({ providedIn: "root" })
+export class UsuariosService {
+  private readonly http = inject(HttpClient);
+
+  list(rol?: string): Promise<Usuario[]> {
+    const qs = rol ? `?rol=${rol}` : "";
+    return firstValueFrom(this.http.get<Usuario[]>(`${environment.apiUrl}/usuarios${qs}`));
+  }
 }
 
 @Injectable({ providedIn: "root" })

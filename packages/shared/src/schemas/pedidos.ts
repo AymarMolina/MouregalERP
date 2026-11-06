@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CANAL, TALLA } from "../enums";
+import { CANAL, ESTADO_PEDIDO, TALLA } from "../enums";
 
 export const cotizacionInputSchema = z.object({
   productoId: z.string().uuid(),
@@ -49,3 +49,32 @@ export const consultaResolverSchema = z.object({
   ajustePrecio: z.coerce.number().optional(),
 });
 export type ConsultaResolverInput = z.infer<typeof consultaResolverSchema>;
+
+export const transicionInputSchema = z.object({
+  a: z.enum(ESTADO_PEDIDO),
+  nota: z.string().trim().optional(),
+});
+export type TransicionInput = z.infer<typeof transicionInputSchema>;
+
+export const asignarInputSchema = z.object({
+  encargadaId: z.string().uuid().optional().nullable(),
+  repartidorId: z.string().uuid().optional().nullable(),
+});
+export type AsignarInput = z.infer<typeof asignarInputSchema>;
+
+export const consumoLineaInputSchema = z.object({
+  insumoId: z.string().uuid(),
+  cantidadUsada: z.coerce.number().nonnegative(),
+});
+export const consumoInputSchema = z.object({
+  lineas: z.array(consumoLineaInputSchema).min(1),
+});
+export type ConsumoInput = z.infer<typeof consumoInputSchema>;
+
+export const ajusteInventarioInputSchema = z.object({
+  insumoId: z.string().uuid(),
+  tipo: z.enum(["ajuste_positivo", "ajuste_negativo"]),
+  cantidad: z.coerce.number().positive(),
+  nota: z.string().trim().min(1),
+});
+export type AjusteInventarioInput = z.infer<typeof ajusteInventarioInputSchema>;

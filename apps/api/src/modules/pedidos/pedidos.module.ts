@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { InventarioModule } from '../inventario/inventario.module';
 import { ConsultasController } from './consultas.controller';
 import { ConsultasService } from './consultas.service';
 import { CotizacionesController } from './cotizaciones.controller';
@@ -8,6 +9,7 @@ import { PedidosController } from './pedidos.controller';
 import { PedidosService } from './pedidos.service';
 
 @Module({
+  imports: [InventarioModule],
   controllers: [CotizacionesController, PedidosController, ConsultasController],
   providers: [
     DisponibilidadService,

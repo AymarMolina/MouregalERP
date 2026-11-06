@@ -59,6 +59,8 @@ export interface Pedido {
   costoEnvio: string;
   total: string;
   totalPagado: string;
+  encargadaId: string | null;
+  repartidorId: string | null;
   createdAt: string;
 }
 

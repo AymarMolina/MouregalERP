@@ -1,13 +1,14 @@
+import { DatePipe } from "@angular/common";
 import { Component, OnInit, inject, signal } from "@angular/core";
 import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms";
 import type { InsumoCategoria, UnidadBase } from "@erp/shared";
 import { INSUMO_CATEGORIA, UNIDAD_BASE } from "@erp/shared";
 import type { Insumo } from "../../core/catalogo/catalogo.types";
-import { InsumosService } from "../../core/catalogo/insumos.service";
+import { InsumosService, type KardexMovimiento } from "../../core/catalogo/insumos.service";
 
 @Component({
   selector: "app-inventario",
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, DatePipe],
   templateUrl: "./inventario.component.html",
 })
 export class InventarioComponent implements OnInit {
@@ -24,6 +25,9 @@ export class InventarioComponent implements OnInit {
   readonly mostrarForm = signal(false);
   readonly aperturaMensaje = signal<string | null>(null);
   readonly aperturaErrores = signal<string[]>([]);
+  readonly kardexDe = signal<Insumo | null>(null);
+  readonly kardexMovimientos = signal<KardexMovimiento[]>([]);
+  readonly cargandoKardex = signal(false);
 
   readonly form = this.fb.nonNullable.group({
     codigo: ["", Validators.required],
@@ -86,6 +90,17 @@ export class InventarioComponent implements OnInit {
     await this.insumosService.update(id, this.editForm.getRawValue());
     this.editingId.set(null);
     await this.cargar();
+  }
+
+  async verKardex(insumo: Insumo): Promise<void> {
+    this.kardexDe.set(insumo);
+    this.cargandoKardex.set(true);
+    this.kardexMovimientos.set(await this.insumosService.kardex(insumo.id));
+    this.cargandoKardex.set(false);
+  }
+
+  cerrarKardex(): void {
+    this.kardexDe.set(null);
   }
 
   async onArchivoApertura(event: Event): Promise<void> {

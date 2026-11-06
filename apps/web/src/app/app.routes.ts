@@ -12,6 +12,7 @@ import { LoginComponent } from "./pages/login/login.component";
 import { PedidoDetalleComponent } from "./pages/pedido-detalle/pedido-detalle.component";
 import { PedidoNuevoComponent } from "./pages/pedido-nuevo/pedido-nuevo.component";
 import { PlaceholderComponent } from "./pages/placeholder/placeholder.component";
+import { ProduccionComponent } from "./pages/produccion/produccion.component";
 
 const TODOS: RolUsuario[] = ["admin", "vendedora", "produccion", "almacen", "delivery"];
 
@@ -49,9 +50,9 @@ export const routes: Routes = [
       },
       {
         path: "produccion",
-        component: PlaceholderComponent,
+        component: ProduccionComponent,
         canActivate: [roleGuard],
-        data: { titulo: "Producción", roles: ["admin", "produccion"] },
+        data: { roles: ["admin", "produccion"] },
       },
       {
         path: "delivery",

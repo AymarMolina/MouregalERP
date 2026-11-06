@@ -1,4 +1,9 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { and, desc, eq, inArray, like } from 'drizzle-orm';
 import {
   calcularEnvio,
@@ -6,6 +11,7 @@ import {
   calcularVehiculo,
   recetaEfectiva,
   type AjusteAplicado,
+  type ConsumoInput,
   type PedidoInput,
   type PedidoItemInput,
   type RecetaLineaBase,
@@ -13,6 +19,7 @@ import {
 import type { EstadoPedido, Canal } from '@erp/shared';
 import { DB } from '../../db/db.module';
 import type { Db } from '../../db/client';
+import { KardexService } from '../inventario/kardex.service';
 import {
   clientes,
   consultasProduccion,
@@ -20,6 +27,7 @@ import {
   extras,
   insumos,
   pagos,
+  pedidoConsumos,
   pedidoHistorialEstado,
   pedidoItemCambios,
   pedidoItemExtras,
@@ -30,6 +38,15 @@ import {
   recetaLineas,
   reglasCambio,
 } from '../../db/schema';
+
+const TRANSICIONES_VALIDAS: Record<EstadoPedido, EstadoPedido[]> = {
+  pendiente: ['en_armado', 'cancelado'],
+  en_armado: ['cancelado'], // en_armado -> listo solo vía POST /pedidos/:id/consumo
+  listo: ['en_camino', 'cancelado'],
+  en_camino: ['entregado', 'cancelado'],
+  entregado: [],
+  cancelado: [],
+};
 
 interface ItemResuelto {
   input: PedidoItemInput;
@@ -45,7 +62,10 @@ interface ItemResuelto {
 
 @Injectable()
 export class PedidosService {
-  constructor(@Inject(DB) private readonly db: Db) {}
+  constructor(
+    @Inject(DB) private readonly db: Db,
+    private readonly kardexService: KardexService,
+  ) {}
 
   async list(filtros: {
     fecha?: string;
@@ -104,6 +124,287 @@ export class PedidosService {
       .from(pedidoHistorialEstado)
       .where(eq(pedidoHistorialEstado.pedidoId, id))
       .orderBy(desc(pedidoHistorialEstado.createdAt));
+  }
+
+  async asignar(
+    id: string,
+    asignacion: { encargadaId?: string | null; repartidorId?: string | null },
+  ) {
+    await this.findOne(id);
+    const [actualizado] = await this.db
+      .update(pedidos)
+      .set({
+        ...(asignacion.encargadaId !== undefined && {
+          encargadaId: asignacion.encargadaId,
+        }),
+        ...(asignacion.repartidorId !== undefined && {
+          repartidorId: asignacion.repartidorId,
+        }),
+        updatedAt: new Date(),
+      })
+      .where(eq(pedidos.id, id))
+      .returning();
+    return actualizado;
+  }
+
+  /** Sección 5.6 — transiciones de estado (en_armado → listo va por confirmarConsumo). */
+  async transicion(
+    id: string,
+    destino: EstadoPedido,
+    nota: string | undefined,
+    usuarioId: string,
+  ) {
+    const pedido = await this.findOne(id);
+
+    const permitidas = TRANSICIONES_VALIDAS[pedido.estado];
+    if (!permitidas.includes(destino)) {
+      throw new BadRequestException(
+        `No se puede pasar de "${pedido.estado}" a "${destino}"`,
+      );
+    }
+
+    if (destino === 'en_armado') {
+      if (!pedido.encargadaId) {
+        throw new BadRequestException(
+          'Asigna una encargada antes de pasar a en_armado',
+        );
+      }
+      const [consultaAbierta] = await this.db
+        .select({ id: consultasProduccion.id })
+        .from(consultasProduccion)
+        .where(
+          and(
+            eq(consultasProduccion.pedidoId, id),
+            eq(consultasProduccion.estado, 'abierta'),
+          ),
+        )
+        .limit(1);
+      if (consultaAbierta) {
+        throw new BadRequestException(
+          'El pedido tiene una consulta abierta; resuélvela antes de armar',
+        );
+      }
+    }
+
+    await this.db.transaction(async (tx) => {
+      await tx
+        .update(pedidos)
+        .set({ estado: destino, updatedAt: new Date() })
+        .where(eq(pedidos.id, id));
+      await tx.insert(pedidoHistorialEstado).values({
+        pedidoId: id,
+        estadoAnterior: pedido.estado,
+        estadoNuevo: destino,
+        usuarioId,
+        nota:
+          nota ??
+          (destino === 'cancelado' &&
+          (pedido.estado === 'listo' || pedido.estado === 'en_camino')
+            ? 'Cancelado: los insumos ya consumidos quedan registrados como merma, no vuelven al stock'
+            : undefined),
+      });
+    });
+
+    return this.findOne(id);
+  }
+
+  /** Receta efectiva del pedido agregada por insumo, para la pantalla de confirmar consumo. */
+  async recetaEfectivaDelPedido(
+    id: string,
+  ): Promise<{ insumoId: string; nombre: string; cantidad: number }[]> {
+    const pedido = await this.findOne(id);
+    if (pedido.estado !== 'en_armado') {
+      throw new BadRequestException('Solo aplica a pedidos en_armado');
+    }
+
+    const items = await this.db
+      .select()
+      .from(pedidoItems)
+      .where(eq(pedidoItems.pedidoId, id));
+    const totalPorInsumo = new Map<string, number>();
+    for (const item of items) {
+      const efectiva = await this.recetaEfectivaDeItem(item);
+      for (const l of efectiva) {
+        totalPorInsumo.set(
+          l.insumoId,
+          (totalPorInsumo.get(l.insumoId) ?? 0) + l.cantidad,
+        );
+      }
+    }
+
+    const insumosInfo = await this.db
+      .select()
+      .from(insumos)
+      .where(inArray(insumos.id, [...totalPorInsumo.keys()]));
+    const nombrePorInsumo = new Map(insumosInfo.map((i) => [i.id, i.nombre]));
+
+    return [...totalPorInsumo.entries()].map(([insumoId, cantidad]) => ({
+      insumoId,
+      nombre: nombrePorInsumo.get(insumoId) ?? '—',
+      cantidad,
+    }));
+  }
+
+  /**
+   * Sección 5.7 — confirmar consumo (una sola transacción). `lineas` viene
+   * agrupada por insumo a nivel de todo el pedido; se reparte entre los
+   * ítems que usan ese insumo según su participación en la receta efectiva.
+   */
+  async confirmarConsumo(id: string, input: ConsumoInput, usuarioId: string) {
+    const pedido = await this.findOne(id);
+    if (pedido.estado !== 'en_armado') {
+      throw new BadRequestException(
+        'Solo se puede confirmar consumo de un pedido en_armado',
+      );
+    }
+
+    const items = await this.db
+      .select()
+      .from(pedidoItems)
+      .where(eq(pedidoItems.pedidoId, id));
+    if (!items.length)
+      throw new BadRequestException('El pedido no tiene ítems');
+
+    // receta efectiva por ítem, y cuánto de cada insumo aporta cada ítem al total del pedido.
+    const recetaPorItem = new Map<
+      string,
+      { insumoId: string; cantidad: number }[]
+    >();
+    const totalPorInsumo = new Map<string, number>();
+    for (const item of items) {
+      const efectiva = await this.recetaEfectivaDeItem(item);
+      recetaPorItem.set(item.id, efectiva);
+      for (const l of efectiva) {
+        totalPorInsumo.set(
+          l.insumoId,
+          (totalPorInsumo.get(l.insumoId) ?? 0) + l.cantidad,
+        );
+      }
+    }
+
+    const usadoPorInsumo = new Map<string, number>();
+    for (const [insumoId, cantidadReceta] of totalPorInsumo) {
+      const linea = input.lineas.find((l) => l.insumoId === insumoId);
+      usadoPorInsumo.set(
+        insumoId,
+        linea ? linea.cantidadUsada : cantidadReceta,
+      );
+    }
+
+    const insumosInfo = await this.db
+      .select()
+      .from(insumos)
+      .where(inArray(insumos.id, [...totalPorInsumo.keys()]));
+    const costoPorInsumo = new Map(
+      insumosInfo.map((i) => [i.id, Number(i.costoPromedio)]),
+    );
+
+    await this.db.transaction(async (tx) => {
+      for (const [insumoId, cantidadReceta] of totalPorInsumo) {
+        const cantidadUsada = usadoPorInsumo.get(insumoId) ?? cantidadReceta;
+        const consumoSalida = Math.min(cantidadUsada, cantidadReceta);
+        const mermaSalida = Math.max(0, cantidadUsada - cantidadReceta);
+        const costoUnitario = costoPorInsumo.get(insumoId) ?? 0;
+
+        await this.kardexService.registrarMovimiento(tx, {
+          insumoId,
+          tipo: 'consumo',
+          salida: consumoSalida,
+          costoUnitario,
+          referenciaTipo: 'pedido',
+          referenciaId: id,
+          usuarioId,
+        });
+        if (mermaSalida > 0) {
+          await this.kardexService.registrarMovimiento(tx, {
+            insumoId,
+            tipo: 'merma',
+            salida: mermaSalida,
+            costoUnitario,
+            referenciaTipo: 'pedido',
+            referenciaId: id,
+            nota: `usó ${cantidadUsada} de ${cantidadReceta}`,
+            usuarioId,
+          });
+        }
+
+        // reparte lo usado entre los ítems que aportan a este insumo, proporcional a su receta.
+        for (const item of items) {
+          const lineaItem = (recetaPorItem.get(item.id) ?? []).find(
+            (l) => l.insumoId === insumoId,
+          );
+          if (!lineaItem) continue;
+          const participacion = lineaItem.cantidad / cantidadReceta;
+          const usadoDelItem =
+            Math.round(
+              (cantidadUsada * participacion + Number.EPSILON) * 1000,
+            ) / 1000;
+          await tx.insert(pedidoConsumos).values({
+            pedidoItemId: item.id,
+            insumoId,
+            cantidadReceta: String(lineaItem.cantidad),
+            cantidadUsada: String(usadoDelItem),
+            confirmadoPor: usuarioId,
+          });
+        }
+      }
+
+      await tx
+        .update(pedidos)
+        .set({ estado: 'listo', updatedAt: new Date() })
+        .where(eq(pedidos.id, id));
+      await tx.insert(pedidoHistorialEstado).values({
+        pedidoId: id,
+        estadoAnterior: 'en_armado',
+        estadoNuevo: 'listo',
+        usuarioId,
+        nota: 'Consumo confirmado',
+      });
+    });
+
+    return this.findOne(id);
+  }
+
+  private async recetaEfectivaDeItem(
+    item: typeof pedidoItems.$inferSelect,
+  ): Promise<{ insumoId: string; cantidad: number }[]> {
+    const [talla] = await this.db
+      .select()
+      .from(productoTallas)
+      .where(eq(productoTallas.id, item.productoTallaId))
+      .limit(1);
+    if (!talla) throw new NotFoundException('Talla de producto no encontrada');
+    const [producto] = await this.db
+      .select()
+      .from(productos)
+      .where(eq(productos.id, talla.productoId))
+      .limit(1);
+    if (!producto) throw new NotFoundException('Producto no encontrado');
+
+    const lineasRaw = await this.db
+      .select()
+      .from(recetaLineas)
+      .where(eq(recetaLineas.productoTallaId, talla.id));
+    const lineasBase: RecetaLineaBase[] = lineasRaw.map((l) => ({
+      insumoId: l.insumoId,
+      cantidad: Number(l.cantidad),
+      rol: l.rol as RecetaLineaBase['rol'],
+    }));
+
+    const itemExtras = await this.db
+      .select({ insumoId: extras.insumoId })
+      .from(pedidoItemExtras)
+      .innerJoin(extras, eq(pedidoItemExtras.extraId, extras.id))
+      .where(eq(pedidoItemExtras.pedidoItemId, item.id));
+
+    return recetaEfectiva({
+      lineasBase,
+      florId: item.florId,
+      usaPapel: producto.usaPapel,
+      papelId: item.papelId,
+      extraInsumoIds: itemExtras.map((e) => e.insumoId),
+      cantidad: item.cantidad,
+    });
   }
 
   async crear(input: PedidoInput, creadoPor: string) {

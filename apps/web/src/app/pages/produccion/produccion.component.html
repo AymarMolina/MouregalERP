@@ -1,0 +1,182 @@
+<div class="p-6">
+  <div class="page-header">
+    <div>
+      <h1 class="panel-title">Producción</h1>
+      <p class="panel-subtitle">Pedidos pendientes de armar, en armado y listos para despacho.</p>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <p class="text-muted">Cargando...</p>
+  } @else {
+    <div class="grid grid-cols-3 gap-4 mb-6">
+      <div>
+        <h2 class="mb-2 font-medium">Pendiente ({{ pendientes().length }})</h2>
+        <div class="space-y-2">
+          @for (p of pendientes(); track p.id) {
+            <button
+              type="button"
+              (click)="seleccionar(p)"
+              class="w-full rounded-md border px-3 py-2 text-left transition hover:bg-accent-soft"
+              [class.border-accent-2]="seleccionado()?.id === p.id"
+              [class.bg-accent-soft]="seleccionado()?.id === p.id"
+              [class.border-line]="seleccionado()?.id !== p.id"
+            >
+              <div class="flex justify-between">
+                <span class="font-medium">#{{ p.numero }}</span>
+                <span class="text-muted">{{ p.horaEntrega }}</span>
+              </div>
+              <div class="text-muted">{{ p.nombreReceptor }}</div>
+            </button>
+          } @empty {
+            <p class="text-muted">Sin pedidos pendientes.</p>
+          }
+        </div>
+      </div>
+
+      <div>
+        <h2 class="mb-2 font-medium">En armado ({{ enArmado().length }})</h2>
+        <div class="space-y-2">
+          @for (p of enArmado(); track p.id) {
+            <button
+              type="button"
+              (click)="seleccionar(p)"
+              class="w-full rounded-md border px-3 py-2 text-left transition hover:bg-accent-soft"
+              [class.border-accent-2]="seleccionado()?.id === p.id"
+              [class.bg-accent-soft]="seleccionado()?.id === p.id"
+              [class.border-line]="seleccionado()?.id !== p.id"
+            >
+              <div class="flex justify-between">
+                <span class="font-medium">#{{ p.numero }}</span>
+                <span class="text-muted">{{ p.horaEntrega }}</span>
+              </div>
+              <div class="text-muted">{{ p.nombreReceptor }}</div>
+            </button>
+          } @empty {
+            <p class="text-muted">Nada en armado.</p>
+          }
+        </div>
+      </div>
+
+      <div>
+        <h2 class="mb-2 font-medium">Listo ({{ listos().length }})</h2>
+        <div class="space-y-2">
+          @for (p of listos(); track p.id) {
+            <button
+              type="button"
+              (click)="seleccionar(p)"
+              class="w-full rounded-md border px-3 py-2 text-left transition hover:bg-accent-soft"
+              [class.border-accent-2]="seleccionado()?.id === p.id"
+              [class.bg-accent-soft]="seleccionado()?.id === p.id"
+              [class.border-line]="seleccionado()?.id !== p.id"
+            >
+              <div class="flex justify-between">
+                <span class="font-medium">#{{ p.numero }}</span>
+                <span class="text-muted">{{ p.horaEntrega }}</span>
+              </div>
+              <div class="text-muted">{{ p.nombreReceptor }}</div>
+            </button>
+          } @empty {
+            <p class="text-muted">Nada listo todavía.</p>
+          }
+        </div>
+      </div>
+    </div>
+
+    @if (seleccionado(); as pedido) {
+      <div class="card space-y-5">
+        <div class="flex items-center justify-between border-b border-line pb-3">
+          <div>
+            <h2 class="panel-title text-base">Pedido #{{ pedido.numero }}</h2>
+            <p class="panel-subtitle">{{ pedido.horaEntrega }} · {{ pedido.nombreReceptor }}</p>
+          </div>
+          <button type="button" (click)="cerrar()" class="btn-icon">✕</button>
+        </div>
+
+        @if (pedido.dedicatoria) {
+          <p class="rounded-md bg-sidebar px-3 py-2 italic">"{{ pedido.dedicatoria }}"</p>
+        }
+
+        @if (error()) {
+          <p class="rounded-md bg-accent-soft px-3 py-2 text-accent-2">{{ error() }}</p>
+        }
+
+        @if (consultaAbierta(); as c) {
+          <div class="rounded-md border border-accent-2/30 bg-accent-soft p-4 space-y-2">
+            <p class="font-medium text-accent-2">Consulta abierta</p>
+            <p>{{ c.descripcion }}</p>
+            <form [formGroup]="resolverForm" class="flex items-end gap-2">
+              <div class="flex-1">
+                <label class="field-label">Respuesta</label>
+                <input formControlName="respuesta" class="input" />
+              </div>
+              <button type="button" (click)="resolverConsulta('aprobada')" class="btn-primary">Aprobar</button>
+              <button type="button" (click)="resolverConsulta('rechazada')" class="btn-secondary">Rechazar</button>
+            </form>
+          </div>
+        }
+
+        @if (pedido.estado === "pendiente") {
+          <div class="flex items-end gap-3">
+            <div>
+              <label class="field-label">Encargada</label>
+              <select
+                class="input"
+                [value]="encargadaSeleccionada()"
+                (change)="asignarEncargada($any($event.target).value)"
+              >
+                <option value="">Sin asignar</option>
+                @for (u of encargadas(); track u.id) { <option [value]="u.id">{{ u.nombre }}</option> }
+              </select>
+            </div>
+            <button type="button" (click)="pasarAEnArmado()" class="btn-primary">Pasar a en armado</button>
+          </div>
+        }
+
+        @if (pedido.estado === "en_armado") {
+          <div>
+            <h3 class="mb-2 font-medium">Receta vs. usado</h3>
+            <div class="table-wrap mb-3" [formGroup]="consumoForm">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Insumo</th>
+                    <th class="text-right">Receta</th>
+                    <th class="text-right">Usado</th>
+                    <th class="text-right">Merma</th>
+                  </tr>
+                </thead>
+                <tbody formArrayName="lineas">
+                  @for (linea of lineasForm.controls; track $index) {
+                    <tr [formGroupName]="$index">
+                      <td>{{ linea.value.nombre }}</td>
+                      <td class="text-right text-muted">{{ linea.value.cantidadReceta }}</td>
+                      <td class="text-right">
+                        <input type="number" step="0.001" formControlName="cantidadUsada" class="input w-28 py-1 text-right" />
+                      </td>
+                      <td class="text-right" [class.text-accent-2]="merma(linea.value) > 0">
+                        {{ merma(linea.value) }}
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            <button
+              type="button"
+              (click)="confirmarConsumo()"
+              [disabled]="guardando() || consumoForm.invalid"
+              class="btn-primary"
+            >
+              {{ guardando() ? "Guardando..." : "Confirmar consumo" }}
+            </button>
+          </div>
+        }
+
+        @if (pedido.estado === "listo") {
+          <button type="button" (click)="pasarAEnCamino()" class="btn-primary">Pasar a en camino</button>
+        }
+      </div>
+    }
+  }
+</div>

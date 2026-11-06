@@ -1,9 +1,21 @@
 import { HttpClient } from "@angular/common/http";
 import { Injectable, inject } from "@angular/core";
 import { firstValueFrom } from "rxjs";
-import type { AperturaInput, InsumoInput } from "@erp/shared";
+import type { AjusteInventarioInput, AperturaInput, InsumoInput } from "@erp/shared";
 import { environment } from "../../../environments/environment";
 import type { Insumo } from "./catalogo.types";
+
+export interface KardexMovimiento {
+  id: string;
+  insumoId: string;
+  fecha: string;
+  tipo: string;
+  entrada: string;
+  salida: string;
+  costoUnitario: string;
+  saldoResultante: string;
+  nota: string | null;
+}
 
 @Injectable({ providedIn: "root" })
 export class InsumosService {
@@ -26,5 +38,13 @@ export class InsumosService {
     return firstValueFrom(
       this.http.post<{ cargados: number }>(`${environment.apiUrl}/inventario/apertura`, input),
     );
+  }
+
+  kardex(id: string): Promise<KardexMovimiento[]> {
+    return firstValueFrom(this.http.get<KardexMovimiento[]>(`${this.base}/${id}/kardex`));
+  }
+
+  ajustar(input: AjusteInventarioInput): Promise<void> {
+    return firstValueFrom(this.http.post<void>(`${environment.apiUrl}/inventario/ajustes`, input));
   }
 }

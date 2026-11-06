@@ -132,14 +132,60 @@
                     <span class="badge badge-neutral">No</span>
                   }
                 </td>
-                <td>
+                <td class="whitespace-nowrap">
                   <button type="button" (click)="editar(i)" class="btn-text">Editar</button>
+                  <button type="button" (click)="verKardex(i)" class="btn-text">Kardex</button>
                 </td>
               </tr>
             }
           }
         </tbody>
       </table>
+    </div>
+  }
+
+  @if (kardexDe(); as insumo) {
+    <div class="card mt-6">
+      <div class="flex items-center justify-between border-b border-line pb-3 mb-3">
+        <div>
+          <h2 class="panel-title text-base">Kardex — {{ insumo.nombre }}</h2>
+          <p class="panel-subtitle">{{ insumo.codigo }} · stock actual {{ insumo.stockActual }} {{ insumo.unidadBase }}</p>
+        </div>
+        <button type="button" (click)="cerrarKardex()" class="btn-icon">✕</button>
+      </div>
+
+      @if (cargandoKardex()) {
+        <p class="text-muted">Cargando...</p>
+      } @else {
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Tipo</th>
+                <th class="text-right">Entrada</th>
+                <th class="text-right">Salida</th>
+                <th class="text-right">Saldo</th>
+                <th>Nota</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (m of kardexMovimientos(); track m.id) {
+                <tr>
+                  <td class="text-muted">{{ m.fecha | date: "short" }}</td>
+                  <td class="capitalize">{{ m.tipo }}</td>
+                  <td class="text-right">{{ m.entrada !== "0.000" ? m.entrada : "" }}</td>
+                  <td class="text-right">{{ m.salida !== "0.000" ? m.salida : "" }}</td>
+                  <td class="text-right font-medium">{{ m.saldoResultante }}</td>
+                  <td class="text-muted">{{ m.nota }}</td>
+                </tr>
+              } @empty {
+                <tr><td colspan="6" class="text-muted">Sin movimientos todavía.</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
     </div>
   }
 </div>
