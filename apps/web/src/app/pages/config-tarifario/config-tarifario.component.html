@@ -1,96 +1,102 @@
-<div class="p-6 space-y-6">
-  <div>
-    <h1 class="text-lg font-medium">Tarifario</h1>
-    <p class="text-muted">Tarifas de envío por distrito y costo por viaje de cada vehículo.</p>
+<div class="p-6">
+  <div class="page-header">
+    <div>
+      <h1 class="panel-title">Tarifario</h1>
+      <p class="panel-subtitle">Tarifas de envío por distrito y costo por viaje de cada vehículo.</p>
+    </div>
   </div>
 
-  <div class="bg-surface border border-line rounded p-4">
-    <h2 class="font-medium mb-3">Costo por viaje</h2>
+  <div class="card mb-6">
+    <h2 class="mb-3 font-medium">Costo por viaje</h2>
     <form [formGroup]="costosForm" (ngSubmit)="guardarCostos()" class="flex items-end gap-4">
       <div>
-        <label class="block text-muted mb-1">Moto (S/)</label>
-        <input type="number" step="0.01" formControlName="moto" class="w-32 rounded border border-line px-2 py-1.5" />
+        <label class="field-label">Moto (S/)</label>
+        <input type="number" step="0.01" formControlName="moto" class="input w-32" />
       </div>
       <div>
-        <label class="block text-muted mb-1">Carro (S/)</label>
-        <input type="number" step="0.01" formControlName="carro" class="w-32 rounded border border-line px-2 py-1.5" />
+        <label class="field-label">Carro (S/)</label>
+        <input type="number" step="0.01" formControlName="carro" class="input w-32" />
       </div>
-      <button type="submit" [disabled]="costosForm.invalid" class="rounded bg-accent text-text font-medium px-3 py-1.5 disabled:opacity-50">
-        Guardar
-      </button>
+      <button type="submit" [disabled]="costosForm.invalid" class="btn-primary">Guardar</button>
       @if (costoMensaje()) {
-        <span class="text-estado-listo-fg">{{ costoMensaje() }}</span>
+        <span class="badge badge-success">{{ costoMensaje() }}</span>
       }
     </form>
   </div>
 
-  <div class="flex items-center justify-between">
+  <div class="page-header">
     <h2 class="font-medium">Distritos</h2>
-    <button type="button" (click)="mostrarForm.set(!mostrarForm())" class="rounded bg-accent text-text font-medium px-3 py-1.5">
+    <button type="button" (click)="mostrarForm.set(!mostrarForm())" class="btn-primary">
       {{ mostrarForm() ? "Cancelar" : "+ Nuevo distrito" }}
     </button>
   </div>
 
   @if (mostrarForm()) {
-    <form [formGroup]="form" (ngSubmit)="crear()" class="bg-surface border border-line rounded p-4 flex items-end gap-4">
+    <form [formGroup]="form" (ngSubmit)="crear()" class="card mb-6 flex items-end gap-4">
       <div class="flex-1">
-        <label class="block text-muted mb-1">Nombre</label>
-        <input formControlName="nombre" class="w-full rounded border border-line px-2 py-1.5" />
+        <label class="field-label">Nombre</label>
+        <input formControlName="nombre" class="input" />
       </div>
       <div>
-        <label class="block text-muted mb-1">Tarifa moto (S/)</label>
-        <input type="number" step="0.01" formControlName="tarifaMoto" class="w-32 rounded border border-line px-2 py-1.5" />
+        <label class="field-label">Tarifa moto (S/)</label>
+        <input type="number" step="0.01" formControlName="tarifaMoto" class="input w-32" />
       </div>
       <div>
-        <label class="block text-muted mb-1">Tarifa carro (S/)</label>
-        <input type="number" step="0.01" formControlName="tarifaCarro" class="w-32 rounded border border-line px-2 py-1.5" />
+        <label class="field-label">Tarifa carro (S/)</label>
+        <input type="number" step="0.01" formControlName="tarifaCarro" class="input w-32" />
       </div>
-      <button type="submit" [disabled]="form.invalid" class="rounded bg-accent text-text font-medium px-3 py-1.5 disabled:opacity-50">
-        Guardar
-      </button>
+      <button type="submit" [disabled]="form.invalid" class="btn-primary">Guardar</button>
     </form>
   }
 
   @if (loading()) {
     <p class="text-muted">Cargando...</p>
   } @else {
-    <table class="w-full bg-surface border border-line rounded overflow-hidden">
-      <thead class="bg-sidebar text-left">
-        <tr>
-          <th class="px-3 py-2">Distrito</th>
-          <th class="px-3 py-2 text-right">Moto</th>
-          <th class="px-3 py-2 text-right">Carro</th>
-          <th class="px-3 py-2">Activo</th>
-          <th class="px-3 py-2"></th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (d of distritos(); track d.id) {
-          @if (editingId() === d.id) {
-            <tr class="border-t border-line" [formGroup]="editForm">
-              <td class="px-3 py-2"><input formControlName="nombre" class="w-full rounded border border-line px-2 py-1" /></td>
-              <td class="px-3 py-2 text-right"><input type="number" step="0.01" formControlName="tarifaMoto" class="w-24 rounded border border-line px-2 py-1 text-right" /></td>
-              <td class="px-3 py-2 text-right"><input type="number" step="0.01" formControlName="tarifaCarro" class="w-24 rounded border border-line px-2 py-1 text-right" /></td>
-              <td class="px-3 py-2 text-muted">{{ d.activo ? "Sí" : "No" }}</td>
-              <td class="px-3 py-2 whitespace-nowrap">
-                <button type="button" (click)="guardarEdicion(d.id)" class="text-accent-2 hover:underline mr-2">Guardar</button>
-                <button type="button" (click)="cancelarEdicion()" class="text-muted hover:underline">Cancelar</button>
-              </td>
-            </tr>
-          } @else {
-            <tr class="border-t border-line">
-              <td class="px-3 py-2 font-medium">{{ d.nombre }}</td>
-              <td class="px-3 py-2 text-right">{{ d.tarifaMoto }}</td>
-              <td class="px-3 py-2 text-right">{{ d.tarifaCarro }}</td>
-              <td class="px-3 py-2">{{ d.activo ? "Sí" : "No" }}</td>
-              <td class="px-3 py-2 whitespace-nowrap">
-                <button type="button" (click)="editar(d)" class="text-accent-2 hover:underline mr-2">Editar</button>
-                <button type="button" (click)="eliminar(d.id)" class="text-accent-2 hover:underline">Desactivar</button>
-              </td>
-            </tr>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Distrito</th>
+            <th class="text-right">Moto</th>
+            <th class="text-right">Carro</th>
+            <th>Activo</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (d of distritos(); track d.id) {
+            @if (editingId() === d.id) {
+              <tr [formGroup]="editForm">
+                <td><input formControlName="nombre" class="input py-1" /></td>
+                <td class="text-right"><input type="number" step="0.01" formControlName="tarifaMoto" class="input w-24 py-1 text-right" /></td>
+                <td class="text-right"><input type="number" step="0.01" formControlName="tarifaCarro" class="input w-24 py-1 text-right" /></td>
+                <td class="text-muted">{{ d.activo ? "Sí" : "No" }}</td>
+                <td class="whitespace-nowrap">
+                  <button type="button" (click)="guardarEdicion(d.id)" class="btn-text">Guardar</button>
+                  <button type="button" (click)="cancelarEdicion()" class="btn-text text-muted">Cancelar</button>
+                </td>
+              </tr>
+            } @else {
+              <tr>
+                <td class="font-medium">{{ d.nombre }}</td>
+                <td class="text-right">{{ d.tarifaMoto }}</td>
+                <td class="text-right">{{ d.tarifaCarro }}</td>
+                <td>
+                  @if (d.activo) {
+                    <span class="badge badge-success">Sí</span>
+                  } @else {
+                    <span class="badge badge-neutral">No</span>
+                  }
+                </td>
+                <td class="whitespace-nowrap">
+                  <button type="button" (click)="editar(d)" class="btn-text">Editar</button>
+                  <button type="button" (click)="eliminar(d.id)" class="btn-text">Desactivar</button>
+                </td>
+              </tr>
+            }
           }
-        }
-      </tbody>
-    </table>
+        </tbody>
+      </table>
+    </div>
   }
 </div>

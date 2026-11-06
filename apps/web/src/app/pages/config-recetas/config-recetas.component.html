@@ -1,65 +1,63 @@
-<div class="p-6 space-y-6">
-  <div class="flex items-center justify-between">
+<div class="p-6">
+  <div class="page-header">
     <div>
-      <h1 class="text-lg font-medium">Recetas</h1>
-      <p class="text-muted">Productos, tallas, receta por insumo, flores permitidas y margen.</p>
+      <h1 class="panel-title">Recetas</h1>
+      <p class="panel-subtitle">Productos, tallas, receta por insumo, flores permitidas y margen.</p>
     </div>
     @if (esAdmin()) {
-      <button type="button" (click)="mostrarFormNuevo.set(!mostrarFormNuevo())" class="rounded bg-accent text-text font-medium px-3 py-1.5">
+      <button type="button" (click)="mostrarFormNuevo.set(!mostrarFormNuevo())" class="btn-primary">
         {{ mostrarFormNuevo() ? "Cancelar" : "+ Nuevo producto" }}
       </button>
     }
   </div>
 
   @if (mostrarFormNuevo() && esAdmin()) {
-    <form [formGroup]="nuevoForm" (ngSubmit)="crearProducto()" class="bg-surface border border-line rounded p-4 grid grid-cols-4 gap-3 items-end">
+    <form [formGroup]="nuevoForm" (ngSubmit)="crearProducto()" class="card mb-6 grid grid-cols-4 gap-4 items-end">
       <div>
-        <label class="block text-muted mb-1">Nombre</label>
-        <input formControlName="nombre" class="w-full rounded border border-line px-2 py-1.5" />
+        <label class="field-label">Nombre</label>
+        <input formControlName="nombre" class="input" />
       </div>
       <div>
-        <label class="block text-muted mb-1">Slug</label>
-        <input formControlName="slug" class="w-full rounded border border-line px-2 py-1.5" placeholder="ramo-ejemplo" />
+        <label class="field-label">Slug</label>
+        <input formControlName="slug" class="input" placeholder="ramo-ejemplo" />
       </div>
       <div class="col-span-2">
-        <label class="block text-muted mb-1">Descripción</label>
-        <input formControlName="descripcion" class="w-full rounded border border-line px-2 py-1.5" />
+        <label class="field-label">Descripción</label>
+        <input formControlName="descripcion" class="input" />
       </div>
       <div>
-        <label class="block text-muted mb-1">Flor principal</label>
-        <select formControlName="florPrincipalId" class="w-full rounded border border-line px-2 py-1.5">
+        <label class="field-label">Flor principal</label>
+        <select formControlName="florPrincipalId" class="input">
           <option value="">Seleccionar...</option>
           @for (i of insumosFlor(); track i.id) { <option [value]="i.id">{{ i.nombre }}</option> }
         </select>
       </div>
-      <div class="flex items-center gap-2 mt-5">
-        <input type="checkbox" formControlName="usaPapel" id="nuevoUsaPapel" />
+      <div class="flex items-center gap-2 pb-2">
+        <input type="checkbox" formControlName="usaPapel" id="nuevoUsaPapel" class="checkbox" />
         <label for="nuevoUsaPapel">Usa papel</label>
       </div>
       <div>
-        <label class="block text-muted mb-1">Papel por defecto</label>
-        <select formControlName="papelDefaultId" class="w-full rounded border border-line px-2 py-1.5">
+        <label class="field-label">Papel por defecto</label>
+        <select formControlName="papelDefaultId" class="input">
           <option value="">—</option>
           @for (i of insumosPapel(); track i.id) { <option [value]="i.id">{{ i.nombre }}</option> }
         </select>
       </div>
       <div></div>
       <div>
-        <label class="block text-muted mb-1">Precio S (S/)</label>
-        <input type="number" step="0.01" formControlName="precioS" class="w-full rounded border border-line px-2 py-1.5" />
+        <label class="field-label">Precio S (S/)</label>
+        <input type="number" step="0.01" formControlName="precioS" class="input" />
       </div>
       <div>
-        <label class="block text-muted mb-1">Precio M (S/)</label>
-        <input type="number" step="0.01" formControlName="precioM" class="w-full rounded border border-line px-2 py-1.5" />
+        <label class="field-label">Precio M (S/)</label>
+        <input type="number" step="0.01" formControlName="precioM" class="input" />
       </div>
       <div>
-        <label class="block text-muted mb-1">Precio L (S/)</label>
-        <input type="number" step="0.01" formControlName="precioL" class="w-full rounded border border-line px-2 py-1.5" />
+        <label class="field-label">Precio L (S/)</label>
+        <input type="number" step="0.01" formControlName="precioL" class="input" />
       </div>
       <div>
-        <button type="submit" [disabled]="nuevoForm.invalid" class="rounded bg-accent text-text font-medium px-3 py-1.5 disabled:opacity-50">
-          Crear
-        </button>
+        <button type="submit" [disabled]="nuevoForm.invalid" class="btn-primary w-full">Crear</button>
       </div>
     </form>
   }
@@ -67,70 +65,72 @@
   @if (loading()) {
     <p class="text-muted">Cargando...</p>
   } @else {
-    <table class="w-full bg-surface border border-line rounded overflow-hidden">
-      <thead class="bg-sidebar text-left">
-        <tr>
-          <th class="px-3 py-2">Producto</th>
-          <th class="px-3 py-2 text-right">Precio S</th>
-          <th class="px-3 py-2 text-right">Margen S</th>
-          <th class="px-3 py-2 text-right">Precio M</th>
-          <th class="px-3 py-2 text-right">Margen M</th>
-          <th class="px-3 py-2 text-right">Precio L</th>
-          <th class="px-3 py-2 text-right">Margen L</th>
-          <th class="px-3 py-2"></th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (p of productos(); track p.id) {
-          <tr class="border-t border-line" [class.bg-accent-soft]="seleccionado()?.id === p.id">
-            <td class="px-3 py-2 font-medium">{{ p.nombre }}</td>
-            <td class="px-3 py-2 text-right">{{ tallaDe(p, "S")?.precioBase }}</td>
-            <td class="px-3 py-2 text-right text-muted">{{ tallaDe(p, "S")?.margen }}</td>
-            <td class="px-3 py-2 text-right">{{ tallaDe(p, "M")?.precioBase }}</td>
-            <td class="px-3 py-2 text-right text-muted">{{ tallaDe(p, "M")?.margen }}</td>
-            <td class="px-3 py-2 text-right">{{ tallaDe(p, "L")?.precioBase }}</td>
-            <td class="px-3 py-2 text-right text-muted">{{ tallaDe(p, "L")?.margen }}</td>
-            <td class="px-3 py-2 whitespace-nowrap">
-              <button type="button" (click)="seleccionar(p)" class="text-accent-2 hover:underline mr-2">Editar</button>
-              @if (esAdmin()) {
-                <button type="button" (click)="desactivar(p.id)" class="text-accent-2 hover:underline">Desactivar</button>
-              }
-            </td>
+    <div class="table-wrap mb-6">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th class="text-right">Precio S</th>
+            <th class="text-right">Margen S</th>
+            <th class="text-right">Precio M</th>
+            <th class="text-right">Margen M</th>
+            <th class="text-right">Precio L</th>
+            <th class="text-right">Margen L</th>
+            <th></th>
           </tr>
-        }
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          @for (p of productos(); track p.id) {
+            <tr [class.bg-accent-soft]="seleccionado()?.id === p.id">
+              <td class="font-medium">{{ p.nombre }}</td>
+              <td class="text-right">{{ tallaDe(p, "S")?.precioBase }}</td>
+              <td class="text-right text-muted">{{ tallaDe(p, "S")?.margen }}</td>
+              <td class="text-right">{{ tallaDe(p, "M")?.precioBase }}</td>
+              <td class="text-right text-muted">{{ tallaDe(p, "M")?.margen }}</td>
+              <td class="text-right">{{ tallaDe(p, "L")?.precioBase }}</td>
+              <td class="text-right text-muted">{{ tallaDe(p, "L")?.margen }}</td>
+              <td class="whitespace-nowrap">
+                <button type="button" (click)="seleccionar(p)" class="btn-text">Editar</button>
+                @if (esAdmin()) {
+                  <button type="button" (click)="desactivar(p.id)" class="btn-text">Desactivar</button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
   }
 
   @if (seleccionado(); as producto) {
-    <div class="bg-surface border border-line rounded p-4 space-y-6">
-      <div class="flex items-center justify-between">
-        <h2 class="font-medium">{{ producto.nombre }}</h2>
-        <button type="button" (click)="cerrarDetalle()" class="text-muted hover:underline">Cerrar</button>
+    <div class="card space-y-6">
+      <div class="flex items-center justify-between border-b border-line pb-4">
+        <h2 class="panel-title">{{ producto.nombre }}</h2>
+        <button type="button" (click)="cerrarDetalle()" class="btn-icon">✕</button>
       </div>
 
-      <form [formGroup]="detalleForm" (ngSubmit)="guardarDetalle()" class="grid grid-cols-4 gap-3 items-end">
+      <form [formGroup]="detalleForm" (ngSubmit)="guardarDetalle()" class="grid grid-cols-4 gap-4 items-end">
         <div>
-          <label class="block text-muted mb-1">Nombre</label>
-          <input formControlName="nombre" class="w-full rounded border border-line px-2 py-1.5" />
+          <label class="field-label">Nombre</label>
+          <input formControlName="nombre" class="input" />
         </div>
         <div class="col-span-2">
-          <label class="block text-muted mb-1">Descripción</label>
-          <input formControlName="descripcion" class="w-full rounded border border-line px-2 py-1.5" />
+          <label class="field-label">Descripción</label>
+          <input formControlName="descripcion" class="input" />
         </div>
-        <div class="flex items-center gap-2 mt-5">
-          <input type="checkbox" formControlName="usaPapel" id="detUsaPapel" />
+        <div class="flex items-center gap-2 pb-2">
+          <input type="checkbox" formControlName="usaPapel" id="detUsaPapel" class="checkbox" />
           <label for="detUsaPapel">Usa papel</label>
         </div>
         <div>
-          <label class="block text-muted mb-1">Flor principal</label>
-          <select formControlName="florPrincipalId" class="w-full rounded border border-line px-2 py-1.5">
+          <label class="field-label">Flor principal</label>
+          <select formControlName="florPrincipalId" class="input">
             @for (i of insumosFlor(); track i.id) { <option [value]="i.id">{{ i.nombre }}</option> }
           </select>
         </div>
         <div>
-          <label class="block text-muted mb-1">Papel por defecto</label>
-          <select formControlName="papelDefaultId" class="w-full rounded border border-line px-2 py-1.5">
+          <label class="field-label">Papel por defecto</label>
+          <select formControlName="papelDefaultId" class="input">
             <option value="">—</option>
             @for (i of insumosPapel(); track i.id) { <option [value]="i.id">{{ i.nombre }}</option> }
           </select>
@@ -138,34 +138,33 @@
         <div></div>
         <div></div>
         <div>
-          <label class="block text-muted mb-1">Precio S (S/)</label>
-          <input type="number" step="0.01" formControlName="precioS" class="w-full rounded border border-line px-2 py-1.5" />
+          <label class="field-label">Precio S (S/)</label>
+          <input type="number" step="0.01" formControlName="precioS" class="input" />
         </div>
         <div>
-          <label class="block text-muted mb-1">Precio M (S/)</label>
-          <input type="number" step="0.01" formControlName="precioM" class="w-full rounded border border-line px-2 py-1.5" />
+          <label class="field-label">Precio M (S/)</label>
+          <input type="number" step="0.01" formControlName="precioM" class="input" />
         </div>
         <div>
-          <label class="block text-muted mb-1">Precio L (S/)</label>
-          <input type="number" step="0.01" formControlName="precioL" class="w-full rounded border border-line px-2 py-1.5" />
+          <label class="field-label">Precio L (S/)</label>
+          <input type="number" step="0.01" formControlName="precioL" class="input" />
         </div>
         @if (esAdmin()) {
           <div>
-            <button type="submit" [disabled]="detalleForm.invalid" class="rounded bg-accent text-text font-medium px-3 py-1.5 disabled:opacity-50">
-              Guardar datos
-            </button>
+            <button type="submit" [disabled]="detalleForm.invalid" class="btn-primary w-full">Guardar datos</button>
           </div>
         }
       </form>
 
-      <div>
-        <h3 class="font-medium mb-2">Flores permitidas (cambio)</h3>
-        <div class="flex flex-wrap gap-3 mb-2">
+      <div class="border-t border-line pt-5">
+        <h3 class="mb-2 font-medium">Flores permitidas (cambio)</h3>
+        <div class="mb-3 flex flex-wrap gap-x-5 gap-y-2">
           @for (i of insumosFlor(); track i.id) {
             @if (i.id !== producto.florPrincipalId) {
               <label class="flex items-center gap-1.5">
                 <input
                   type="checkbox"
+                  class="checkbox"
                   [checked]="floresPermitidas().has(i.id)"
                   (change)="toggleFlorPermitida(i.id)"
                 />
@@ -175,23 +174,25 @@
           }
         </div>
         @if (esAdmin()) {
-          <button type="button" (click)="guardarFloresPermitidas()" class="text-accent-2 hover:underline">
+          <button type="button" (click)="guardarFloresPermitidas()" class="btn-secondary">
             Guardar flores permitidas
           </button>
         }
-        <p class="text-muted mt-1">El ajuste de precio de cada flor se define en Reglas de cambio (tipo "flor").</p>
+        <p class="mt-2 text-muted">El ajuste de precio de cada flor se define en Reglas de cambio (tipo "flor").</p>
       </div>
 
-      <div>
-        <div class="flex items-center justify-between mb-2">
+      <div class="border-t border-line pt-5">
+        <div class="mb-3 flex items-center justify-between">
           <h3 class="font-medium">Receta</h3>
-          <div class="flex items-center gap-1">
+          <div class="flex items-center gap-1 rounded-md bg-sidebar p-1">
             @for (t of tallas; track t) {
               <button
                 type="button"
                 (click)="cambiarTalla(t)"
-                class="px-3 py-1 rounded"
-                [class.bg-sidebar-act]="tallaActiva() === t"
+                class="rounded px-3 py-1 font-medium transition"
+                [class.bg-surface]="tallaActiva() === t"
+                [class.shadow-sm]="tallaActiva() === t"
+                [class.text-muted]="tallaActiva() !== t"
               >
                 {{ t }}
               </button>
@@ -199,59 +200,61 @@
           </div>
         </div>
 
-        <table class="w-full border border-line rounded overflow-hidden mb-3" [formGroup]="recetaForm">
-          <thead class="bg-sidebar text-left">
-            <tr>
-              <th class="px-3 py-2">Insumo</th>
-              <th class="px-3 py-2">Cantidad</th>
-              <th class="px-3 py-2">Rol</th>
-              <th class="px-3 py-2"></th>
-            </tr>
-          </thead>
-          <tbody formArrayName="lineas">
-            @for (linea of lineas.controls; track $index) {
-              <tr class="border-t border-line" [formGroupName]="$index">
-                <td class="px-3 py-2">
-                  <select formControlName="insumoId" class="w-full rounded border border-line px-2 py-1">
-                    @for (i of insumos(); track i.id) { <option [value]="i.id">{{ i.nombre }}</option> }
-                  </select>
-                </td>
-                <td class="px-3 py-2">
-                  <input type="number" step="0.001" formControlName="cantidad" class="w-28 rounded border border-line px-2 py-1" />
-                </td>
-                <td class="px-3 py-2">
-                  <select formControlName="rol" class="rounded border border-line px-2 py-1">
-                    @for (r of roles; track r) { <option [value]="r">{{ r }}</option> }
-                  </select>
-                </td>
-                <td class="px-3 py-2">
-                  @if (esAdmin()) {
-                    <button type="button" (click)="quitarLinea($index)" class="text-accent-2 hover:underline">Quitar</button>
-                  }
-                </td>
+        <div class="table-wrap mb-4" [formGroup]="recetaForm">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Insumo</th>
+                <th>Cantidad</th>
+                <th>Rol</th>
+                <th></th>
               </tr>
-            }
-          </tbody>
-        </table>
+            </thead>
+            <tbody formArrayName="lineas">
+              @for (linea of lineas.controls; track $index) {
+                <tr [formGroupName]="$index">
+                  <td>
+                    <select formControlName="insumoId" class="input py-1">
+                      @for (i of insumos(); track i.id) { <option [value]="i.id">{{ i.nombre }}</option> }
+                    </select>
+                  </td>
+                  <td>
+                    <input type="number" step="0.001" formControlName="cantidad" class="input w-28 py-1" />
+                  </td>
+                  <td>
+                    <select formControlName="rol" class="input w-36 py-1">
+                      @for (r of roles; track r) { <option [value]="r">{{ r }}</option> }
+                    </select>
+                  </td>
+                  <td>
+                    @if (esAdmin()) {
+                      <button type="button" (click)="quitarLinea($index)" class="btn-text">Quitar</button>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
 
         @if (esAdmin()) {
-          <div class="flex items-center gap-3">
-            <button type="button" (click)="agregarLinea()" class="text-accent-2 hover:underline">+ Agregar línea</button>
+          <div class="flex flex-wrap items-center gap-3">
+            <button type="button" (click)="agregarLinea()" class="btn-secondary">+ Agregar línea</button>
             <button
               type="button"
               (click)="guardarReceta()"
               [disabled]="guardandoReceta() || recetaForm.invalid"
-              class="rounded bg-accent text-text font-medium px-3 py-1.5 disabled:opacity-50"
+              class="btn-primary"
             >
               Guardar receta {{ tallaActiva() }}
             </button>
             @if (recetaMensaje()) {
-              <span class="text-estado-listo-fg">{{ recetaMensaje() }}</span>
+              <span class="badge badge-success">{{ recetaMensaje() }}</span>
             }
-            <span class="text-muted">Copiar esta receta a:</span>
+            <span class="ml-auto text-muted">Copiar a:</span>
             @for (t of tallas; track t) {
               @if (t !== tallaActiva()) {
-                <button type="button" (click)="copiarA(t)" class="text-accent-2 hover:underline">{{ t }}</button>
+                <button type="button" (click)="copiarA(t)" class="btn-secondary">{{ t }}</button>
               }
             }
           </div>

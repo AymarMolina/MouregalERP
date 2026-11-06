@@ -1,27 +1,74 @@
 <div class="flex min-h-screen bg-bg">
-  <aside class="w-56 shrink-0 bg-sidebar border-r border-line flex flex-col">
-    <div class="px-4 py-4 font-medium">ERP Florería</div>
-    <nav class="flex-1 overflow-y-auto">
-      @for (item of navItems(); track item.path) {
-        <a
-          [routerLink]="item.path"
-          routerLinkActive="bg-sidebar-act"
-          class="block px-4 py-2 hover:bg-sidebar-act"
-        >
-          {{ item.label }}
-        </a>
+  <aside class="flex w-60 shrink-0 flex-col border-r border-line bg-sidebar">
+    <div class="flex items-center gap-2 px-5 py-5">
+      <div class="flex h-8 w-8 items-center justify-center rounded-md bg-accent font-semibold text-text">M</div>
+      <div class="leading-tight">
+        <div class="font-semibold text-text">ERP Florería</div>
+        <div class="text-xs text-muted">Mouregal</div>
+      </div>
+    </div>
+
+    <nav class="flex-1 overflow-y-auto px-3 pb-4">
+      @for (group of groups(); track group.label) {
+        <div class="mb-4">
+          <div class="px-2.5 pb-1.5 pt-2 text-xs font-semibold uppercase tracking-wide text-muted/80">
+            {{ group.label }}
+          </div>
+          @for (item of group.items; track item.path) {
+            <a
+              [routerLink]="item.path"
+              routerLinkActive="bg-sidebar-act font-medium text-text border-accent-2"
+              #rla="routerLinkActive"
+              class="mb-0.5 flex items-center gap-2 rounded-md border-l-2 border-transparent px-2.5 py-2 text-text/90 transition hover:bg-sidebar-act/60"
+            >
+              <span
+                class="h-1.5 w-1.5 shrink-0 rounded-full"
+                [class.bg-accent-2]="rla.isActive"
+                [class.bg-line]="!rla.isActive"
+              ></span>
+              {{ item.label }}
+            </a>
+          }
+        </div>
       }
     </nav>
-    <div class="px-4 py-3 border-t border-line text-muted">
-      <div class="font-medium text-text">{{ user()?.nombre }}</div>
-      <div class="mb-2">{{ user()?.rol }}</div>
-      <button type="button" (click)="logout()" class="text-accent-2 hover:underline">
-        Cerrar sesión
-      </button>
-    </div>
   </aside>
 
-  <main class="flex-1 min-w-0">
-    <router-outlet></router-outlet>
-  </main>
+  <div class="flex min-w-0 flex-1 flex-col">
+    <header class="flex h-14 shrink-0 items-center justify-between border-b border-line bg-surface px-6">
+      <div class="text-muted">{{ seccionActual() }}</div>
+
+      <div class="relative">
+        <button
+          type="button"
+          (click)="toggleMenu()"
+          class="flex items-center gap-2 rounded-md px-2 py-1.5 transition hover:bg-accent-soft"
+        >
+          <span class="flex h-7 w-7 items-center justify-center rounded-full bg-accent text-xs font-semibold text-text">
+            {{ iniciales() }}
+          </span>
+          <span class="text-left leading-tight">
+            <span class="block font-medium text-text">{{ user()?.nombre }}</span>
+            <span class="block text-xs capitalize text-muted">{{ user()?.rol }}</span>
+          </span>
+        </button>
+
+        @if (menuAbierto()) {
+          <div class="absolute right-0 top-full z-10 mt-1 w-44 rounded-md border border-line bg-surface py-1 shadow-md">
+            <button
+              type="button"
+              (click)="logout()"
+              class="block w-full px-3 py-2 text-left text-accent-2 transition hover:bg-accent-soft"
+            >
+              Cerrar sesión
+            </button>
+          </div>
+        }
+      </div>
+    </header>
+
+    <main class="min-w-0 flex-1 overflow-y-auto">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
 </div>
