@@ -6,6 +6,7 @@ import {
   ESTADO_PAGO,
   ESTADO_PEDIDO,
   ESTADO_REGLA,
+  INSUMO_CATEGORIA,
   METODO_PAGO,
   ROL_USUARIO,
   TALLA,
@@ -30,3 +31,4 @@ export const tipoPagoEnum = pgEnum('tipo_pago', TIPO_PAGO);
 export const metodoPagoEnum = pgEnum('metodo_pago', METODO_PAGO);
 export const estadoPagoEnum = pgEnum('estado_pago', ESTADO_PAGO);
 export const estadoOcEnum = pgEnum('estado_oc', ESTADO_OC);
+export const insumoCategoriaEnum = pgEnum('insumo_categoria', INSUMO_CATEGORIA);

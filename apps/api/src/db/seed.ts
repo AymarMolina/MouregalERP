@@ -1,7 +1,9 @@
 import 'dotenv/config';
 import * as bcrypt from 'bcryptjs';
+import { eq } from 'drizzle-orm';
 import { ROL_USUARIO } from '@erp/shared';
 import { createDb } from './client';
+import { seedCatalogo } from './seed-catalogo';
 import { usuarios } from './schema';
 
 const DEV_PASSWORD = 'dev12345';
@@ -27,6 +29,16 @@ async function main(): Promise<void> {
 
   console.log(`Usuarios semilla listos (contraseña dev: "${DEV_PASSWORD}"):`);
   for (const rol of ROL_USUARIO) console.log(`  - ${rol}@mouregal.pe`);
+
+  const [admin] = await db
+    .select()
+    .from(usuarios)
+    .where(eq(usuarios.email, 'admin@mouregal.pe'))
+    .limit(1);
+  await seedCatalogo(db, admin.id);
+  console.log(
+    'Catálogo de ejemplo (sección 11) listo: insumos, productos, recetas, reglas, extras y distritos.',
+  );
 
   await sql.end();
 }

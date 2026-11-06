@@ -7,6 +7,22 @@ export type RolUsuario = (typeof ROL_USUARIO)[number];
 export const UNIDAD_BASE = ["tallo", "g", "hoja", "m", "und"] as const;
 export type UnidadBase = (typeof UNIDAD_BASE)[number];
 
+export const INSUMO_CATEGORIA = [
+  "flor",
+  "follaje",
+  "papel",
+  "accesorio",
+  "relleno",
+  "peluche",
+] as const;
+export type InsumoCategoria = (typeof INSUMO_CATEGORIA)[number];
+
+export const ROL_RECETA_LINEA = ["flor_principal", "papel", "otro"] as const;
+export type RolRecetaLinea = (typeof ROL_RECETA_LINEA)[number];
+
+export const AJUSTE_MODO = ["fijo", "por_unidad"] as const;
+export type AjusteModo = (typeof AJUSTE_MODO)[number];
+
 export const TALLA = ["S", "M", "L"] as const;
 export type Talla = (typeof TALLA)[number];
 

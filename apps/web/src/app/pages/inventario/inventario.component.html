@@ -1,0 +1,138 @@
+<div class="p-6 space-y-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-lg font-medium">Inventario</h1>
+      <p class="text-muted">Insumos, stock mínimo, costo promedio y saldo de apertura.</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <label class="text-accent-2 hover:underline cursor-pointer">
+        Cargar apertura (CSV)
+        <input type="file" accept=".csv,text/csv" class="hidden" (change)="onArchivoApertura($event)" />
+      </label>
+      <button
+        type="button"
+        (click)="mostrarForm.set(!mostrarForm())"
+        class="rounded bg-accent text-text font-medium px-3 py-1.5"
+      >
+        {{ mostrarForm() ? "Cancelar" : "+ Nuevo insumo" }}
+      </button>
+    </div>
+  </div>
+
+  @if (aperturaMensaje()) {
+    <p class="text-estado-listo-fg bg-estado-listo-bg rounded px-3 py-2">{{ aperturaMensaje() }}</p>
+  }
+  @if (aperturaErrores().length) {
+    <div class="text-accent-2 bg-accent-soft rounded px-3 py-2">
+      <p class="font-medium mb-1">No se cargó la apertura:</p>
+      <ul class="list-disc list-inside">
+        @for (e of aperturaErrores(); track e) {
+          <li>{{ e }}</li>
+        }
+      </ul>
+    </div>
+  }
+  <p class="text-muted">
+    Formato CSV esperado (con o sin encabezado): <code>codigo,cantidad,costoUnitario</code>
+  </p>
+
+  @if (mostrarForm()) {
+    <form [formGroup]="form" (ngSubmit)="crear()" class="bg-surface border border-line rounded p-4 grid grid-cols-6 gap-3 items-end">
+      <div>
+        <label class="block text-muted mb-1">Código</label>
+        <input formControlName="codigo" class="w-full rounded border border-line px-2 py-1.5" />
+      </div>
+      <div class="col-span-2">
+        <label class="block text-muted mb-1">Nombre</label>
+        <input formControlName="nombre" class="w-full rounded border border-line px-2 py-1.5" />
+      </div>
+      <div>
+        <label class="block text-muted mb-1">Categoría</label>
+        <select formControlName="categoria" class="w-full rounded border border-line px-2 py-1.5">
+          @for (c of categorias; track c) {
+            <option [value]="c">{{ c }}</option>
+          }
+        </select>
+      </div>
+      <div>
+        <label class="block text-muted mb-1">Unidad</label>
+        <select formControlName="unidadBase" class="w-full rounded border border-line px-2 py-1.5">
+          @for (u of unidades; track u) {
+            <option [value]="u">{{ u }}</option>
+          }
+        </select>
+      </div>
+      <div>
+        <label class="block text-muted mb-1">Stock mínimo</label>
+        <input type="number" formControlName="stockMinimo" class="w-full rounded border border-line px-2 py-1.5" />
+      </div>
+      <div class="col-span-6 flex items-center gap-4">
+        <label class="flex items-center gap-2">
+          <input type="checkbox" formControlName="esFlor" />
+          Es flor (principal o de cambio)
+        </label>
+        <button type="submit" [disabled]="form.invalid" class="rounded bg-accent text-text font-medium px-3 py-1.5 disabled:opacity-50">
+          Guardar
+        </button>
+      </div>
+    </form>
+  }
+
+  @if (loading()) {
+    <p class="text-muted">Cargando...</p>
+  } @else if (error()) {
+    <p class="text-accent-2">{{ error() }}</p>
+  } @else {
+    <table class="w-full bg-surface border border-line rounded overflow-hidden">
+      <thead class="bg-sidebar text-left">
+        <tr>
+          <th class="px-3 py-2">Código</th>
+          <th class="px-3 py-2">Nombre</th>
+          <th class="px-3 py-2">Categoría</th>
+          <th class="px-3 py-2">Unidad</th>
+          <th class="px-3 py-2 text-right">Mínimo</th>
+          <th class="px-3 py-2 text-right">Stock actual</th>
+          <th class="px-3 py-2 text-right">Costo prom.</th>
+          <th class="px-3 py-2">Activo</th>
+          <th class="px-3 py-2"></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (i of insumos(); track i.id) {
+          @if (editingId() === i.id) {
+            <tr class="border-t border-line" [formGroup]="editForm">
+              <td class="px-3 py-2 text-muted">{{ i.codigo }}</td>
+              <td class="px-3 py-2"><input formControlName="nombre" class="w-full rounded border border-line px-2 py-1" /></td>
+              <td class="px-3 py-2 text-muted">{{ i.categoria }}</td>
+              <td class="px-3 py-2 text-muted">{{ i.unidadBase }}</td>
+              <td class="px-3 py-2 text-right"><input type="number" formControlName="stockMinimo" class="w-24 rounded border border-line px-2 py-1 text-right" /></td>
+              <td class="px-3 py-2 text-right text-muted">{{ i.stockActual }}</td>
+              <td class="px-3 py-2 text-right text-muted">{{ i.costoPromedio }}</td>
+              <td class="px-3 py-2"><input type="checkbox" formControlName="activo" /></td>
+              <td class="px-3 py-2 whitespace-nowrap">
+                <button type="button" (click)="guardarEdicion(i.id)" class="text-accent-2 hover:underline mr-2">Guardar</button>
+                <button type="button" (click)="cancelarEdicion()" class="text-muted hover:underline">Cancelar</button>
+              </td>
+            </tr>
+          } @else {
+            <tr class="border-t border-line">
+              <td class="px-3 py-2 font-medium">{{ i.codigo }}</td>
+              <td class="px-3 py-2">{{ i.nombre }}</td>
+              <td class="px-3 py-2 text-muted">{{ i.categoria }}</td>
+              <td class="px-3 py-2 text-muted">{{ i.unidadBase }}</td>
+              <td class="px-3 py-2 text-right">{{ i.stockMinimo }}</td>
+              <td class="px-3 py-2 text-right" [class.text-accent-2]="stockBajo(i)">
+                {{ i.stockActual }}
+              </td>
+              <td class="px-3 py-2 text-right">{{ i.costoPromedio }}</td>
+              <td class="px-3 py-2">{{ i.activo ? "Sí" : "No" }}</td>
+              <td class="px-3 py-2">
+                <button type="button" (click)="editar(i)" class="text-accent-2 hover:underline">Editar</button>
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  }
+</div>

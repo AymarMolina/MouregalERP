@@ -4,23 +4,17 @@ import {
   check,
   index,
   numeric,
-  pgEnum,
   pgTable,
   text,
   timestamp,
   uuid,
 } from 'drizzle-orm/pg-core';
-import { tipoMovimientoEnum, unidadBaseEnum } from './enums';
+import {
+  insumoCategoriaEnum,
+  tipoMovimientoEnum,
+  unidadBaseEnum,
+} from './enums';
 import { usuarios } from './usuarios';
-
-export const insumoCategoriaEnum = pgEnum('insumo_categoria', [
-  'flor',
-  'follaje',
-  'papel',
-  'accesorio',
-  'relleno',
-  'peluche',
-]);
 
 export const insumos = pgTable('insumos', {
   id: uuid('id').defaultRandom().primaryKey(),

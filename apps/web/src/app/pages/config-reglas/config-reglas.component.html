@@ -1,0 +1,113 @@
+<div class="p-6 space-y-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-lg font-medium">Reglas de cambio</h1>
+      <p class="text-muted">Ajustes de precio cuando se cambia flor, papel, color, tamaño o extra.</p>
+    </div>
+    <button type="button" (click)="mostrarForm.set(!mostrarForm())" class="rounded bg-accent text-text font-medium px-3 py-1.5">
+      {{ mostrarForm() ? "Cancelar" : "+ Nueva regla" }}
+    </button>
+  </div>
+
+  @if (mostrarForm()) {
+    <form [formGroup]="form" (ngSubmit)="crear()" class="bg-surface border border-line rounded p-4 grid grid-cols-4 gap-3 items-end">
+      <div>
+        <label class="block text-muted mb-1">Tipo</label>
+        <select formControlName="tipo" class="w-full rounded border border-line px-2 py-1.5">
+          @for (t of tipos; track t) { <option [value]="t">{{ t }}</option> }
+        </select>
+      </div>
+      <div>
+        <label class="block text-muted mb-1">Producto (vacío = todos)</label>
+        <select formControlName="productoId" class="w-full rounded border border-line px-2 py-1.5">
+          <option value="">Todos</option>
+          @for (p of productos(); track p.id) { <option [value]="p.id">{{ p.nombre }}</option> }
+        </select>
+      </div>
+      <div>
+        <label class="block text-muted mb-1">Insumo origen</label>
+        <select formControlName="insumoOrigenId" class="w-full rounded border border-line px-2 py-1.5">
+          <option value="">—</option>
+          @for (i of insumos(); track i.id) { <option [value]="i.id">{{ i.nombre }}</option> }
+        </select>
+      </div>
+      <div>
+        <label class="block text-muted mb-1">Insumo destino</label>
+        <select formControlName="insumoDestinoId" class="w-full rounded border border-line px-2 py-1.5">
+          <option value="">—</option>
+          @for (i of insumos(); track i.id) { <option [value]="i.id">{{ i.nombre }}</option> }
+        </select>
+      </div>
+      <div class="col-span-2">
+        <label class="block text-muted mb-1">Descripción</label>
+        <input formControlName="descripcion" class="w-full rounded border border-line px-2 py-1.5" />
+      </div>
+      <div>
+        <label class="block text-muted mb-1">Modo de ajuste</label>
+        <select formControlName="ajusteModo" class="w-full rounded border border-line px-2 py-1.5">
+          @for (m of ajusteModos; track m) { <option [value]="m">{{ m }}</option> }
+        </select>
+      </div>
+      <div>
+        <label class="block text-muted mb-1">Monto (S/)</label>
+        <input type="number" step="0.01" formControlName="ajusteMonto" class="w-full rounded border border-line px-2 py-1.5" />
+      </div>
+      <div>
+        <label class="block text-muted mb-1">Estado</label>
+        <select formControlName="estado" class="w-full rounded border border-line px-2 py-1.5">
+          @for (e of estados; track e) { <option [value]="e">{{ e }}</option> }
+        </select>
+      </div>
+      <div>
+        <button type="submit" [disabled]="form.invalid" class="rounded bg-accent text-text font-medium px-3 py-1.5 disabled:opacity-50">
+          Guardar
+        </button>
+      </div>
+    </form>
+  }
+
+  @if (loading()) {
+    <p class="text-muted">Cargando...</p>
+  } @else {
+    <table class="w-full bg-surface border border-line rounded overflow-hidden">
+      <thead class="bg-sidebar text-left">
+        <tr>
+          <th class="px-3 py-2">Tipo</th>
+          <th class="px-3 py-2">Producto</th>
+          <th class="px-3 py-2">Origen → Destino</th>
+          <th class="px-3 py-2">Descripción</th>
+          <th class="px-3 py-2 text-right">Ajuste</th>
+          <th class="px-3 py-2">Estado</th>
+          <th class="px-3 py-2"></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (r of reglas(); track r.id) {
+          <tr class="border-t border-line">
+            <td class="px-3 py-2">{{ r.tipo }}</td>
+            <td class="px-3 py-2 text-muted">{{ nombreProducto(r.productoId) }}</td>
+            <td class="px-3 py-2 text-muted">{{ nombreInsumo(r.insumoOrigenId) }} → {{ nombreInsumo(r.insumoDestinoId) }}</td>
+            <td class="px-3 py-2">{{ r.descripcion }}</td>
+            <td class="px-3 py-2 text-right">
+              {{ r.ajusteMonto }} {{ r.ajusteModo === "por_unidad" ? "/ unidad" : "" }}
+            </td>
+            <td class="px-3 py-2">
+              <span
+                class="px-2 py-0.5 rounded"
+                [class.bg-estado-en-camino-bg]="r.estado === 'aprobado'"
+                [class.text-estado-en-camino-fg]="r.estado === 'aprobado'"
+                [class.bg-accent-soft]="r.estado === 'consultar'"
+                [class.text-accent-2]="r.estado === 'consultar'"
+              >
+                {{ r.estado }}
+              </span>
+            </td>
+            <td class="px-3 py-2">
+              <button type="button" (click)="eliminar(r.id)" class="text-accent-2 hover:underline">Desactivar</button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</div>

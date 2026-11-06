@@ -3,6 +3,10 @@ import type { RolUsuario } from "@erp/shared";
 import { authGuard } from "./core/auth/auth.guard";
 import { roleGuard } from "./core/auth/role.guard";
 import { ShellComponent } from "./layout/shell/shell.component";
+import { ConfigRecetasComponent } from "./pages/config-recetas/config-recetas.component";
+import { ConfigReglasComponent } from "./pages/config-reglas/config-reglas.component";
+import { ConfigTarifarioComponent } from "./pages/config-tarifario/config-tarifario.component";
+import { InventarioComponent } from "./pages/inventario/inventario.component";
 import { LoginComponent } from "./pages/login/login.component";
 import { PlaceholderComponent } from "./pages/placeholder/placeholder.component";
 
@@ -60,9 +64,9 @@ export const routes: Routes = [
       },
       {
         path: "inventario",
-        component: PlaceholderComponent,
+        component: InventarioComponent,
         canActivate: [roleGuard],
-        data: { titulo: "Inventario", roles: ["admin", "almacen"] },
+        data: { roles: ["admin", "almacen"] },
       },
       {
         path: "compras",
@@ -72,21 +76,21 @@ export const routes: Routes = [
       },
       {
         path: "config/recetas",
-        component: PlaceholderComponent,
+        component: ConfigRecetasComponent,
         canActivate: [roleGuard],
-        data: { titulo: "Recetas", roles: ["admin", "produccion", "almacen"] },
+        data: { roles: ["admin", "produccion", "almacen"] },
       },
       {
         path: "config/reglas",
-        component: PlaceholderComponent,
+        component: ConfigReglasComponent,
         canActivate: [roleGuard],
-        data: { titulo: "Reglas de cambio", roles: ["admin"] },
+        data: { roles: ["admin"] },
       },
       {
         path: "config/tarifario",
-        component: PlaceholderComponent,
+        component: ConfigTarifarioComponent,
         canActivate: [roleGuard],
-        data: { titulo: "Tarifario", roles: ["admin"] },
+        data: { roles: ["admin"] },
       },
       {
         path: "reportes",
