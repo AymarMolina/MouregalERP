@@ -6,6 +6,7 @@
     "build:shared": "pnpm --filter @erp/shared build",
     "api:dev": "pnpm run build:shared && pnpm --filter api start:dev",
     "web:dev": "pnpm run build:shared && pnpm --filter web start",
+    "demo": "pnpm run build:shared && concurrently -n api,web -c blue,yellow \"pnpm --filter api start:dev\" \"pnpm --filter web start\"",
     "db:generate": "pnpm --filter api db:generate",
     "db:migrate": "pnpm --filter api db:migrate",
     "db:studio": "pnpm --filter api db:studio",
@@ -17,6 +18,9 @@
     "node": ">=20"
   },
   "packageManager": "pnpm@10.27.0",
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  },
   "pnpm": {
     "onlyBuiltDependencies": [
       "@nestjs/core",
