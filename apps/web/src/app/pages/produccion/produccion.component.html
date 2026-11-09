@@ -1,86 +1,111 @@
-<div class="p-6">
+<div class="p-4 sm:p-6">
   <div class="page-header">
     <div>
-      <h1 class="panel-title">Producción</h1>
-      <p class="panel-subtitle">Pedidos pendientes de armar, en armado y listos para despacho.</p>
+      <h1 class="page-title">Producción</h1>
+      <p class="panel-subtitle">Pedidos por armar, en armado y listos para despacho. Se actualiza cada 15 segundos.</p>
     </div>
+    <button type="button" class="btn-secondary" (click)="exportarExcel()" [disabled]="loading()" title="Hoja de producción: un renglón por producto">
+      <app-icon name="excel" [size]="16" class="text-green-700" /> Excel
+    </button>
   </div>
 
   @if (loading()) {
-    <p class="text-muted">Cargando...</p>
+    <div class="grid gap-4 lg:grid-cols-3">
+      @for (n of [1, 2, 3]; track n) {
+        <div class="space-y-3 rounded-xl bg-gray-100/70 p-4">
+          <div class="skeleton h-5 w-28 bg-white/60"></div>
+          <div class="skeleton h-24 bg-white/70"></div>
+          <div class="skeleton h-24 bg-white/70"></div>
+        </div>
+      }
+    </div>
   } @else {
-    <div class="grid grid-cols-3 gap-4 mb-6">
-      <div>
-        <h2 class="mb-2 font-medium">Pendiente ({{ pendientes().length }})</h2>
-        <div class="space-y-2">
-          @for (p of pendientes(); track p.id) {
-            <button
-              type="button"
-              (click)="seleccionar(p)"
-              class="w-full rounded-md border px-3 py-2 text-left transition hover:bg-accent-soft"
-              [class.border-accent-2]="seleccionado()?.id === p.id"
-              [class.bg-accent-soft]="seleccionado()?.id === p.id"
-              [class.border-line]="seleccionado()?.id !== p.id"
-            >
-              <div class="flex justify-between">
-                <span class="font-medium">#{{ p.numero }}</span>
-                <span class="tabular text-muted">{{ cuando(p.fechaEntrega, p.horaEntrega) }}</span>
-              </div>
-              <div class="text-muted">{{ p.nombreReceptor }}</div>
-            </button>
-          } @empty {
-            <p class="text-muted">Sin pedidos pendientes.</p>
-          }
-        </div>
-      </div>
+    <!-- Tablero Kanban -->
+    <div class="mb-6 grid items-start gap-4 lg:grid-cols-3">
+      @for (col of columnas(); track col.clave) {
+        <section class="flex min-h-[14rem] flex-col rounded-xl bg-gray-100/70 p-4" [attr.aria-label]="col.titulo">
+          <!-- Encabezado de columna -->
+          <header class="mb-3 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-white text-brand shadow-sm">
+                <app-icon [name]="col.icono" [size]="16" />
+              </span>
+              <h2 class="text-sm font-semibold text-[#2c2b2d]">{{ col.titulo }}</h2>
+              <span
+                class="flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1.5 text-xs font-semibold tabular"
+                [class]="col.pedidos.length > 0 ? 'bg-[#9b73a1] text-white' : 'bg-white text-[#6d5d72]'"
+              >{{ col.pedidos.length }}</span>
+            </div>
+            <span class="text-xs text-[#6d5d72]">{{ col.ayuda }}</span>
+          </header>
 
-      <div>
-        <h2 class="mb-2 font-medium">En armado ({{ enArmado().length }})</h2>
-        <div class="space-y-2">
-          @for (p of enArmado(); track p.id) {
-            <button
-              type="button"
-              (click)="seleccionar(p)"
-              class="w-full rounded-md border px-3 py-2 text-left transition hover:bg-accent-soft"
-              [class.border-accent-2]="seleccionado()?.id === p.id"
-              [class.bg-accent-soft]="seleccionado()?.id === p.id"
-              [class.border-line]="seleccionado()?.id !== p.id"
-            >
-              <div class="flex justify-between">
-                <span class="font-medium">#{{ p.numero }}</span>
-                <span class="tabular text-muted">{{ cuando(p.fechaEntrega, p.horaEntrega) }}</span>
-              </div>
-              <div class="text-muted">{{ p.nombreReceptor }}</div>
-            </button>
-          } @empty {
-            <p class="text-muted">Nada en armado.</p>
-          }
-        </div>
-      </div>
+          <!-- Tarjetas -->
+          <div class="flex flex-1 flex-col gap-3">
+            @for (p of col.pedidos; track p.id) {
+              @let tiempo = estadoTiempo(p);
+              @let activo = seleccionado()?.id === p.id;
+              <button
+                type="button"
+                (click)="seleccionar(p)"
+                [attr.aria-pressed]="activo"
+                class="group w-full rounded-xl border bg-white p-3.5 text-left shadow-sm transition duration-150 hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b584b9]"
+                [class]="activo ? 'border-[#9b73a1] ring-2 ring-[#b584b9]/40' : 'border-purple-100/60'"
+              >
+                <!-- Header: número + hora -->
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-base font-bold tracking-tight text-[#161616]">#{{ p.numero }}</span>
+                  <span
+                    class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium tabular"
+                    [class]="tiempo.tono === 'atrasado' ? 'bg-red-100 text-negativo' : tiempo.tono === 'pronto' ? 'bg-amber-100 text-amber-800' : 'bg-[#f4edf5] text-[#6d5d72]'"
+                  >
+                    <app-icon name="reloj" [size]="12" />
+                    {{ cuando(p.fechaEntrega, p.horaEntrega) }}
+                  </span>
+                </div>
 
-      <div>
-        <h2 class="mb-2 font-medium">Listo ({{ listos().length }})</h2>
-        <div class="space-y-2">
-          @for (p of listos(); track p.id) {
-            <button
-              type="button"
-              (click)="seleccionar(p)"
-              class="w-full rounded-md border px-3 py-2 text-left transition hover:bg-accent-soft"
-              [class.border-accent-2]="seleccionado()?.id === p.id"
-              [class.bg-accent-soft]="seleccionado()?.id === p.id"
-              [class.border-line]="seleccionado()?.id !== p.id"
-            >
-              <div class="flex justify-between">
-                <span class="font-medium">#{{ p.numero }}</span>
-                <span class="tabular text-muted">{{ cuando(p.fechaEntrega, p.horaEntrega) }}</span>
+                <!-- Cuerpo: quién recibe + qué lleva -->
+                <div class="mt-2 text-sm font-semibold text-[#2c2b2d]">{{ p.nombreReceptor }}</div>
+                @if (resumenItems(p); as resumen) {
+                  <div class="mt-0.5 truncate text-xs text-[#6d5d72]" [title]="resumen">{{ resumen }}</div>
+                }
+
+                <!-- Footer sutil -->
+                <div class="mt-3 flex flex-wrap items-center gap-1.5 border-t border-[#f4edf5] pt-2.5 text-[11px]">
+                  @if (tiempo.texto) {
+                    <span
+                      class="font-semibold"
+                      [class.text-amber-700]="tiempo.tono === 'pronto'"
+                      [class.text-negativo]="tiempo.tono === 'atrasado'"
+                    >{{ tiempo.texto }}</span>
+                  }
+                  <span class="inline-flex items-center gap-1 text-[#6d5d72]">
+                    <app-icon name="usuario" [size]="12" />
+                    {{ nombreEncargada(p) }}
+                  </span>
+                  @if (p.vehiculo === "carro") {
+                    <span class="inline-flex items-center gap-1 rounded-full bg-[#f4edf5] px-1.5 py-0.5 font-medium text-[#4e345a]">
+                      <app-icon name="delivery" [size]="12" /> carro
+                    </span>
+                  }
+                  @if (p.dedicatoria) {
+                    <span class="inline-flex items-center gap-1 text-[#6d5d72]" title="Lleva dedicatoria">
+                      <app-icon name="regalo" [size]="12" /> dedicatoria
+                    </span>
+                  }
+                </div>
+              </button>
+            } @empty {
+              <!-- Estado vacío -->
+              <div class="flex flex-1 flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#d9c9de] px-4 py-8 text-center">
+                <span class="flex h-9 w-9 items-center justify-center rounded-full bg-white/70 text-[#b584b9]">
+                  <app-icon [name]="col.icono" [size]="18" />
+                </span>
+                <p class="text-sm font-medium text-[#6d5d72]">{{ col.vacio }}</p>
               </div>
-              <div class="text-muted">{{ p.nombreReceptor }}</div>
-            </button>
-          } @empty {
-            <p class="text-muted">Nada listo todavía.</p>
-          }
-        </div>
-      </div>
+            }
+          </div>
+        </section>
+      }
     </div>
 
     @if (seleccionado(); as pedido) {
@@ -94,16 +119,13 @@
         </div>
 
         @if (error()) {
-          <p class="rounded-md bg-accent-soft px-3 py-2 text-accent-2">{{ error() }}</p>
+          <p class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-red-800">{{ error() }}</p>
         }
 
         @if (pedido.dedicatoria) {
           <p class="rounded-md bg-sidebar px-3 py-2 italic">"{{ pedido.dedicatoria }}"</p>
         }
 
-        @if (error()) {
-          <p class="rounded-md bg-accent-soft px-3 py-2 text-accent-2">{{ error() }}</p>
-        }
 
         @if (consultaAbierta(); as c) {
           <div class="rounded-md border border-accent-2/30 bg-accent-soft p-4 space-y-2">
@@ -154,12 +176,12 @@
                   @for (linea of lineasForm.controls; track $index) {
                     <tr [formGroupName]="$index">
                       <td>{{ linea.value.nombre }}</td>
-                      <td class="text-right text-muted">{{ linea.value.cantidadReceta }}</td>
+                      <td class="text-right text-muted tabular">{{ cantidad(linea.value.cantidadReceta) }} {{ linea.value.unidadBase }}</td>
                       <td class="text-right">
-                        <input type="number" step="0.001" formControlName="cantidadUsada" class="input w-28 py-1 text-right" />
+                        <input type="number" [step]="esUnidadEntera(linea.value.unidadBase) ? 1 : 0.001" min="0" formControlName="cantidadUsada" class="input w-28 py-1 text-right" />
                       </td>
                       <td class="text-right" [class.text-accent-2]="merma(linea.value) > 0">
-                        {{ merma(linea.value) }}
+                        {{ cantidad(merma(linea.value)) }}
                       </td>
                     </tr>
                   }

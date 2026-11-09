@@ -1,7 +1,7 @@
 <div class="p-6">
   <div class="page-header">
     <div>
-      <h1 class="panel-title">Pagos</h1>
+      <h1 class="page-title">Pagos</h1>
       <p class="panel-subtitle">Saldos por pedido: envía el link del saldo o registra un pago recibido.</p>
     </div>
   </div>
@@ -26,20 +26,31 @@
   </div>
 
   @if (error()) {
-    <p class="mb-4 rounded-md bg-accent-soft px-3 py-2 text-accent-2">{{ error() }}</p>
+    <p class="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-red-800">{{ error() }}</p>
   }
   @if (aviso()) {
     <p class="mb-4 rounded-md bg-estado-listo-bg px-3 py-2 text-estado-listo-fg">{{ aviso() }}</p>
   }
 
   <div [class]="seleccionado() ? 'grid items-start gap-6 lg:grid-cols-[1fr_22rem]' : 'grid items-start gap-6'">
-    <div class="table-wrap overflow-x-auto">
+    <div class="table-wrap">
+      <div class="table-head">
+        <h2 class="table-title">Pedidos con saldo</h2>
+        <app-paginacion [tabla]="tabla" />
+      </div>
+      <app-seleccion-bar [tabla]="tabla" />
       @if (loading()) {
-        <p class="p-4 text-muted">Cargando...</p>
+        <div class="space-y-3 p-4">
+          @for (i of [1, 2, 3, 4, 5]; track i) {
+            <div class="skeleton h-9"></div>
+          }
+        </div>
       } @else {
+        <div class="overflow-x-auto">
         <table class="table">
           <thead>
             <tr>
+              <th class="col-check"><app-check-todos [tabla]="tabla" /></th>
               <th>#</th>
               <th>Cliente</th>
               <th>Entrega</th>
@@ -48,26 +59,28 @@
               <th class="text-right">Pagado</th>
               <th class="text-right">Saldo</th>
               <th>Cobro</th>
+              <th class="w-10"><span class="sr-only">Acciones</span></th>
             </tr>
           </thead>
           <tbody>
-            @for (f of visibles(); track f.id) {
-              <tr class="cursor-pointer" [class.bg-accent-soft]="seleccionadoId() === f.id" (click)="seleccionar(f)">
-                <td class="font-medium">
+            @for (f of tabla.filas(); track f.id) {
+              <tr class="cursor-pointer" [class.fila-sel]="tabla.marcado(f)" [class.bg-brand-soft]="seleccionadoId() === f.id" (click)="seleccionar(f)">
+                <td class="col-check"><app-check-fila [tabla]="tabla" [fila]="f" [etiqueta]="'Seleccionar pedido #' + f.numero" /></td>
+                <td class="font-semibold text-gray-900">
                   <a [routerLink]="['/pedidos', f.id]" (click)="$event.stopPropagation()" class="hover:underline">#{{ f.numero }}</a>
                 </td>
                 <td>
-                  <div>{{ f.clienteNombre }}</div>
-                  <div class="text-muted">{{ f.clienteTelefono ?? "—" }}</div>
+                  <div class="text-gray-900">{{ f.clienteNombre }}</div>
+                  <div class="text-xs text-muted">{{ f.clienteTelefono ?? "—" }}</div>
                 </td>
                 <td>
                   <div>{{ f.fechaEntrega }}</div>
-                  <div class="text-muted">{{ hora(f.horaEntrega) }} · {{ f.distrito }}</div>
+                  <div class="text-xs text-muted">{{ hora(f.horaEntrega) }} · {{ f.distrito }}</div>
                 </td>
                 <td><span [class]="'badge ' + claseEstado[f.estado]">{{ etiquetaEstado[f.estado] }}</span></td>
-                <td class="text-right">{{ soles(f.total) }}</td>
-                <td class="text-right">{{ soles(f.totalPagado) }}</td>
-                <td class="text-right font-semibold" [class.text-accent-2]="f.saldo > 0">{{ soles(f.saldo) }}</td>
+                <td class="text-right tabular-nums">{{ soles(f.total) }}</td>
+                <td class="text-right tabular-nums">{{ soles(f.totalPagado) }}</td>
+                <td class="text-right font-semibold tabular-nums" [class.text-gray-900]="f.saldo > 0">{{ soles(f.saldo) }}</td>
                 <td>
                   @if (pagoPendiente(f); as p) {
                     <span [class]="'badge ' + clasePago[p.estado]">{{ p.tipo }} {{ soles(p.monto) }}</span>
@@ -77,14 +90,21 @@
                     <span class="badge badge-success">pagado</span>
                   }
                 </td>
+                <td (click)="$event.stopPropagation()">
+                  <app-row-menu [etiqueta]="'Acciones del pedido #' + f.numero">
+                    <button type="button" class="btn-action" (click)="seleccionar(f)" aria-label="Gestionar cobro"><app-icon name="pagos" [size]="15" /></button>
+                    <a [routerLink]="['/pedidos', f.id]" class="btn-action" aria-label="Ver pedido"><app-icon name="pedido" [size]="15" /></a>
+                  </app-row-menu>
+                </td>
               </tr>
             } @empty {
               <tr>
-                <td colspan="8" class="py-10 text-center text-muted">No hay pedidos que coincidan.</td>
+                <td colspan="10" class="py-10 text-center text-muted">No hay pedidos que coincidan.</td>
               </tr>
             }
           </tbody>
         </table>
+        </div>
       }
     </div>
 

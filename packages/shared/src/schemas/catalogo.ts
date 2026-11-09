@@ -52,7 +52,14 @@ export const productoInputSchema = z.object({
   florPrincipalId: z.string().uuid(),
   usaPapel: z.boolean().default(true),
   papelDefaultId: z.string().uuid().optional().nullable(),
-  imagenUrl: z.string().url().optional().nullable(),
+  // URL completa o ruta servida por la propia web (ej. "/productos/susurro-pink.webp").
+  imagenUrl: z
+    .string()
+    .trim()
+    .max(500)
+    .refine((v) => /^https?:\/\//.test(v) || /^\/[\w\-./]+$/.test(v), "imagenUrl debe ser una URL o una ruta que empiece con /")
+    .optional()
+    .nullable(),
   activo: z.boolean().optional(),
   tallas: z.array(productoTallaInputSchema).optional(),
 });

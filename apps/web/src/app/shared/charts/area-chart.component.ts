@@ -45,7 +45,7 @@ export class AreaChartComponent implements AfterViewInit, OnDestroy {
   @Input() titulo = "";
   @Input() alto = 220;
   /** Color de la serie (validado ≥ 3:1 sobre blanco). */
-  @Input() color = "#b7791f";
+  @Input() color = "#9b73a1";
   @Input() formato: (v: number) => string = (v) => v.toLocaleString("es-PE");
 
   readonly serie = signal<Punto[]>([]);

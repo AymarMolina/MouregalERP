@@ -1,4 +1,5 @@
 import { Component, OnInit, computed, inject, signal } from "@angular/core";
+import { descargarExcel } from "../../shared/tabla/excel";
 import { IconComponent } from "../../shared/icon/icon.component";
 import { FormsModule } from "@angular/forms";
 import { RouterLink } from "@angular/router";
@@ -35,6 +36,30 @@ export class DeliveryComponent implements OnInit {
   readonly soloMios = signal(false);
   /** Repartidor elegido por pedido (admin/vendedora). */
   readonly repartidorPorPedido = signal<Partial<Record<string, string>>>({});
+
+  exportarExcel(): void {
+    const pedidos = this.tablero()?.pedidos ?? [];
+    descargarExcel(
+      "delivery",
+      pedidos.map((p) => ({
+        pedido: p.numero,
+        estado: ETIQUETA_ESTADO_PEDIDO[p.estado],
+        fechaEntrega: p.fechaEntrega,
+        hora: hora(p.horaEntrega),
+        distrito: p.distrito,
+        direccion: p.direccion,
+        referencia: p.referencia,
+        recibe: p.nombreReceptor,
+        telefono: p.telefonoReceptor,
+        vehiculo: p.vehiculo,
+        repartidor: p.repartidor ?? "Sin asignar",
+        total: Number(p.total),
+        pagado: Number(p.totalPagado),
+        saldo: p.saldo,
+      })),
+      "Delivery",
+    );
+  }
 
   readonly esRepartidor = computed(() => this.auth.user()?.rol === "delivery");
   readonly puedeEntregar = computed(() => ["admin", "delivery"].includes(this.auth.user()?.rol ?? ""));

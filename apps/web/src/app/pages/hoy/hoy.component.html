@@ -20,7 +20,7 @@
   </div>
 
   @if (error()) {
-    <p class="mb-4 rounded-lg bg-accent-soft px-3 py-2 text-accent-2">{{ error() }}</p>
+    <p class="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-red-800">{{ error() }}</p>
   }
 
   @if (loading()) {
@@ -94,8 +94,8 @@
                 <span [class]="'badge ' + claseEstado[e.estado]">{{ etiquetaEstado[e.estado] }}</span>
                 <span class="font-semibold tabular-nums">{{ e.n }}</span>
               </div>
-              <div class="h-1.5 overflow-hidden rounded-full bg-[#f3ead7]">
-                <div class="h-full rounded-full bg-accent-2 transition-[width]" [style.width.%]="e.pct"></div>
+              <div class="h-1.5 overflow-hidden rounded-full bg-accent-soft">
+                <div class="h-full rounded-full bg-accent transition-[width]" [style.width.%]="e.pct"></div>
               </div>
             </li>
           }
@@ -106,13 +106,22 @@
     <!-- Tabla + lateral -->
     <div class="grid items-start gap-4 lg:grid-cols-3">
       <section class="table-wrap lg:col-span-2">
-        <div class="flex items-center justify-between px-4 pt-4">
+        <div class="px-4 pt-4">
           <h2 class="panel-title">Pedidos del día</h2>
-          <span class="text-xs text-muted">{{ pedidosFiltrados().length }} de {{ d.pedidos.length }}</span>
+          <nav class="tabs mt-3" aria-label="Filtrar por estado">
+            <button type="button" class="tab" [class.tab-active]="filtroEstado() === null" (click)="filtroEstado.set(null)">
+              Todos <span class="tab-count">{{ conteo(null) }}</span>
+            </button>
+            @for (e of estadosDia; track e) {
+              <button type="button" class="tab" [class.tab-active]="filtroEstado() === e" (click)="filtroEstado.set(e)">
+                {{ etiquetaEstado[e] }} <span class="tab-count">{{ conteo(e) }}</span>
+              </button>
+            }
+          </nav>
         </div>
         <div class="toolbar">
           <label class="search">
-            <app-icon name="buscar" [size]="16" class="pointer-events-none absolute left-2.5 text-muted" />
+            <app-icon name="buscar" [size]="16" class="pointer-events-none absolute left-2.5 text-gray-400" />
             <input
               type="search"
               placeholder="Buscar #, cliente, receptor o distrito"
@@ -120,19 +129,14 @@
               (ngModelChange)="busqueda.set($event)"
             />
           </label>
-          <div class="flex flex-wrap gap-1.5">
-            <button type="button" class="pill" [class.pill-active]="filtroEstado() === null" (click)="filtroEstado.set(null)">Todos</button>
-            @for (e of estadosDia; track e) {
-              <button type="button" class="pill" [class.pill-active]="filtroEstado() === e" (click)="filtroEstado.set(e)">
-                {{ etiquetaEstado[e] }}
-              </button>
-            }
-          </div>
+          <app-paginacion [tabla]="tabla" />
         </div>
+        <app-seleccion-bar [tabla]="tabla" />
         <div class="overflow-x-auto">
           <table class="table">
             <thead>
               <tr>
+                <th class="col-check"><app-check-todos [tabla]="tabla" /></th>
                 <th>Pedido</th>
                 <th>Hora</th>
                 <th>Cliente / recibe</th>
@@ -140,18 +144,20 @@
                 <th>Estado</th>
                 <th class="text-right">Total</th>
                 <th class="text-right">Saldo</th>
+                <th class="w-10"><span class="sr-only">Acciones</span></th>
               </tr>
             </thead>
             <tbody>
-              @for (p of pedidosFiltrados(); track p.id) {
-                <tr>
+              @for (p of tabla.filas(); track p.id) {
+                <tr [class.fila-sel]="tabla.marcado(p)">
+                  <td class="col-check"><app-check-fila [tabla]="tabla" [fila]="p" [etiqueta]="'Seleccionar pedido #' + p.numero" /></td>
                   <td>
-                    <a [routerLink]="['/pedidos', p.id]" class="font-semibold text-text hover:underline">#{{ p.numero }}</a>
+                    <a [routerLink]="['/pedidos', p.id]" class="font-semibold text-gray-900 hover:underline">#{{ p.numero }}</a>
                     <div class="text-xs capitalize text-muted">{{ p.canal }}</div>
                   </td>
                   <td class="tabular-nums">{{ hora(p.horaEntrega) }}</td>
                   <td>
-                    <div>{{ p.cliente }}</div>
+                    <div class="text-gray-900">{{ p.cliente }}</div>
                     <div class="text-xs text-muted">Recibe {{ p.nombreReceptor }}</div>
                   </td>
                   <td>
@@ -159,14 +165,19 @@
                     <div class="text-xs uppercase text-muted">{{ p.vehiculo }}</div>
                   </td>
                   <td><span [class]="'badge ' + claseEstado[p.estado]">{{ etiquetaEstado[p.estado] }}</span></td>
-                  <td class="text-right tabular-nums">{{ soles(p.total) }}</td>
-                  <td class="text-right tabular-nums" [class.font-medium]="saldo(p) > 0" [class.text-accent-2]="saldo(p) > 0" [class.text-muted]="saldo(p) === 0">
+                  <td class="text-right tabular-nums text-gray-900">{{ soles(p.total) }}</td>
+                  <td class="text-right tabular-nums" [class.font-medium]="saldo(p) > 0" [class.text-gray-900]="saldo(p) > 0" [class.text-muted]="saldo(p) === 0">
                     {{ saldo(p) > 0 ? soles(saldo(p)) : "—" }}
+                  </td>
+                  <td>
+                    <app-row-menu [etiqueta]="'Acciones del pedido #' + p.numero">
+                      <a [routerLink]="['/pedidos', p.id]" class="btn-action" aria-label="Ver detalle"><app-icon name="pedido" [size]="15" /></a>
+                    </app-row-menu>
                   </td>
                 </tr>
               } @empty {
                 <tr>
-                  <td colspan="7" class="py-12 text-center text-muted">
+                  <td colspan="9" class="py-12 text-center text-muted">
                     {{ d.pedidos.length ? "Ningún pedido coincide con el filtro." : "No hay pedidos con entrega para hoy." }}
                   </td>
                 </tr>

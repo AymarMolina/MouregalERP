@@ -73,7 +73,7 @@ const PASOS: Paso[] = [
         @for (p of pasos(); track p.numero) {
           <li class="card flex flex-col gap-3 p-4" [class.opacity-60]="!p.enlaces.length">
             <div class="flex items-center gap-3">
-              <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent font-semibold text-text">
+              <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent font-semibold text-white">
                 {{ p.numero }}
               </span>
               <h2 class="font-semibold">{{ p.titulo }}</h2>

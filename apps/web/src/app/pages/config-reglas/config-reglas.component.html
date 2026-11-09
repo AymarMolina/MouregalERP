@@ -65,28 +65,40 @@
   }
 
   @if (loading()) {
-    <p class="text-muted">Cargando...</p>
+    <div class="table-wrap space-y-3 p-4">
+      @for (i of [1, 2, 3]; track i) {
+        <div class="skeleton h-6"></div>
+      }
+    </div>
   } @else {
     <div class="table-wrap">
+      <div class="table-head">
+        <h2 class="table-title">Reglas de cambio</h2>
+        <app-paginacion [tabla]="tabla" />
+      </div>
+      <app-seleccion-bar [tabla]="tabla" />
+      <div class="overflow-x-auto">
       <table class="table">
         <thead>
           <tr>
+            <th class="col-check"><app-check-todos [tabla]="tabla" /></th>
             <th>Tipo</th>
             <th>Producto</th>
             <th>Origen → Destino</th>
             <th>Descripción</th>
             <th class="text-right">Ajuste</th>
             <th>Estado</th>
-            <th></th>
+            <th class="w-10"><span class="sr-only">Acciones</span></th>
           </tr>
         </thead>
         <tbody>
-          @for (r of reglas(); track r.id) {
-            <tr>
+          @for (r of tabla.filas(); track r.id) {
+            <tr [class.fila-sel]="tabla.marcado(r)">
+              <td class="col-check"><app-check-fila [tabla]="tabla" [fila]="r" etiqueta="Seleccionar regla" /></td>
               <td class="capitalize">{{ r.tipo }}</td>
               <td class="text-muted">{{ nombreProducto(r.productoId) }}</td>
               <td class="text-muted">{{ nombreInsumo(r.insumoOrigenId) }} → {{ nombreInsumo(r.insumoDestinoId) }}</td>
-              <td>{{ r.descripcion }}</td>
+              <td class="text-gray-900">{{ r.descripcion }}</td>
               <td class="text-right font-medium">
                 {{ r.ajusteMonto }} {{ r.ajusteModo === "por_unidad" ? "/ unidad" : "" }}
               </td>
@@ -98,14 +110,19 @@
                 }
               </td>
               <td>
-                <div class="acciones">
+                <app-row-menu etiqueta="Acciones de la regla">
                   <button type="button" class="btn-action btn-action-danger" (click)="eliminar(r.id)" title="Desactivar regla" aria-label="Desactivar regla"><app-icon name="eliminar" [size]="16" /></button>
-                </div>
+                </app-row-menu>
               </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="8" class="py-10 text-center text-muted">No hay reglas de cambio.</td>
             </tr>
           }
         </tbody>
       </table>
+      </div>
     </div>
   }
 </div>

@@ -1,12 +1,15 @@
 import { Component, OnInit, inject, signal } from "@angular/core";
 import { IconComponent } from "../../shared/icon/icon.component";
+import { RowMenuComponent } from "../../shared/tabla/row-menu.component";
+import { Tabla } from "../../shared/tabla/tabla";
+import { TABLA_CONTROLES } from "../../shared/tabla/tabla-controles.component";
 import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms";
 import type { Distrito } from "../../core/catalogo/catalogo.types";
 import { CostosVehiculoService, DistritosService } from "../../core/catalogo/distritos.service";
 
 @Component({
   selector: "app-config-tarifario",
-  imports: [ReactiveFormsModule, IconComponent],
+  imports: [ReactiveFormsModule, IconComponent, RowMenuComponent, ...TABLA_CONTROLES],
   templateUrl: "./config-tarifario.component.html",
 })
 export class ConfigTarifarioComponent implements OnInit {
@@ -15,6 +18,12 @@ export class ConfigTarifarioComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
 
   readonly distritos = signal<Distrito[]>([]);
+  readonly tabla = new Tabla(() => this.distritos(), {
+    id: (d) => d.id,
+    porPagina: 10,
+    nombreCsv: "tarifario",
+    csv: (d) => ({ distrito: d.nombre, moto: d.tarifaMoto, carro: d.tarifaCarro, activo: d.activo ? "Sí" : "No" }),
+  });
   readonly loading = signal(true);
   readonly mostrarForm = signal(false);
   readonly editingId = signal<string | null>(null);
