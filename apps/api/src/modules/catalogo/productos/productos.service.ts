@@ -30,83 +30,88 @@ export class ProductosService {
   }
 
   async create(input: ProductoInput) {
-    const [producto] = await this.db
-      .insert(productos)
-      .values({
-        nombre: input.nombre,
-        slug: input.slug,
-        descripcion: input.descripcion,
-        florPrincipalId: input.florPrincipalId,
-        usaPapel: input.usaPapel,
-        papelDefaultId: input.papelDefaultId ?? null,
-        imagenUrl: input.imagenUrl ?? null,
-      })
-      .returning();
+    const productoId = await this.db.transaction(async (tx) => {
+      const [producto] = await tx
+        .insert(productos)
+        .values({
+          nombre: input.nombre,
+          slug: input.slug,
+          descripcion: input.descripcion,
+          florPrincipalId: input.florPrincipalId,
+          usaPapel: input.usaPapel,
+          papelDefaultId: input.papelDefaultId ?? null,
+          imagenUrl: input.imagenUrl ?? null,
+        })
+        .returning();
 
-    if (input.tallas?.length) {
-      await this.db.insert(productoTallas).values(
-        input.tallas.map((t) => ({
-          productoId: producto.id,
-          talla: t.talla,
-          precioBase: String(t.precioBase),
-        })),
-      );
-    }
+      if (input.tallas?.length) {
+        await tx.insert(productoTallas).values(
+          input.tallas.map((t) => ({
+            productoId: producto.id,
+            talla: t.talla,
+            precioBase: String(t.precioBase),
+          })),
+        );
+      }
+      return producto.id;
+    });
 
-    return this.findOne(producto.id);
+    return this.findOne(productoId);
   }
 
   async update(id: string, input: Partial<ProductoInput>) {
     await this.oneProducto(id);
 
-    await this.db
-      .update(productos)
-      .set({
-        ...(input.nombre !== undefined && { nombre: input.nombre }),
-        ...(input.slug !== undefined && { slug: input.slug }),
-        ...(input.descripcion !== undefined && {
-          descripcion: input.descripcion,
-        }),
-        ...(input.florPrincipalId !== undefined && {
-          florPrincipalId: input.florPrincipalId,
-        }),
-        ...(input.usaPapel !== undefined && { usaPapel: input.usaPapel }),
-        ...(input.papelDefaultId !== undefined && {
-          papelDefaultId: input.papelDefaultId,
-        }),
-        ...(input.imagenUrl !== undefined && { imagenUrl: input.imagenUrl }),
-        ...(input.activo !== undefined && { activo: input.activo }),
-        updatedAt: new Date(),
-      })
-      .where(eq(productos.id, id));
+    await this.db.transaction(async (tx) => {
+      await tx
+        .update(productos)
+        .set({
+          ...(input.nombre !== undefined && { nombre: input.nombre }),
+          ...(input.slug !== undefined && { slug: input.slug }),
+          ...(input.descripcion !== undefined && {
+            descripcion: input.descripcion,
+          }),
+          ...(input.florPrincipalId !== undefined && {
+            florPrincipalId: input.florPrincipalId,
+          }),
+          ...(input.usaPapel !== undefined && { usaPapel: input.usaPapel }),
+          ...(input.papelDefaultId !== undefined && {
+            papelDefaultId: input.papelDefaultId,
+          }),
+          ...(input.imagenUrl !== undefined && { imagenUrl: input.imagenUrl }),
+          ...(input.activo !== undefined && { activo: input.activo }),
+          updatedAt: new Date(),
+        })
+        .where(eq(productos.id, id));
 
-    if (input.tallas?.length) {
-      for (const t of input.tallas) {
-        const [existing] = await this.db
-          .select()
-          .from(productoTallas)
-          .where(
-            and(
-              eq(productoTallas.productoId, id),
-              eq(productoTallas.talla, t.talla),
-            ),
-          )
-          .limit(1);
+      if (input.tallas?.length) {
+        for (const t of input.tallas) {
+          const [existing] = await tx
+            .select()
+            .from(productoTallas)
+            .where(
+              and(
+                eq(productoTallas.productoId, id),
+                eq(productoTallas.talla, t.talla),
+              ),
+            )
+            .limit(1);
 
-        if (existing) {
-          await this.db
-            .update(productoTallas)
-            .set({ precioBase: String(t.precioBase), updatedAt: new Date() })
-            .where(eq(productoTallas.id, existing.id));
-        } else {
-          await this.db.insert(productoTallas).values({
-            productoId: id,
-            talla: t.talla,
-            precioBase: String(t.precioBase),
-          });
+          if (existing) {
+            await tx
+              .update(productoTallas)
+              .set({ precioBase: String(t.precioBase), updatedAt: new Date() })
+              .where(eq(productoTallas.id, existing.id));
+          } else {
+            await tx.insert(productoTallas).values({
+              productoId: id,
+              talla: t.talla,
+              precioBase: String(t.precioBase),
+            });
+          }
         }
       }
-    }
+    });
 
     return this.findOne(id);
   }
@@ -134,19 +139,21 @@ export class ProductosService {
   ) {
     const productoTalla = await this.oneProductoTalla(productoId, talla);
 
-    await this.db
-      .delete(recetaLineas)
-      .where(eq(recetaLineas.productoTallaId, productoTalla.id));
-    if (lineas.length) {
-      await this.db.insert(recetaLineas).values(
-        lineas.map((l) => ({
-          productoTallaId: productoTalla.id,
-          insumoId: l.insumoId,
-          cantidad: String(l.cantidad),
-          rol: l.rol,
-        })),
-      );
-    }
+    await this.db.transaction(async (tx) => {
+      await tx
+        .delete(recetaLineas)
+        .where(eq(recetaLineas.productoTallaId, productoTalla.id));
+      if (lineas.length) {
+        await tx.insert(recetaLineas).values(
+          lineas.map((l) => ({
+            productoTallaId: productoTalla.id,
+            insumoId: l.insumoId,
+            cantidad: String(l.cantidad),
+            rol: l.rol,
+          })),
+        );
+      }
+    });
 
     return this.getReceta(productoId, talla);
   }
@@ -162,22 +169,28 @@ export class ProductosService {
       .from(recetaLineas)
       .where(eq(recetaLineas.productoTallaId, origen.id));
 
-    for (const talla of destinos) {
-      const destino = await this.oneProductoTalla(productoId, talla);
-      await this.db
-        .delete(recetaLineas)
-        .where(eq(recetaLineas.productoTallaId, destino.id));
-      if (lineasOrigen.length) {
-        await this.db.insert(recetaLineas).values(
-          lineasOrigen.map((l) => ({
-            productoTallaId: destino.id,
-            insumoId: l.insumoId,
-            cantidad: l.cantidad,
-            rol: l.rol,
-          })),
-        );
+    // Valida todos los destinos antes de tocar nada, y aplica todo o nada.
+    const destinosRows: (typeof productoTallas.$inferSelect)[] = [];
+    for (const talla of destinos)
+      destinosRows.push(await this.oneProductoTalla(productoId, talla));
+
+    await this.db.transaction(async (tx) => {
+      for (const destino of destinosRows) {
+        await tx
+          .delete(recetaLineas)
+          .where(eq(recetaLineas.productoTallaId, destino.id));
+        if (lineasOrigen.length) {
+          await tx.insert(recetaLineas).values(
+            lineasOrigen.map((l) => ({
+              productoTallaId: destino.id,
+              insumoId: l.insumoId,
+              cantidad: l.cantidad,
+              rol: l.rol,
+            })),
+          );
+        }
       }
-    }
+    });
 
     return this.findOne(productoId);
   }
@@ -192,14 +205,19 @@ export class ProductosService {
 
   async replaceFloresPermitidas(productoId: string, insumoIds: string[]) {
     await this.oneProducto(productoId);
-    await this.db
-      .delete(productoFloresPermitidas)
-      .where(eq(productoFloresPermitidas.productoId, productoId));
-    if (insumoIds.length) {
-      await this.db
-        .insert(productoFloresPermitidas)
-        .values(insumoIds.map((insumoId) => ({ productoId, insumoId })));
-    }
+    await this.db.transaction(async (tx) => {
+      await tx
+        .delete(productoFloresPermitidas)
+        .where(eq(productoFloresPermitidas.productoId, productoId));
+      if (insumoIds.length) {
+        await tx.insert(productoFloresPermitidas).values(
+          [...new Set(insumoIds)].map((insumoId) => ({
+            productoId,
+            insumoId,
+          })),
+        );
+      }
+    });
     return this.getFloresPermitidas(productoId);
   }
 

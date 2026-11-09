@@ -9,15 +9,23 @@ import { CatalogoModule } from './modules/catalogo/catalogo.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { InventarioModule } from './modules/inventario/inventario.module';
 import { PedidosModule } from './modules/pedidos/pedidos.module';
+import { ComprasModule } from './modules/compras/compras.module';
+import { NotificacionesModule } from './modules/notificaciones/notificaciones.service';
+import { PagosModule } from './modules/pagos/pagos.module';
+import { ReportesModule } from './modules/reportes/reportes.controller';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     DbModule,
+    NotificacionesModule,
     AuthModule,
     CatalogoModule,
     InventarioModule,
     PedidosModule,
+    PagosModule,
+    ComprasModule,
+    ReportesModule,
     DashboardModule,
   ],
   providers: [

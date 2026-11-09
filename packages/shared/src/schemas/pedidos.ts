@@ -1,17 +1,6 @@
 import { z } from "zod";
 import { CANAL, ESTADO_PEDIDO, TALLA } from "../enums";
 
-export const cotizacionInputSchema = z.object({
-  productoId: z.string().uuid(),
-  talla: z.enum(TALLA),
-  cantidad: z.coerce.number().int().positive().default(1),
-  florId: z.string().uuid().optional(),
-  papelId: z.string().uuid().optional().nullable(),
-  extraIds: z.array(z.string().uuid()).default([]),
-  distritoId: z.string().uuid(),
-});
-export type CotizacionInput = z.infer<typeof cotizacionInputSchema>;
-
 export const pedidoItemInputSchema = z.object({
   productoId: z.string().uuid(),
   talla: z.enum(TALLA),
@@ -22,6 +11,20 @@ export const pedidoItemInputSchema = z.object({
   cambioNoListado: z.string().trim().optional(),
 });
 export type PedidoItemInput = z.infer<typeof pedidoItemInputSchema>;
+
+export const cotizacionInputSchema = z.object({
+  productoId: z.string().uuid(),
+  talla: z.enum(TALLA),
+  cantidad: z.coerce.number().int().positive().default(1),
+  florId: z.string().uuid().optional(),
+  papelId: z.string().uuid().optional().nullable(),
+  extraIds: z.array(z.string().uuid()).default([]),
+  distritoId: z.string().uuid(),
+  cambioNoListado: z.string().trim().optional(),
+  /** Ítems ya agregados al pedido: su receta se descuenta del disponible al evaluar las opciones. */
+  itemsEnCarrito: z.array(pedidoItemInputSchema).max(20).default([]),
+});
+export type CotizacionInput = z.infer<typeof cotizacionInputSchema>;
 
 export const pedidoInputSchema = z.object({
   canal: z.enum(CANAL),
@@ -78,3 +81,15 @@ export const ajusteInventarioInputSchema = z.object({
   nota: z.string().trim().min(1),
 });
 export type AjusteInventarioInput = z.infer<typeof ajusteInventarioInputSchema>;
+
+/** Cotización del pedido completo (varios ítems): total, vehículo, envío y stock combinado. */
+export const cotizacionPedidoInputSchema = z.object({
+  items: z.array(pedidoItemInputSchema).min(1),
+  distritoId: z.string().uuid(),
+});
+export type CotizacionPedidoInput = z.infer<typeof cotizacionPedidoInputSchema>;
+
+export const despacharInputSchema = z.object({
+  repartidorId: z.string().uuid().optional(),
+});
+export type DespacharInput = z.infer<typeof despacharInputSchema>;

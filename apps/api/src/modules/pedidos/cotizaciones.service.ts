@@ -1,32 +1,25 @@
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { eq, inArray } from 'drizzle-orm';
 import {
-  BadRequestException,
-  Inject,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
-import { and, eq } from 'drizzle-orm';
-import {
-  calcularDisponible,
   calcularEnvio,
-  calcularPrecio,
-  calcularVehiculo,
-  recetaEfectiva,
+  faltantes,
+  sumarRecetas,
+  type CotizacionPedidoInput,
   type AjusteAplicado,
   type CotizacionInput,
   type RecetaLineaBase,
+  type Talla,
 } from '@erp/shared';
 import { DB } from '../../db/db.module';
 import type { Db } from '../../db/client';
-import {
-  distritos,
-  extras,
-  insumos,
-  productoTallas,
-  productos,
-  recetaLineas,
-  reglasCambio,
-} from '../../db/schema';
+import { distritos, productoTallas, recetaLineas } from '../../db/schema';
 import { DisponibilidadService } from './disponibilidad.service';
+import {
+  ItemResolverService,
+  type ContextoCatalogo,
+  type ItemResuelto,
+  type ItemSolicitado,
+} from './item-resolver.service';
 
 export interface OpcionCotizacion {
   insumoId: string;
@@ -47,9 +40,23 @@ export interface OpcionExtra {
   motivo?: string;
 }
 
+export interface OpcionTalla {
+  talla: Talla;
+  precioBase: number;
+  disponible: boolean;
+  motivo?: string;
+}
+
+export interface FaltanteDetalle {
+  insumoId: string;
+  nombre: string;
+  necesario: number;
+  disponible: number;
+}
+
 export interface ResultadoCotizacion {
   productoId: string;
-  talla: string;
+  talla: Talla;
   cantidad: number;
   florId: string;
   papelId: string | null;
@@ -60,7 +67,14 @@ export interface ResultadoCotizacion {
   vehiculo: 'moto' | 'carro';
   costoEnvio: number;
   total: number;
+  /** La selección actual completa cabe en el stock disponible. */
+  disponible: boolean;
+  faltantes: FaltanteDetalle[];
+  /** La selección generará una consulta a Producción al crear el pedido. */
+  requiereConsulta: boolean;
+  consultas: string[];
   opciones: {
+    tallas: OpcionTalla[];
     flores: OpcionCotizacion[];
     papeles: OpcionCotizacion[];
     extras: OpcionExtra[];
@@ -71,172 +85,209 @@ export interface ResultadoCotizacion {
 export class CotizacionesService {
   constructor(
     @Inject(DB) private readonly db: Db,
-    private readonly disponibilidadService: DisponibilidadService,
+    private readonly disponibilidad: DisponibilidadService,
+    private readonly resolver: ItemResolverService,
   ) {}
 
   async cotizar(input: CotizacionInput): Promise<ResultadoCotizacion> {
-    const [producto] = await this.db
-      .select()
-      .from(productos)
-      .where(eq(productos.id, input.productoId))
-      .limit(1);
-    if (!producto) throw new NotFoundException('Producto no encontrado');
-
-    const [talla] = await this.db
-      .select()
-      .from(productoTallas)
-      .where(
-        and(
-          eq(productoTallas.productoId, producto.id),
-          eq(productoTallas.talla, input.talla),
-        ),
-      )
-      .limit(1);
-    if (!talla)
-      throw new NotFoundException(
-        `El producto no tiene la talla ${input.talla}`,
-      );
-
     const [distrito] = await this.db
       .select()
       .from(distritos)
       .where(eq(distritos.id, input.distritoId))
       .limit(1);
-    if (!distrito) throw new NotFoundException('Distrito no encontrado');
+    if (!distrito || !distrito.activo)
+      throw new NotFoundException('Distrito no encontrado o inactivo');
 
-    const lineasRaw = await this.db
-      .select()
-      .from(recetaLineas)
-      .where(eq(recetaLineas.productoTallaId, talla.id));
-    const lineasBase: RecetaLineaBase[] = lineasRaw.map((l) => ({
-      insumoId: l.insumoId,
-      cantidad: Number(l.cantidad),
-      rol: l.rol as RecetaLineaBase['rol'],
-    }));
-    const lineaFlor = lineasBase.find((l) => l.rol === 'flor_principal');
-    const lineaPapel = lineasBase.find((l) => l.rol === 'papel');
-
-    const reservados = await this.disponibilidadService.calcularReservados();
-    const todosInsumos = await this.db.select().from(insumos);
-    const insumoPorId = new Map(todosInsumos.map((i) => [i.id, i]));
-    const insumosCaja = new Set(
-      todosInsumos
-        .filter((i) => i.codigo.toUpperCase().startsWith('CAJ'))
-        .map((i) => i.id),
+    const ctx = await this.resolver.cargarContexto(this.db);
+    const producto = await this.resolver.cargarProducto(
+      this.db,
+      input.productoId,
     );
-    const disponibleDe = (insumoId: string): number => {
-      const insumo = insumoPorId.get(insumoId);
-      return calcularDisponible(
-        Number(insumo?.stockActual ?? '0'),
-        reservados.get(insumoId) ?? 0,
-      );
+    const { talla, lineasBase } = await this.resolver.cargarTalla(
+      this.db,
+      producto,
+      input.talla,
+    );
+    const disponibleBase = await this.disponibilidad.disponibleDe(this.db);
+    // Lo que ya está en el carrito de este pedido también consume stock.
+    const enCarrito = new Map<string, number>();
+    for (const otro of input.itemsEnCarrito) {
+      const r = await this.resolver.resolver(this.db, ctx, otro);
+      for (const l of r.recetaEfectiva)
+        enCarrito.set(
+          l.insumoId,
+          (enCarrito.get(l.insumoId) ?? 0) + l.cantidad,
+        );
+    }
+    const disponibleDe = (id: string) =>
+      Math.round((disponibleBase(id) - (enCarrito.get(id) ?? 0)) * 1000) / 1000;
+
+    const seleccion: ItemSolicitado = {
+      productoId: producto.id,
+      talla: input.talla,
+      cantidad: input.cantidad,
+      florId: input.florId,
+      papelId: input.papelId,
+      extraIds: input.extraIds,
+      cambioNoListado: input.cambioNoListado,
+    };
+    const item = this.resolver.resolverConReceta(
+      ctx,
+      producto,
+      talla,
+      lineasBase,
+      seleccion,
+    );
+    const faltan = this.detallarFaltantes(ctx, item, disponibleDe);
+
+    // Cada opción se evalúa con la receta efectiva COMPLETA que resultaría de elegirla (5.3).
+    const evaluar = (
+      cambio: Partial<ItemSolicitado>,
+      tallaRow = talla,
+      lineas = lineasBase,
+    ): { disponible: boolean; motivo?: string } => {
+      try {
+        const alt = this.resolver.resolverConReceta(
+          ctx,
+          producto,
+          tallaRow,
+          lineas,
+          {
+            ...seleccion,
+            florId: item.florId,
+            papelId: item.papelId,
+            extraIds: item.extras.map((e) => e.id),
+            ...cambio,
+          },
+        );
+        const f = this.detallarFaltantes(ctx, alt, disponibleDe);
+        return f.length
+          ? { disponible: false, motivo: this.motivo(f) }
+          : { disponible: true };
+      } catch (e) {
+        return { disponible: false, motivo: (e as Error).message };
+      }
     };
 
-    const reglasActivas = await this.db
+    // Tallas
+    const tallasRows = await this.db
       .select()
-      .from(reglasCambio)
-      .where(eq(reglasCambio.activo, true));
-    const reglasAplicables = reglasActivas.filter(
-      (r) => r.productoId === null || r.productoId === producto.id,
-    );
-
-    const florId = input.florId ?? producto.florPrincipalId;
-    const papelId = producto.usaPapel
-      ? (input.papelId ?? producto.papelDefaultId)
-      : null;
-
-    const opcionesFlores = this.construirOpciones({
-      insumoOrigenId: producto.florPrincipalId,
-      insumoDestinoDefault: producto.florPrincipalId,
-      tipo: 'flor',
-      reglasAplicables,
-      insumoPorId,
-      cantidadBase: lineaFlor?.cantidad ?? 0,
-      itemCantidad: input.cantidad,
-      disponibleDe,
-    });
-
-    const opcionesPapeles = producto.usaPapel
-      ? this.construirOpciones({
-          insumoOrigenId: producto.papelDefaultId,
-          insumoDestinoDefault: producto.papelDefaultId,
-          tipo: 'papel',
-          reglasAplicables,
-          insumoPorId,
-          cantidadBase: lineaPapel?.cantidad ?? 0,
-          itemCantidad: input.cantidad,
-          disponibleDe,
-        })
+      .from(productoTallas)
+      .where(eq(productoTallas.productoId, producto.id));
+    const tallasActivas = tallasRows.filter((t) => t.activo);
+    const lineasTallas = tallasActivas.length
+      ? await this.db
+          .select()
+          .from(recetaLineas)
+          .where(
+            inArray(
+              recetaLineas.productoTallaId,
+              tallasActivas.map((t) => t.id),
+            ),
+          )
       : [];
-
-    const todosExtras = await this.db
-      .select()
-      .from(extras)
-      .where(eq(extras.activo, true));
-    const opcionesExtras: OpcionExtra[] = todosExtras.map((e) => {
-      const disponible = disponibleDe(e.insumoId) >= input.cantidad;
-      return {
-        id: e.id,
-        insumoId: e.insumoId,
-        nombre: e.nombre,
-        precio: Number(e.precio),
-        disponible,
-        motivo: disponible ? undefined : 'Stock insuficiente',
-      };
+    const opcionesTallas: OpcionTalla[] = tallasActivas.map((t) => {
+      const lineas: RecetaLineaBase[] = lineasTallas
+        .filter((l) => l.productoTallaId === t.id)
+        .map((l) => ({
+          insumoId: l.insumoId,
+          cantidad: Number(l.cantidad),
+          rol: l.rol as RecetaLineaBase['rol'],
+        }));
+      const ev = lineas.length
+        ? evaluar({ talla: t.talla }, t, lineas)
+        : { disponible: false, motivo: 'Sin receta cargada' };
+      return { talla: t.talla, precioBase: Number(t.precioBase), ...ev };
     });
 
-    const ajustes: AjusteAplicado[] = [];
-    if (florId !== producto.florPrincipalId) {
-      const opcion = opcionesFlores.find((o) => o.insumoId === florId);
-      if (!opcion)
-        throw new BadRequestException(
-          'La flor elegida no está entre las opciones disponibles',
-        );
-      ajustes.push({
-        descripcion: `Cambio de flor: ${opcion.nombre}`,
-        ajuste: opcion.ajuste,
-        reglaId: undefined,
-      });
+    // Flores: la principal + reglas de flor del producto + flores permitidas.
+    const floresIds = new Set<string>([producto.florPrincipalId]);
+    for (const r of ctx.reglasActivas) {
+      if (
+        r.tipo === 'flor' &&
+        r.insumoOrigenId === producto.florPrincipalId &&
+        r.insumoDestinoId &&
+        (r.productoId === null || r.productoId === producto.id)
+      )
+        floresIds.add(r.insumoDestinoId);
     }
-    if (papelId && producto.usaPapel && papelId !== producto.papelDefaultId) {
-      const opcion = opcionesPapeles.find((o) => o.insumoId === papelId);
-      if (!opcion)
-        throw new BadRequestException(
-          'El papel elegido no está entre las opciones disponibles',
+    for (const id of ctx.floresPermitidas.get(producto.id) ?? [])
+      floresIds.add(id);
+    const cantidadFlorBase =
+      lineasBase.find((l) => l.rol === 'flor_principal')?.cantidad ?? 0;
+    const opcionesFlores = [...floresIds]
+      .filter((id) => ctx.insumoPorId.get(id)?.activo)
+      .map((id) =>
+        this.opcion(
+          ctx,
+          id,
+          producto.florPrincipalId,
+          () =>
+            this.resolver.evaluarCambio(ctx, {
+              tipo: 'flor',
+              productoId: producto.id,
+              origenId: producto.florPrincipalId,
+              destinoId: id,
+              cantidadBase: cantidadFlorBase,
+            }),
+          evaluar({ florId: id }),
+        ),
+      );
+
+    // Papeles: el default + reglas de papel desde el default.
+    let opcionesPapeles: OpcionCotizacion[] = [];
+    if (producto.usaPapel && producto.papelDefaultId) {
+      const papelDefault = producto.papelDefaultId;
+      const papelesIds = new Set<string>([papelDefault]);
+      for (const r of ctx.reglasActivas) {
+        if (
+          r.tipo === 'papel' &&
+          r.insumoOrigenId === papelDefault &&
+          r.insumoDestinoId &&
+          (r.productoId === null || r.productoId === producto.id)
+        )
+          papelesIds.add(r.insumoDestinoId);
+      }
+      const cantidadPapelBase =
+        lineasBase.find((l) => l.rol === 'papel')?.cantidad ?? 0;
+      opcionesPapeles = [...papelesIds]
+        .filter((id) => ctx.insumoPorId.get(id)?.activo)
+        .map((id) =>
+          this.opcion(
+            ctx,
+            id,
+            papelDefault,
+            () =>
+              this.resolver.evaluarCambio(ctx, {
+                tipo: 'papel',
+                productoId: producto.id,
+                origenId: papelDefault,
+                destinoId: id,
+                cantidadBase: cantidadPapelBase,
+              }),
+            evaluar({ papelId: id }),
+          ),
         );
-      ajustes.push({
-        descripcion: `Cambio de papel: ${opcion.nombre}`,
-        ajuste: opcion.ajuste,
-      });
     }
 
-    const extrasSeleccionados = todosExtras.filter((e) =>
-      input.extraIds.includes(e.id),
-    );
+    // Extras: se evalúa la selección con el extra agregado.
+    const seleccionados = new Set(item.extras.map((e) => e.id));
+    const opcionesExtras: OpcionExtra[] = [...ctx.extraPorId.values()]
+      .filter((e) => e.activo)
+      .map((e) => {
+        const ev = evaluar({
+          extraIds: [...new Set([...seleccionados, e.id])],
+        });
+        return {
+          id: e.id,
+          insumoId: e.insumoId,
+          nombre: e.nombre,
+          precio: Number(e.precio),
+          ...ev,
+        };
+      });
 
-    const { precioUnitario, subtotal } = calcularPrecio({
-      precioBase: Number(talla.precioBase),
-      ajustes,
-      extrasPrecio: extrasSeleccionados.map((e) => Number(e.precio)),
-      cantidad: input.cantidad,
-    });
-
-    const efectiva = recetaEfectiva({
-      lineasBase,
-      florId,
-      usaPapel: producto.usaPapel,
-      papelId,
-      extraInsumoIds: extrasSeleccionados.map((e) => e.insumoId),
-      cantidad: input.cantidad,
-    });
-
-    const vehiculo = calcularVehiculo({
-      talla: input.talla,
-      recetaEfectiva: efectiva,
-      insumosCaja,
-      algunExtraFuerzaCarro: extrasSeleccionados.some((e) => e.fuerzaCarro),
-    });
-    const costoEnvio = calcularEnvio(vehiculo, {
+    const costoEnvio = calcularEnvio(item.vehiculo, {
       tarifaMoto: Number(distrito.tarifaMoto),
       tarifaCarro: Number(distrito.tarifaCarro),
     });
@@ -245,16 +296,25 @@ export class CotizacionesService {
       productoId: producto.id,
       talla: input.talla,
       cantidad: input.cantidad,
-      florId,
-      papelId,
-      extraIds: extrasSeleccionados.map((e) => e.id),
-      precioUnitario,
-      subtotal,
-      ajustes,
-      vehiculo,
+      florId: item.florId,
+      papelId: item.papelId,
+      extraIds: item.extras.map((e) => e.id),
+      precioUnitario: item.precioUnitario,
+      subtotal: item.subtotal,
+      ajustes: item.ajustes.map(({ descripcion, ajuste }) => ({
+        descripcion,
+        ajuste,
+      })),
+      vehiculo: item.vehiculo,
       costoEnvio,
-      total: Math.round((subtotal + costoEnvio + Number.EPSILON) * 100) / 100,
+      total:
+        Math.round((item.subtotal + costoEnvio + Number.EPSILON) * 100) / 100,
+      disponible: faltan.length === 0,
+      faltantes: faltan,
+      requiereConsulta: item.consultas.length > 0,
+      consultas: item.consultas,
       opciones: {
+        tallas: opcionesTallas,
         flores: opcionesFlores,
         papeles: opcionesPapeles,
         extras: opcionesExtras,
@@ -262,58 +322,113 @@ export class CotizacionesService {
     };
   }
 
-  private construirOpciones(params: {
-    insumoOrigenId: string | null;
-    insumoDestinoDefault: string | null;
-    tipo: 'flor' | 'papel';
-    reglasAplicables: (typeof reglasCambio.$inferSelect)[];
-    insumoPorId: Map<string, typeof insumos.$inferSelect>;
-    cantidadBase: number;
-    itemCantidad: number;
-    disponibleDe: (insumoId: string) => number;
-  }): OpcionCotizacion[] {
-    if (!params.insumoDestinoDefault) return [];
-    const defaultInsumo = params.insumoPorId.get(params.insumoDestinoDefault);
-    const necesario = params.cantidadBase * params.itemCantidad;
+  /**
+   * Cotiza el pedido completo (varios ítems) con las mismas reglas que usa
+   * POST /pedidos: precio por ítem, vehículo (carro si algún ítem lo
+   * requiere), envío, total, stock combinado y consultas que se abrirán.
+   */
+  async cotizarPedido(input: CotizacionPedidoInput) {
+    const [distrito] = await this.db
+      .select()
+      .from(distritos)
+      .where(eq(distritos.id, input.distritoId))
+      .limit(1);
+    if (!distrito || !distrito.activo)
+      throw new NotFoundException('Distrito no encontrado o inactivo');
 
-    const opciones: OpcionCotizacion[] = [
-      {
-        insumoId: params.insumoDestinoDefault,
-        nombre: defaultInsumo?.nombre ?? '—',
-        ajusteModo: null,
-        ajuste: 0,
-        estado: 'aprobado',
-        disponible:
-          params.disponibleDe(params.insumoDestinoDefault) >= necesario,
-      },
-    ];
+    const ctx = await this.resolver.cargarContexto(this.db);
+    const items: ItemResuelto[] = [];
+    for (const it of input.items)
+      items.push(await this.resolver.resolver(this.db, ctx, it));
 
-    const reglasDelTipo = params.reglasAplicables.filter(
-      (r) =>
-        r.tipo === params.tipo &&
-        r.insumoOrigenId === params.insumoOrigenId &&
-        r.insumoDestinoId,
-    );
+    const disponibleDe = await this.disponibilidad.disponibleDe(this.db);
+    const faltan = faltantes(
+      sumarRecetas(items.map((i) => i.recetaEfectiva)),
+      disponibleDe,
+    ).map((f) => ({
+      ...f,
+      nombre: ctx.insumoPorId.get(f.insumoId)?.nombre ?? '—',
+    }));
 
-    for (const regla of reglasDelTipo) {
-      const destinoId = regla.insumoDestinoId as string;
-      const insumoDestino = params.insumoPorId.get(destinoId);
-      const disponible = params.disponibleDe(destinoId) >= necesario;
-      const ajuste =
-        regla.ajusteModo === 'por_unidad'
-          ? Number(regla.ajusteMonto) * params.cantidadBase
-          : Number(regla.ajusteMonto);
-      opciones.push({
-        insumoId: destinoId,
-        nombre: insumoDestino?.nombre ?? '—',
-        ajusteModo: regla.ajusteModo as 'fijo' | 'por_unidad',
-        ajuste,
-        estado: regla.estado as 'aprobado' | 'consultar',
-        disponible,
-        motivo: disponible ? undefined : 'Stock insuficiente',
-      });
-    }
+    const subtotalProductos =
+      Math.round(items.reduce((acc, i) => acc + i.subtotal, 0) * 100) / 100;
+    const vehiculo = items.some((i) => i.vehiculo === 'carro')
+      ? 'carro'
+      : 'moto';
+    const costoEnvio = calcularEnvio(vehiculo, {
+      tarifaMoto: Number(distrito.tarifaMoto),
+      tarifaCarro: Number(distrito.tarifaCarro),
+    });
 
-    return opciones;
+    return {
+      items: items.map((i) => ({
+        productoId: i.producto.id,
+        producto: i.producto.nombre,
+        talla: i.talla.talla,
+        cantidad: i.cantidad,
+        flor: ctx.insumoPorId.get(i.florId)?.nombre ?? '—',
+        papel: i.papelId
+          ? (ctx.insumoPorId.get(i.papelId)?.nombre ?? '—')
+          : null,
+        extras: i.extras.map((e) => e.nombre),
+        precioUnitario: i.precioUnitario,
+        subtotal: i.subtotal,
+        ajustes: i.ajustes.map(({ descripcion, ajuste }) => ({
+          descripcion,
+          ajuste,
+        })),
+        vehiculo: i.vehiculo,
+        consultas: i.consultas,
+      })),
+      subtotalProductos,
+      vehiculo,
+      costoEnvio,
+      total: Math.round((subtotalProductos + costoEnvio) * 100) / 100,
+      disponible: faltan.length === 0,
+      faltantes: faltan,
+      requiereConsulta: items.some((i) => i.consultas.length > 0),
+    };
+  }
+
+  private opcion(
+    ctx: ContextoCatalogo,
+    insumoId: string,
+    defaultId: string,
+    evaluarCambio: () => ReturnType<ItemResolverService['evaluarCambio']>,
+    stock: { disponible: boolean; motivo?: string },
+  ): OpcionCotizacion {
+    const ev =
+      insumoId === defaultId
+        ? { ajuste: 0, ajusteModo: null, estado: 'aprobado' as const }
+        : evaluarCambio();
+    return {
+      insumoId,
+      nombre: ctx.insumoPorId.get(insumoId)?.nombre ?? '—',
+      ajusteModo: ev.ajusteModo,
+      ajuste: ev.ajuste,
+      estado: ev.estado,
+      ...stock,
+    };
+  }
+
+  private detallarFaltantes(
+    ctx: ContextoCatalogo,
+    item: ItemResuelto,
+    disponibleDe: (id: string) => number,
+  ): FaltanteDetalle[] {
+    return faltantes(item.recetaEfectiva, disponibleDe).map((f) => ({
+      ...f,
+      nombre: ctx.insumoPorId.get(f.insumoId)?.nombre ?? '—',
+    }));
+  }
+
+  private motivo(f: FaltanteDetalle[]): string {
+    const partes = f
+      .slice(0, 2)
+      .map(
+        (x) =>
+          `${x.nombre} (necesita ${x.necesario}, hay ${Math.max(0, x.disponible)})`,
+      );
+    return `Sin stock: ${partes.join(', ')}${f.length > 2 ? '…' : ''}`;
   }
 }

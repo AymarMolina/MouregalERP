@@ -8,6 +8,7 @@ import {
   Param,
   Patch,
   Post,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { distritoInputSchema } from '@erp/shared';
 import { Roles } from '../../../common/decorators/roles.decorator';
@@ -31,14 +32,14 @@ export class DistritosController {
 
   @Roles('admin')
   @Patch(':id')
-  update(@Param('id') id: string, @Body() body: unknown) {
+  update(@Param('id', ParseUUIDPipe) id: string, @Body() body: unknown) {
     return this.distritos.update(id, distritoInputSchema.partial().parse(body));
   }
 
   @Roles('admin')
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id') id: string) {
+  remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.distritos.softDelete(id);
   }
 }

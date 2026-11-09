@@ -4,77 +4,140 @@
 
 html,
 body {
-  background-color: #fffdf3;
-  color: #22201a;
-  font-family: "Roboto", ui-sans-serif, system-ui, sans-serif;
+  background-color: #f6f5f1;
+  color: #1f2329;
+  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
   font-size: 13px;
+  font-weight: 400;
+  /* Inter: dígitos con cero sin barra y "1" de pie simple */
+  font-feature-settings: "cv11", "ss01";
   -webkit-font-smoothing: antialiased;
 }
 
+/* Números tabulares donde hay que comparar en columna: tablas, inventarios, ejes. */
+table,
+.tabular,
+input[type="number"] {
+  font-variant-numeric: tabular-nums;
+}
+
 @layer components {
-  /* Botones */
+  /* ---------- Botones ---------- */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-md bg-accent px-3.5 py-2 font-medium text-text shadow-sm transition hover:brightness-95 active:brightness-90 disabled:opacity-50 disabled:pointer-events-none;
+    @apply inline-flex items-center justify-center gap-1.5 rounded-lg bg-accent px-3.5 py-2 font-medium text-text transition-colors hover:bg-[#dcab17] active:bg-[#cfa112] disabled:pointer-events-none disabled:opacity-50;
   }
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-md border border-line bg-surface px-3.5 py-2 font-medium text-text shadow-sm transition hover:bg-accent-soft disabled:opacity-50 disabled:pointer-events-none;
+    @apply inline-flex items-center justify-center gap-1.5 rounded-lg border border-line bg-surface px-3.5 py-2 font-medium text-text transition-colors hover:bg-gray-50 disabled:pointer-events-none disabled:opacity-50;
   }
   .btn-text {
-    @apply inline-flex items-center gap-1 rounded px-2 py-1 font-medium text-accent-2 transition hover:bg-accent-soft disabled:opacity-50 disabled:pointer-events-none;
+    @apply inline-flex items-center gap-1 rounded-md px-2 py-1 font-medium text-accent-2 transition-colors hover:bg-accent-soft disabled:pointer-events-none disabled:opacity-50;
   }
   .btn-icon {
-    @apply inline-flex h-8 w-8 items-center justify-center rounded-md text-muted transition hover:bg-accent-soft hover:text-text;
+    @apply inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-gray-100 hover:text-text;
+  }
+  /* Acción de fila con ícono (lápiz, basurero...): siempre con title y aria-label. */
+  .btn-action {
+    @apply inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-gray-100 hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 disabled:pointer-events-none disabled:opacity-40;
+  }
+  .btn-action-danger {
+    @apply hover:bg-red-50 hover:text-negativo;
+  }
+  .btn-action-ok {
+    @apply hover:bg-estado-listo-bg hover:text-estado-listo-fg;
+  }
+  .acciones {
+    @apply flex items-center justify-end gap-0.5;
   }
 
-  /* Formularios */
+  /* ---------- Formularios ---------- */
   .field-label {
-    @apply mb-1 block text-xs font-medium uppercase tracking-wide text-muted;
+    @apply mb-1 block text-xs font-medium text-muted;
+  }
+  .page-title {
+    @apply text-xl font-semibold tracking-[-0.015em] text-text;
   }
   .input,
   select.input {
-    @apply w-full rounded-md border border-line bg-surface px-3 py-2 text-text shadow-sm transition placeholder:text-muted/70 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/40;
+    @apply w-full rounded-lg border border-line bg-surface px-3 py-2 text-text transition-colors placeholder:text-muted/70 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30;
   }
   .checkbox {
-    @apply h-4 w-4 rounded border-line text-accent-2 focus:ring-accent/40;
+    @apply h-4 w-4 rounded border-gray-300 text-accent-2 accent-[#b7791f] focus:ring-accent/40;
   }
 
-  /* Superficies */
+  /* ---------- Superficies ---------- */
   .card {
-    @apply rounded-lg border border-line bg-surface p-5 shadow-sm;
+    @apply rounded-xl bg-surface p-5 shadow-card;
   }
   .panel-title {
-    @apply text-base font-semibold text-text;
+    @apply text-[15px] font-semibold tracking-[-0.01em] text-text;
   }
   .panel-subtitle {
     @apply mt-0.5 text-muted;
   }
+  .page-header {
+    @apply mb-6 flex flex-wrap items-start justify-between gap-3;
+  }
 
-  /* Tablas */
+  /* ---------- KPI ---------- */
+  .kpi {
+    @apply flex items-start gap-3 rounded-xl bg-surface p-4 shadow-card;
+  }
+  .kpi-icon {
+    @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent-soft text-accent-2;
+  }
+  .kpi-label {
+    @apply text-[13px] text-muted;
+  }
+  .kpi-value {
+    @apply mt-0.5 text-[26px] font-semibold leading-tight tracking-[-0.02em] text-text;
+  }
+  .kpi-delta {
+    @apply mt-1 text-xs text-muted;
+  }
+
+  /* ---------- Toolbar de tablas: búsqueda + filtros píldora ---------- */
+  .toolbar {
+    @apply flex flex-wrap items-center gap-2 border-b border-line px-4 py-3;
+  }
+  .search {
+    @apply relative flex min-w-[12rem] flex-1 items-center sm:max-w-xs;
+  }
+  .search > svg {
+    @apply pointer-events-none absolute left-2.5 h-4 w-4 text-muted;
+  }
+  .search > input {
+    @apply w-full rounded-lg border border-line bg-surface py-1.5 pl-8 pr-3 text-text placeholder:text-muted/70 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30;
+  }
+  .pill {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1 text-xs font-medium text-muted transition-colors hover:bg-gray-50 hover:text-text;
+  }
+  .pill-active {
+    @apply border-text bg-text text-white hover:bg-text hover:text-white;
+  }
+
+  /* ---------- Tablas ---------- */
   .table-wrap {
-    @apply overflow-hidden rounded-lg border border-line bg-surface shadow-sm;
+    @apply overflow-hidden rounded-xl bg-surface shadow-card;
   }
   table.table {
     @apply w-full border-collapse text-left;
   }
-  .table thead {
-    @apply bg-sidebar/70;
-  }
   .table th {
-    @apply border-b border-line px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted;
+    @apply border-b border-line px-4 py-2.5 text-xs font-medium text-muted;
   }
   .table td {
-    @apply border-b border-line px-4 py-2.5 align-middle;
+    @apply border-b border-gray-100 px-4 py-3 align-middle;
   }
   .table tbody tr:last-child td {
     @apply border-b-0;
   }
   .table tbody tr {
-    @apply transition hover:bg-accent-soft/40;
+    @apply transition-colors hover:bg-gray-50/80;
   }
 
-  /* Insignias de estado */
+  /* ---------- Badges píldora ---------- */
   .badge {
-    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+    @apply inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium;
   }
   .badge-neutral {
     @apply bg-estado-pendiente-bg text-estado-pendiente-fg;
@@ -89,8 +152,11 @@ body {
     @apply bg-accent-soft text-accent-2;
   }
 
-  /* Encabezado de página */
-  .page-header {
-    @apply mb-6 flex flex-wrap items-start justify-between gap-3;
+  /* ---------- Carga sutil ---------- */
+  .spinner {
+    @apply inline-block h-4 w-4 animate-spin rounded-full border-2 border-gray-200 border-t-accent-2;
+  }
+  .skeleton {
+    @apply animate-pulse rounded-md bg-gray-100;
   }
 }

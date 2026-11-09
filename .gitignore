@@ -7,3 +7,6 @@ dist/
 .DS_Store
 coverage/
 apps/web/.angular/
+
+# Capturas originales del manual (se regeneran; solo se versionan los recortes c-*.png)
+docs/manual/img/[0-9]*.png

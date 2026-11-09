@@ -33,6 +33,8 @@ export const insumos = pgTable('insumos', {
     .notNull()
     .default('0'),
   esFlor: boolean('es_flor').notNull().default(false),
+  // Caja: el pedido que la lleve sale en carro (5.5).
+  esCaja: boolean('es_caja').notNull().default(false),
   activo: boolean('activo').notNull().default(true),
   createdAt: timestamp('created_at', { withTimezone: true })
     .notNull()

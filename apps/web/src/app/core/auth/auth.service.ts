@@ -43,16 +43,10 @@ export class AuthService {
 
   /** Restaura la sesión al arrancar la app a partir del refresh token guardado. */
   async refresh(): Promise<boolean> {
-    const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
-    if (!refreshToken) return false;
+    const token = await this.renovarAccessToken();
+    if (!token) return false;
 
     try {
-      const tokens = await firstValueFrom(
-        this.http.post<RefreshResponse>(`${environment.apiUrl}/auth/refresh`, { refreshToken }),
-      );
-      this.accessToken = tokens.accessToken;
-      localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refreshToken);
-
       const user = await firstValueFrom(this.http.get<AuthUser>(`${environment.apiUrl}/auth/me`));
       this.user.set(user);
       return true;
@@ -62,7 +56,41 @@ export class AuthService {
     }
   }
 
+  /**
+   * Pide un access token nuevo con el refresh token. Si varias peticiones
+   * reciben 401 a la vez, comparten una sola renovación en curso.
+   * Devuelve null (y cierra la sesión) si no se pudo renovar.
+   */
+  renovarAccessToken(): Promise<string | null> {
+    this.renovacionEnCurso ??= this.ejecutarRenovacion().finally(() => {
+      this.renovacionEnCurso = null;
+    });
+    return this.renovacionEnCurso;
+  }
+
+  private renovacionEnCurso: Promise<string | null> | null = null;
+
+  private async ejecutarRenovacion(): Promise<string | null> {
+    const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+    if (!refreshToken) return null;
+    try {
+      const tokens = await firstValueFrom(
+        this.http.post<RefreshResponse>(`${environment.apiUrl}/auth/refresh`, { refreshToken }),
+      );
+      this.accessToken = tokens.accessToken;
+      localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refreshToken);
+      return tokens.accessToken;
+    } catch {
+      this.clearSession();
+      return null;
+    }
+  }
+
+  /** Cierra la sesión aquí y revoca los refresh tokens en el servidor (best effort). */
   logout(): void {
+    if (this.accessToken) {
+      this.http.post(`${environment.apiUrl}/auth/logout`, {}).subscribe({ error: () => undefined });
+    }
     this.clearSession();
     void this.router.navigateByUrl("/login");
   }

@@ -2,246 +2,360 @@
   <div class="page-header">
     <div>
       <h1 class="panel-title">Nuevo pedido</h1>
-      <p class="panel-subtitle">Cotiza el pedido y confírmalo. El precio y la disponibilidad siempre los calcula el servidor.</p>
+      <p class="panel-subtitle">Configura cada producto, agrégalo al pedido y confirma. El precio y el stock los calcula el servidor.</p>
     </div>
   </div>
 
   @if (loading()) {
     <p class="text-muted">Cargando...</p>
   } @else {
-    <form [formGroup]="form" (ngSubmit)="confirmarPedido()" class="grid grid-cols-3 gap-6 items-start">
-      <div class="col-span-2 space-y-6">
-        <div class="card space-y-4">
-          <h2 class="panel-title text-base">1. Producto</h2>
-          <div class="grid grid-cols-3 gap-4">
+    <div class="grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)]">
+      <div class="space-y-6">
+        <!-- 1. Canal y destino -->
+        <form [formGroup]="form" class="card space-y-4">
+          <h2 class="panel-title">1. Canal y distrito</h2>
+          <div class="grid gap-4 sm:grid-cols-2">
             <div>
               <label class="field-label">Canal</label>
               <select formControlName="canal" class="input">
-                @for (c of canales; track c) { <option [value]="c">{{ c }}</option> }
+                @for (c of canales; track c) {
+                  <option [value]="c">{{ c }}</option>
+                }
               </select>
             </div>
-            <div class="col-span-2">
+            <div>
+              <label class="field-label">Distrito de entrega</label>
+              <select formControlName="distritoId" class="input" [class.border-accent-2]="invalido('distritoId')" (change)="onDistritoChange()">
+                <option value="">Seleccionar...</option>
+                @for (d of distritos(); track d.id) {
+                  <option [value]="d.id">{{ d.nombre }}</option>
+                }
+              </select>
+            </div>
+          </div>
+        </form>
+
+        <!-- 2. Producto en configuración -->
+        <div class="card space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="panel-title">2. Agregar producto</h2>
+            @if (carrito().length) {
+              <span class="badge badge-neutral">{{ carrito().length }} en el pedido</span>
+            }
+          </div>
+
+          @if (!form.value.distritoId) {
+            <p class="text-muted">Elige primero el distrito: el envío y la disponibilidad dependen de él.</p>
+          }
+
+          <form [formGroup]="itemForm" class="grid gap-4 sm:grid-cols-4">
+            <div class="sm:col-span-2">
               <label class="field-label">Producto</label>
               <select formControlName="productoId" class="input" (change)="onProductoChange()">
                 <option value="">Seleccionar...</option>
-                @for (p of productos(); track p.id) { <option [value]="p.id">{{ p.nombre }}</option> }
+                @for (p of productos(); track p.id) {
+                  <option [value]="p.id">{{ p.nombre }}</option>
+                }
               </select>
             </div>
             <div>
               <label class="field-label">Talla</label>
-              <select formControlName="talla" class="input" (change)="onProductoChange()">
-                @for (t of tallas; track t) { <option [value]="t">{{ t }}</option> }
+              <select formControlName="talla" class="input" (change)="onCambioBasico()">
+                @for (t of tallas; track t) {
+                  @let op = opcionTalla(t);
+                  <option [value]="t" [disabled]="op && !op.disponible" [title]="op?.motivo ?? ''">
+                    {{ t }}{{ op ? " · " + soles(op.precioBase) : "" }}{{ op && !op.disponible ? " — sin stock" : "" }}
+                  </option>
+                }
               </select>
             </div>
             <div>
               <label class="field-label">Cantidad</label>
               <input type="number" formControlName="cantidad" min="1" class="input" (change)="onCambioBasico()" />
             </div>
-            <div>
-              <label class="field-label">Distrito</label>
-              <select formControlName="distritoId" class="input" (change)="onCambioBasico()">
-                <option value="">Seleccionar...</option>
-                @for (d of distritos(); track d.id) { <option [value]="d.id">{{ d.nombre }}</option> }
-              </select>
-            </div>
-          </div>
-        </div>
+          </form>
 
-        @if (cotizacion(); as c) {
-          <div class="card space-y-4">
-            <h2 class="panel-title text-base">2. Flor y papel</h2>
-
-            <div>
-              <div class="field-label mb-2">Flor</div>
-              <div class="flex flex-wrap gap-2">
-                @for (o of c.opciones.flores; track o.insumoId) {
-                  <button
-                    type="button"
-                    (click)="elegirFlor(o.insumoId)"
-                    [disabled]="!o.disponible"
-                    class="rounded-md border px-3 py-2 text-left transition disabled:cursor-not-allowed disabled:opacity-40"
-                    [class.border-accent-2]="c.florId === o.insumoId"
-                    [class.bg-accent-soft]="c.florId === o.insumoId"
-                    [class.border-line]="c.florId !== o.insumoId"
-                  >
-                    <div class="font-medium">{{ o.nombre }}</div>
-                    <div class="text-muted">
-                      @if (o.ajuste !== 0) { {{ o.ajuste > 0 ? "+" : "" }}{{ o.ajuste }} }
-                      @if (o.estado === "consultar") {
-                        <span class="badge badge-warn ml-1">consultar</span>
-                      }
-                      @if (!o.disponible) {
-                        <span class="badge badge-neutral ml-1">{{ o.motivo }}</span>
-                      }
-                    </div>
-                  </button>
-                }
-              </div>
-            </div>
-
-            @if (c.opciones.papeles.length) {
-              <div>
-                <div class="field-label mb-2">Papel</div>
-                <div class="flex flex-wrap gap-2">
-                  @for (o of c.opciones.papeles; track o.insumoId) {
-                    <button
-                      type="button"
-                      (click)="elegirPapel(o.insumoId)"
-                      [disabled]="!o.disponible"
-                      class="rounded-md border px-3 py-2 text-left transition disabled:cursor-not-allowed disabled:opacity-40"
-                      [class.border-accent-2]="c.papelId === o.insumoId"
-                      [class.bg-accent-soft]="c.papelId === o.insumoId"
-                      [class.border-line]="c.papelId !== o.insumoId"
-                    >
-                      <div class="font-medium">{{ o.nombre }}</div>
-                      <div class="text-muted">
-                        @if (o.ajuste !== 0) { {{ o.ajuste > 0 ? "+" : "" }}{{ o.ajuste }} }
-                        @if (!o.disponible) {
-                          <span class="badge badge-neutral ml-1">{{ o.motivo }}</span>
-                        }
-                      </div>
-                    </button>
-                  }
-                </div>
-              </div>
-            }
-
-            @if (c.opciones.extras.length) {
-              <div>
-                <div class="field-label mb-2">Extras</div>
-                <div class="flex flex-wrap gap-2">
-                  @for (o of c.opciones.extras; track o.id) {
-                    <button
-                      type="button"
-                      (click)="toggleExtra(o.id)"
-                      [disabled]="!o.disponible"
-                      class="rounded-md border px-3 py-2 text-left transition disabled:cursor-not-allowed disabled:opacity-40"
-                      [class.border-accent-2]="extraIds().has(o.id)"
-                      [class.bg-accent-soft]="extraIds().has(o.id)"
-                      [class.border-line]="!extraIds().has(o.id)"
-                    >
-                      <div class="font-medium">{{ o.nombre }}</div>
-                      <div class="text-muted">
-                        +{{ o.precio }}
-                        @if (!o.disponible) {
-                          <span class="badge badge-neutral ml-1">{{ o.motivo }}</span>
-                        }
-                      </div>
-                    </button>
-                  }
-                </div>
-              </div>
-            }
-
-            @if (muestraCambioNoListado()) {
-              <div>
-                <label class="field-label">Describe el pedido especial (requiere aprobación de Producción)</label>
-                <textarea formControlName="cambioNoListado" rows="2" class="input"></textarea>
-              </div>
-            }
-          </div>
-
-          <div class="card space-y-4">
-            <h2 class="panel-title text-base">3. Entrega y cliente</h2>
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="field-label">Nombre del cliente</label>
-                <input formControlName="clienteNombre" class="input" />
-              </div>
-              <div>
-                <label class="field-label">Teléfono del cliente</label>
-                <input formControlName="clienteTelefono" class="input" />
-              </div>
-              <div>
-                <label class="field-label">Fecha de entrega</label>
-                <input type="date" formControlName="fechaEntrega" class="input" />
-              </div>
-              <div>
-                <label class="field-label">Hora de entrega</label>
-                <input type="time" formControlName="horaEntrega" class="input" />
-              </div>
-              <div class="col-span-2">
-                <label class="field-label">Dirección</label>
-                <input formControlName="direccion" class="input" />
-              </div>
-              <div class="col-span-2">
-                <label class="field-label">Referencia</label>
-                <input formControlName="referencia" class="input" />
-              </div>
-              <div>
-                <label class="field-label">Nombre de quien recibe</label>
-                <input formControlName="nombreReceptor" class="input" />
-              </div>
-              <div>
-                <label class="field-label">Teléfono de quien recibe</label>
-                <input formControlName="telefonoReceptor" class="input" />
-              </div>
-              <div class="col-span-2">
-                <label class="field-label">Dedicatoria</label>
-                <textarea formControlName="dedicatoria" rows="2" class="input"></textarea>
-              </div>
-              <div>
-                <label class="field-label">Adelanto (%)</label>
-                <input type="number" formControlName="porcentajeAdelanto" min="0" max="100" class="input" />
-              </div>
-            </div>
-          </div>
-        }
-      </div>
-
-      <div class="sticky top-6">
-        <div class="card space-y-3">
-          <h2 class="panel-title text-base">Resumen</h2>
-
-          @if (cotizando()) {
+          @if (cotizando() && !cotizacion()) {
             <p class="text-muted">Calculando...</p>
-          } @else if (cotizacion()) {
-            @let c = cotizacion()!;
-            <dl class="space-y-1.5">
-              <div class="flex justify-between">
-                <dt class="text-muted">Precio unitario</dt>
-                <dd>S/ {{ c.precioUnitario.toFixed(2) }}</dd>
+          }
+
+          @if (cotizacion(); as c) {
+            <div class="space-y-4 border-t border-line pt-4" [class.opacity-60]="cotizando()">
+              <div>
+                <div class="field-label mb-2">Flor</div>
+                <div class="flex flex-wrap gap-2">
+                  @for (o of c.opciones.flores; track o.insumoId) {
+                    <button
+                      type="button"
+                      (click)="elegirFlor(o.insumoId)"
+                      [disabled]="!o.disponible && c.florId !== o.insumoId"
+                      [title]="o.motivo ?? ''"
+                      class="rounded-md border px-3 py-2 text-left transition hover:border-accent disabled:cursor-not-allowed disabled:opacity-40"
+                      [class.border-accent-2]="c.florId === o.insumoId"
+                      [class.bg-accent-soft]="c.florId === o.insumoId"
+                      [class.border-line]="c.florId !== o.insumoId"
+                    >
+                      <div class="font-medium">{{ o.nombre }}</div>
+                      <div class="flex items-center gap-1 text-muted">
+                        @if (o.ajuste !== 0) {
+                          <span>{{ o.ajuste > 0 ? "+" : "" }}{{ soles(o.ajuste) }}</span>
+                        }
+                        @if (o.estado === "consultar") {
+                          <span class="badge badge-warn">consultar</span>
+                        }
+                        @if (!o.disponible) {
+                          <span class="badge badge-neutral">sin stock</span>
+                        }
+                      </div>
+                    </button>
+                  }
+                </div>
               </div>
-              @for (a of c.ajustes; track a.descripcion) {
-                <div class="flex justify-between text-muted">
-                  <dt>{{ a.descripcion }}</dt>
-                  <dd>{{ a.ajuste > 0 ? "+" : "" }}{{ a.ajuste.toFixed(2) }}</dd>
+
+              @if (c.opciones.papeles.length) {
+                <div>
+                  <div class="field-label mb-2">Papel</div>
+                  <div class="flex flex-wrap gap-2">
+                    @for (o of c.opciones.papeles; track o.insumoId) {
+                      <button
+                        type="button"
+                        (click)="elegirPapel(o.insumoId)"
+                        [disabled]="!o.disponible && c.papelId !== o.insumoId"
+                        [title]="o.motivo ?? ''"
+                        class="rounded-md border px-3 py-2 text-left transition hover:border-accent disabled:cursor-not-allowed disabled:opacity-40"
+                        [class.border-accent-2]="c.papelId === o.insumoId"
+                        [class.bg-accent-soft]="c.papelId === o.insumoId"
+                        [class.border-line]="c.papelId !== o.insumoId"
+                      >
+                        <div class="font-medium">{{ o.nombre }}</div>
+                        <div class="flex items-center gap-1 text-muted">
+                          @if (o.ajuste !== 0) {
+                            <span>{{ o.ajuste > 0 ? "+" : "" }}{{ soles(o.ajuste) }}</span>
+                          }
+                          @if (!o.disponible) {
+                            <span class="badge badge-neutral">sin stock</span>
+                          }
+                        </div>
+                      </button>
+                    }
+                  </div>
                 </div>
               }
-              <div class="flex justify-between">
-                <dt class="text-muted">Subtotal ({{ c.cantidad }})</dt>
-                <dd>S/ {{ c.subtotal.toFixed(2) }}</dd>
-              </div>
-              <div class="flex justify-between">
-                <dt class="text-muted">Envío ({{ c.vehiculo }})</dt>
-                <dd>S/ {{ c.costoEnvio.toFixed(2) }}</dd>
-              </div>
-              <div class="flex justify-between border-t border-line pt-2 text-base font-semibold">
-                <dt>Total</dt>
-                <dd>S/ {{ c.total.toFixed(2) }}</dd>
-              </div>
-              <div class="flex justify-between text-muted">
-                <dt>Adelanto</dt>
-                <dd>S/ {{ adelanto().toFixed(2) }}</dd>
-              </div>
-              <div class="flex justify-between text-muted">
-                <dt>Saldo</dt>
-                <dd>S/ {{ saldo().toFixed(2) }}</dd>
-              </div>
-            </dl>
 
-            @if (error()) {
-              <p class="rounded-md bg-accent-soft px-3 py-2 text-accent-2">{{ error() }}</p>
-            }
+              @if (c.opciones.extras.length) {
+                <div>
+                  <div class="field-label mb-2">Extras</div>
+                  <div class="flex flex-wrap gap-2">
+                    @for (o of c.opciones.extras; track o.id) {
+                      <button
+                        type="button"
+                        (click)="toggleExtra(o.id)"
+                        [disabled]="!o.disponible && !extraIds().has(o.id)"
+                        [title]="o.motivo ?? ''"
+                        class="rounded-md border px-3 py-2 text-left transition hover:border-accent disabled:cursor-not-allowed disabled:opacity-40"
+                        [class.border-accent-2]="extraIds().has(o.id)"
+                        [class.bg-accent-soft]="extraIds().has(o.id)"
+                        [class.border-line]="!extraIds().has(o.id)"
+                      >
+                        <div class="font-medium">{{ o.nombre }}</div>
+                        <div class="flex items-center gap-1 text-muted">
+                          +{{ soles(o.precio) }}
+                          @if (!o.disponible) {
+                            <span class="badge badge-neutral">sin stock</span>
+                          }
+                        </div>
+                      </button>
+                    }
+                  </div>
+                </div>
+              }
 
-            <button type="submit" [disabled]="form.invalid || enviando()" class="btn-primary w-full">
-              {{ enviando() ? "Creando..." : "Confirmar pedido" }}
-            </button>
-          } @else {
-            <p class="text-muted">Elige un producto, talla y distrito para ver el precio.</p>
+              <form [formGroup]="itemForm">
+                <label class="field-label">Pedido especial / cambio no listado (opcional, lo revisa Producción)</label>
+                <textarea
+                  formControlName="cambioNoListado"
+                  rows="2"
+                  class="input"
+                  placeholder="Ej. agregar lazo dorado, flores en tonos pastel..."
+                  (change)="onCambioBasico()"
+                ></textarea>
+              </form>
+
+              @if (tallaNoDisponible(); as t) {
+                <p class="rounded-md bg-accent-soft px-3 py-2 text-accent-2">Talla {{ t.talla }}: {{ t.motivo }}</p>
+              }
+              @if (!c.disponible) {
+                <div class="rounded-md bg-accent-soft px-3 py-2 text-accent-2">
+                  <div class="font-medium">No hay stock para esta selección</div>
+                  <ul class="mt-1 list-disc pl-4">
+                    @for (f of c.faltantes; track f.insumoId) {
+                      <li>{{ f.nombre }}: necesita {{ f.necesario }}, disponible {{ f.disponible > 0 ? f.disponible : 0 }}</li>
+                    }
+                  </ul>
+                </div>
+              }
+
+              <div class="flex flex-wrap items-center justify-between gap-3 rounded-md bg-bg px-4 py-3">
+                <div>
+                  <div class="text-lg font-semibold">{{ soles(c.subtotal) }}</div>
+                  <div class="text-muted">
+                    {{ c.cantidad }} × {{ soles(c.precioUnitario) }}
+                    @for (a of c.ajustes; track a.descripcion) {
+                      · {{ a.descripcion }} {{ a.ajuste >= 0 ? "+" : "" }}{{ soles(a.ajuste) }}
+                    }
+                    @if (c.vehiculo === "carro") {
+                      · <span class="badge badge-info">requiere carro</span>
+                    }
+                    @if (c.requiereConsulta) {
+                      · <span class="badge badge-warn">consulta</span>
+                    }
+                  </div>
+                </div>
+                <button type="button" class="btn-primary" [disabled]="!c.disponible || cotizando() || itemForm.invalid" (click)="agregarAlPedido()">
+                  + Agregar al pedido
+                </button>
+              </div>
+            </div>
           }
         </div>
+
+        <!-- 3. Entrega y cliente -->
+        <form [formGroup]="form" class="card space-y-4">
+          <h2 class="panel-title">3. Entrega y cliente</h2>
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label class="field-label">Nombre del cliente</label>
+              <input formControlName="clienteNombre" class="input" [class.border-accent-2]="invalido('clienteNombre')" />
+            </div>
+            <div>
+              <label class="field-label">Teléfono del cliente</label>
+              <input formControlName="clienteTelefono" class="input" placeholder="Para avisos de estado y link de pago" />
+            </div>
+            <div>
+              <label class="field-label">Fecha de entrega</label>
+              <input type="date" formControlName="fechaEntrega" [min]="hoy" class="input" [class.border-accent-2]="invalido('fechaEntrega')" />
+            </div>
+            <div>
+              <label class="field-label">Hora de entrega</label>
+              <input type="time" formControlName="horaEntrega" class="input" [class.border-accent-2]="invalido('horaEntrega')" />
+            </div>
+            <div class="sm:col-span-2">
+              <label class="field-label">Dirección</label>
+              <input formControlName="direccion" class="input" [class.border-accent-2]="invalido('direccion')" />
+            </div>
+            <div class="sm:col-span-2">
+              <label class="field-label">Referencia</label>
+              <input formControlName="referencia" class="input" />
+            </div>
+            <div>
+              <label class="field-label">Nombre de quien recibe</label>
+              <input formControlName="nombreReceptor" class="input" [class.border-accent-2]="invalido('nombreReceptor')" />
+            </div>
+            <div>
+              <label class="field-label">Teléfono de quien recibe</label>
+              <input formControlName="telefonoReceptor" class="input" [class.border-accent-2]="invalido('telefonoReceptor')" />
+            </div>
+            <div class="sm:col-span-2">
+              <label class="field-label">Dedicatoria</label>
+              <textarea formControlName="dedicatoria" rows="2" class="input"></textarea>
+            </div>
+            <div>
+              <label class="field-label">Adelanto (%)</label>
+              <input type="number" formControlName="porcentajeAdelanto" min="0" max="100" class="input" />
+            </div>
+          </div>
+        </form>
       </div>
-    </form>
+
+      <!-- Resumen -->
+      <aside class="lg:sticky lg:top-6">
+        <div class="card space-y-4">
+          <h2 class="panel-title">Resumen del pedido</h2>
+
+          @if (!carrito().length) {
+            <p class="text-muted">Agrega al menos un producto para ver el total.</p>
+          } @else {
+            <ul class="divide-y divide-line">
+              @for (item of carrito(); track $index; let i = $index) {
+                @let linea = resumen()?.items?.[i];
+                <li class="flex items-start justify-between gap-2 py-2">
+                  <div class="min-w-0">
+                    <div class="font-medium">{{ item.input.cantidad }} × {{ item.producto }} {{ item.input.talla }}</div>
+                    <div class="truncate text-muted" [title]="item.detalle">{{ item.detalle }}</div>
+                    @if (linea?.consultas?.length) {
+                      <span class="badge badge-warn mt-1">consulta</span>
+                    }
+                  </div>
+                  <div class="flex items-center gap-1">
+                    <span class="whitespace-nowrap">{{ linea ? soles(linea.subtotal) : "…" }}</span>
+                    <button type="button" class="btn-action btn-action-danger" (click)="quitarDelPedido(i)" title="Quitar del pedido" aria-label="Quitar del pedido"><app-icon name="eliminar" [size]="16" /></button>
+                  </div>
+                </li>
+              }
+            </ul>
+
+            @if (resumen(); as r) {
+              <dl class="space-y-1.5 border-t border-line pt-3" [class.opacity-60]="cotizandoResumen()">
+                <div class="flex justify-between">
+                  <dt class="text-muted">Productos</dt>
+                  <dd>{{ soles(r.subtotalProductos) }}</dd>
+                </div>
+                <div class="flex justify-between">
+                  <dt class="text-muted">Envío ({{ r.vehiculo }})</dt>
+                  <dd>{{ soles(r.costoEnvio) }}</dd>
+                </div>
+                <div class="flex justify-between border-t border-line pt-2 text-base font-semibold">
+                  <dt>Total</dt>
+                  <dd>{{ soles(r.total) }}</dd>
+                </div>
+                <div class="flex justify-between text-muted">
+                  <dt>Adelanto ({{ form.value.porcentajeAdelanto }}%)</dt>
+                  <dd>{{ soles(adelanto()) }}</dd>
+                </div>
+                <div class="flex justify-between text-muted">
+                  <dt>Saldo</dt>
+                  <dd>{{ soles(saldo()) }}</dd>
+                </div>
+              </dl>
+
+              @if (!r.disponible) {
+                <div class="rounded-md bg-accent-soft px-3 py-2 text-accent-2">
+                  <div class="font-medium">El pedido completo no cabe en el stock</div>
+                  <ul class="mt-1 list-disc pl-4">
+                    @for (f of r.faltantes; track f.insumoId) {
+                      <li>{{ f.nombre }}: necesita {{ f.necesario }}, hay {{ f.disponible > 0 ? f.disponible : 0 }}</li>
+                    }
+                  </ul>
+                </div>
+              }
+              @if (r.requiereConsulta) {
+                <p class="rounded-md border border-line px-3 py-2 text-muted">
+                  <span class="badge badge-warn mr-1">consulta</span>
+                  Se abrirá una consulta a Producción; el pedido no se arma hasta que la respondan.
+                </p>
+              }
+            } @else if (!form.value.distritoId) {
+              <p class="text-muted">Elige el distrito para calcular el envío.</p>
+            }
+          }
+
+          @if (error()) {
+            <p class="rounded-md bg-accent-soft px-3 py-2 text-accent-2">{{ error() }}</p>
+          }
+
+          <button
+            type="button"
+            class="btn-primary w-full"
+            [disabled]="enviando() || cotizandoResumen() || !resumen() || !resumen()!.disponible"
+            (click)="confirmarPedido()"
+          >
+            {{ enviando() ? "Creando..." : "Confirmar pedido" }}
+          </button>
+          @if (form.invalid && carrito().length) {
+            <p class="text-xs text-muted">Completa los datos de entrega y del cliente.</p>
+          }
+        </div>
+      </aside>
+    </div>
   }
 </div>

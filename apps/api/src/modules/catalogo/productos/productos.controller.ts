@@ -9,6 +9,7 @@ import {
   Patch,
   Post,
   Put,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import {
   copiarRecetaInputSchema,
@@ -32,7 +33,7 @@ export class ProductosController {
 
   @Roles('admin', 'produccion', 'almacen', 'vendedora')
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.productos.findOne(id);
   }
 
@@ -44,27 +45,30 @@ export class ProductosController {
 
   @Roles('admin')
   @Patch(':id')
-  update(@Param('id') id: string, @Body() body: unknown) {
+  update(@Param('id', ParseUUIDPipe) id: string, @Body() body: unknown) {
     return this.productos.update(id, productoInputSchema.partial().parse(body));
   }
 
   @Roles('admin')
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id') id: string) {
+  remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.productos.softDelete(id);
   }
 
   @Roles('admin', 'produccion', 'almacen')
   @Get(':id/tallas/:talla/receta')
-  getReceta(@Param('id') id: string, @Param('talla') talla: Talla) {
+  getReceta(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('talla') talla: Talla,
+  ) {
     return this.productos.getReceta(id, talla);
   }
 
   @Roles('admin')
   @Put(':id/tallas/:talla/receta')
   replaceReceta(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Param('talla') talla: Talla,
     @Body() body: unknown,
   ) {
@@ -75,7 +79,7 @@ export class ProductosController {
   @Roles('admin')
   @Post(':id/tallas/:talla/copiar-receta')
   copiarReceta(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Param('talla') talla: Talla,
     @Body() body: unknown,
   ) {
@@ -85,13 +89,16 @@ export class ProductosController {
 
   @Roles('admin', 'produccion', 'almacen')
   @Get(':id/flores-permitidas')
-  getFloresPermitidas(@Param('id') id: string) {
+  getFloresPermitidas(@Param('id', ParseUUIDPipe) id: string) {
     return this.productos.getFloresPermitidas(id);
   }
 
   @Roles('admin')
   @Put(':id/flores-permitidas')
-  replaceFloresPermitidas(@Param('id') id: string, @Body() body: unknown) {
+  replaceFloresPermitidas(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: unknown,
+  ) {
     const { insumoIds } = floresPermitidasInputSchema.parse(body);
     return this.productos.replaceFloresPermitidas(id, insumoIds);
   }

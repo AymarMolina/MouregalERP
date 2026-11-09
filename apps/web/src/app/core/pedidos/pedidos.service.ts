@@ -1,7 +1,7 @@
 import { HttpClient } from "@angular/common/http";
 import { Injectable, inject } from "@angular/core";
 import { firstValueFrom } from "rxjs";
-import type { CotizacionInput, PedidoInput } from "@erp/shared";
+import type { CotizacionInput, CotizacionPedidoInput, PedidoInput } from "@erp/shared";
 import { environment } from "../../../environments/environment";
 import type {
   Consulta,
@@ -9,6 +9,7 @@ import type {
   HistorialEstado,
   PedidoDetalle,
   ResultadoCotizacion,
+  ResultadoCotizacionPedido,
 } from "./pedidos.types";
 
 @Injectable({ providedIn: "root" })
@@ -17,6 +18,12 @@ export class CotizacionesService {
 
   cotizar(input: CotizacionInput): Promise<ResultadoCotizacion> {
     return firstValueFrom(this.http.post<ResultadoCotizacion>(`${environment.apiUrl}/cotizaciones`, input));
+  }
+
+  cotizarPedido(input: CotizacionPedidoInput): Promise<ResultadoCotizacionPedido> {
+    return firstValueFrom(
+      this.http.post<ResultadoCotizacionPedido>(`${environment.apiUrl}/cotizaciones/pedido`, input),
+    );
   }
 }
 

@@ -8,6 +8,7 @@ import {
   Param,
   Patch,
   Post,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { reglaCambioInputSchema } from '@erp/shared';
 import { Roles } from '../../../common/decorators/roles.decorator';
@@ -29,7 +30,7 @@ export class ReglasCambioController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() body: unknown) {
+  update(@Param('id', ParseUUIDPipe) id: string, @Body() body: unknown) {
     return this.reglasCambio.update(
       id,
       reglaCambioInputSchema.partial().parse(body),
@@ -38,7 +39,7 @@ export class ReglasCambioController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id') id: string) {
+  remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.reglasCambio.softDelete(id);
   }
 }

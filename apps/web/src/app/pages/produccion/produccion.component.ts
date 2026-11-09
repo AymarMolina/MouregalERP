@@ -1,4 +1,5 @@
 import { Component, OnInit, computed, inject, signal } from "@angular/core";
+import { IconComponent } from "../../shared/icon/icon.component";
 import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
 import {
   ConsultasService,
@@ -7,6 +8,11 @@ import {
   type Usuario,
 } from "../../core/pedidos/pedidos.service";
 import type { Consulta, PedidoDetalle } from "../../core/pedidos/pedidos.types";
+import { validarTransicion } from "@erp/shared";
+import { AuthService } from "../../core/auth/auth.service";
+import { mensajeError } from "../../core/http/errores";
+import { cuando } from "../../core/util/formato";
+import { usarPolling } from "../../core/util/polling";
 
 interface LineaConsumo {
   insumoId: string;
@@ -16,7 +22,7 @@ interface LineaConsumo {
 
 @Component({
   selector: "app-produccion",
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, IconComponent],
   templateUrl: "./produccion.component.html",
 })
 export class ProduccionComponent implements OnInit {
@@ -24,6 +30,7 @@ export class ProduccionComponent implements OnInit {
   private readonly consultasService = inject(ConsultasService);
   private readonly usuariosService = inject(UsuariosService);
   private readonly fb = inject(FormBuilder);
+  private readonly auth = inject(AuthService);
 
   readonly loading = signal(true);
   readonly pendientes = signal<PedidoDetalle[]>([]);
@@ -45,7 +52,20 @@ export class ProduccionComponent implements OnInit {
     return this.consumoForm.get("lineas") as FormArray<FormGroup>;
   }
 
+  readonly cuando = cuando;
+
   readonly encargadaSeleccionada = computed(() => this.seleccionado()?.encargadaId ?? "");
+
+  /** Misma regla que valida la API: despachar es tarea de delivery/vendedora/admin, no de producción. */
+  readonly puedeDespachar = computed(() => {
+    const rol = this.auth.user()?.rol;
+    return !!rol && validarTransicion(rol, "listo", "en_camino").ok;
+  });
+
+  constructor() {
+    // Spec sección 8: el tablero se refresca cada 15 s (no toca el pedido abierto).
+    usarPolling(() => this.cargarTablero());
+  }
 
   async ngOnInit(): Promise<void> {
     this.loading.set(true);
@@ -114,8 +134,10 @@ export class ProduccionComponent implements OnInit {
       await this.pedidosService.transicion(pedido.id, "en_armado");
       await this.cargarTablero();
       await this.seleccionar({ ...pedido, estado: "en_armado" });
-    } catch {
-      this.error.set("No se pudo pasar a en_armado. Revisa que tenga encargada y no haya consultas abiertas.");
+    } catch (err) {
+      this.error.set(
+        mensajeError(err, "No se pudo pasar a en_armado. Revisa que tenga encargada y no haya consultas abiertas."),
+      );
     }
   }
 
@@ -132,8 +154,8 @@ export class ProduccionComponent implements OnInit {
       await this.pedidosService.confirmarConsumo(pedido.id, lineas);
       await this.cargarTablero();
       this.cerrar();
-    } catch {
-      this.error.set("No se pudo confirmar el consumo.");
+    } catch (err) {
+      this.error.set(mensajeError(err, "No se pudo confirmar el consumo."));
     } finally {
       this.guardando.set(false);
     }
@@ -142,15 +164,26 @@ export class ProduccionComponent implements OnInit {
   async pasarAEnCamino(): Promise<void> {
     const pedido = this.seleccionado();
     if (!pedido) return;
-    await this.pedidosService.transicion(pedido.id, "en_camino");
-    await this.cargarTablero();
-    this.cerrar();
+    this.error.set(null);
+    try {
+      await this.pedidosService.transicion(pedido.id, "en_camino");
+      await this.cargarTablero();
+      this.cerrar();
+    } catch (err) {
+      this.error.set(mensajeError(err, "No se pudo pasar a en camino."));
+    }
   }
 
   async resolverConsulta(estado: "aprobada" | "rechazada"): Promise<void> {
     const consulta = this.consultaAbierta();
     if (!consulta || this.resolverForm.invalid) return;
-    await this.consultasService.resolver(consulta.id, { estado, respuesta: this.resolverForm.value.respuesta! });
+    this.error.set(null);
+    try {
+      await this.consultasService.resolver(consulta.id, { estado, respuesta: this.resolverForm.value.respuesta! });
+    } catch (err) {
+      this.error.set(mensajeError(err, "No se pudo resolver la consulta."));
+      return;
+    }
     this.resolverForm.reset();
     const pedido = this.seleccionado();
     if (pedido) await this.seleccionar(pedido);

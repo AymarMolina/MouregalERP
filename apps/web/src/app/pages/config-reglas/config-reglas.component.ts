@@ -1,4 +1,5 @@
 import { Component, OnInit, inject, signal } from "@angular/core";
+import { IconComponent } from "../../shared/icon/icon.component";
 import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms";
 import type { AjusteModo, EstadoRegla, TipoCambio } from "@erp/shared";
 import { AJUSTE_MODO, ESTADO_REGLA, TIPO_CAMBIO } from "@erp/shared";
@@ -9,7 +10,7 @@ import { ReglasCambioService } from "../../core/catalogo/reglas-cambio.service";
 
 @Component({
   selector: "app-config-reglas",
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, IconComponent],
   templateUrl: "./config-reglas.component.html",
 })
 export class ConfigReglasComponent implements OnInit {

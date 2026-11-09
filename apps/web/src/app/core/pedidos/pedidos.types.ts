@@ -37,7 +37,50 @@ export interface ResultadoCotizacion {
   vehiculo: Vehiculo;
   costoEnvio: number;
   total: number;
-  opciones: { flores: OpcionCotizacion[]; papeles: OpcionCotizacion[]; extras: OpcionExtra[] };
+  /** La selección completa cabe en el stock disponible. */
+  disponible: boolean;
+  faltantes: { insumoId: string; nombre: string; necesario: number; disponible: number }[];
+  /** Al crear el pedido se abrirá una consulta a Producción. */
+  requiereConsulta: boolean;
+  consultas: string[];
+  opciones: {
+    tallas: OpcionTalla[];
+    flores: OpcionCotizacion[];
+    papeles: OpcionCotizacion[];
+    extras: OpcionExtra[];
+  };
+}
+
+/** Cotización del pedido completo (POST /cotizaciones/pedido). */
+export interface ResultadoCotizacionPedido {
+  items: {
+    productoId: string;
+    producto: string;
+    talla: Talla;
+    cantidad: number;
+    flor: string;
+    papel: string | null;
+    extras: string[];
+    precioUnitario: number;
+    subtotal: number;
+    ajustes: AjusteAplicado[];
+    vehiculo: Vehiculo;
+    consultas: string[];
+  }[];
+  subtotalProductos: number;
+  vehiculo: Vehiculo;
+  costoEnvio: number;
+  total: number;
+  disponible: boolean;
+  faltantes: { insumoId: string; nombre: string; necesario: number; disponible: number }[];
+  requiereConsulta: boolean;
+}
+
+export interface OpcionTalla {
+  talla: Talla;
+  precioBase: number;
+  disponible: boolean;
+  motivo?: string;
 }
 
 export interface Pedido {
@@ -73,6 +116,12 @@ export interface PedidoItem {
   papelId: string | null;
   precioUnitario: string;
   subtotal: string;
+  producto: string;
+  talla: Talla;
+  flor: string | null;
+  papel: string | null;
+  extras: string[];
+  cambios: { descripcion: string; ajuste: string }[];
 }
 
 export interface PedidoDetalle extends Pedido {
@@ -102,20 +151,46 @@ export interface StockBajoItem {
   id: string;
   codigo: string;
   nombre: string;
+  unidadBase: string;
   stockActual: string;
   stockMinimo: string;
 }
 
+export interface PedidoDelDia {
+  id: string;
+  numero: number;
+  estado: EstadoPedido;
+  canal: Canal;
+  fechaEntrega: string;
+  horaEntrega: string;
+  nombreReceptor: string;
+  cliente: string;
+  distrito: string;
+  vehiculo: Vehiculo;
+  total: string;
+  totalPagado: string;
+}
+
 export interface DashboardHoy {
   fecha: string;
+  /** Día contra el que se comparan las variaciones (mismo día de la semana pasada). */
+  comparadoCon: string;
   kpis: {
     pedidosHoy: number;
-    totalHoy: number;
-    conteoPorEstado: Record<string, number>;
+    pedidosVariacion: number | null;
+    ventasHoy: number;
+    ventasVariacion: number | null;
+    ticketPromedio: number;
+    ticketVariacion: number | null;
+    porCobrar: number;
+    pedidosConSaldo: number;
+    conteoPorEstado: Partial<Record<string, number>>;
     consultasAbiertas: number;
     stockBajo: number;
   };
-  pedidosPorHora: Pedido[];
-  consultasAbiertas: Consulta[];
+  serieVentas: { fecha: string; ventas: number; pedidos: number }[];
+  pedidosPorHora: { hora: number; pedidos: number }[];
+  pedidos: PedidoDelDia[];
+  consultasAbiertas: { id: string; pedidoId: string; numero: number; descripcion: string; createdAt: string }[];
   stockBajo: StockBajoItem[];
 }

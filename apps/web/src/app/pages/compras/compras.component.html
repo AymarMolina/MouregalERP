@@ -1,0 +1,333 @@
+<div class="p-6">
+  <div class="page-header">
+    <div>
+      <h1 class="panel-title">Compras</h1>
+      <p class="panel-subtitle">Lista sugerida, órdenes de compra y recepción en unidad base.</p>
+    </div>
+  </div>
+
+  <nav class="mb-5 flex gap-1 border-b border-line">
+    @for (t of [{ id: "sugeridas", label: "Compras sugeridas" }, { id: "ordenes", label: "Órdenes de compra" }, { id: "proveedores", label: "Proveedores" }]; track t.id) {
+      <button
+        type="button"
+        (click)="cambiarPestana($any(t.id))"
+        class="-mb-px border-b-2 px-4 py-2 font-medium transition"
+        [class.border-accent]="pestana() === t.id"
+        [class.text-text]="pestana() === t.id"
+        [class.border-transparent]="pestana() !== t.id"
+        [class.text-muted]="pestana() !== t.id"
+      >
+        {{ t.label }}
+      </button>
+    }
+  </nav>
+
+  @if (error()) {
+    <p class="mb-4 rounded-md bg-accent-soft px-3 py-2 text-accent-2">{{ error() }}</p>
+  }
+  @if (aviso()) {
+    <p class="mb-4 rounded-md bg-estado-listo-bg px-3 py-2 text-estado-listo-fg">{{ aviso() }}</p>
+  }
+
+  <!-- ===================== SUGERIDAS ===================== -->
+  @if (pestana() === "sugeridas") {
+    <div class="card mb-4 flex flex-wrap items-end gap-4 p-4">
+      <div>
+        <label class="field-label">Demanda de los próximos</label>
+        <div class="flex items-center gap-2">
+          <input type="number" min="0" max="60" class="input w-24" [ngModel]="dias()" (ngModelChange)="dias.set(+$event)" />
+          <span class="text-muted">días</span>
+          <button type="button" class="btn-secondary" (click)="cargarSugeridas()">Recalcular</button>
+        </div>
+      </div>
+      <label class="flex items-center gap-2 pb-2">
+        <input type="checkbox" class="checkbox" [ngModel]="soloAComprar()" (ngModelChange)="soloAComprar.set($event)" />
+        Solo insumos a comprar
+      </label>
+      <p class="max-w-md pb-1 text-muted">
+        Sugerido = mínimo + reservado + demanda estimada − stock. La demanda es el consumo promedio de los últimos 28 días.
+        Se descuenta lo ya pedido en órdenes abiertas.
+      </p>
+    </div>
+
+    <div class="table-wrap mb-4 overflow-x-auto">
+      @if (cargandoSugeridas()) {
+        <p class="p-4 text-muted">Calculando...</p>
+      } @else {
+        <table class="table">
+          <thead>
+            <tr>
+              <th class="w-8">
+                <input type="checkbox" class="checkbox" (change)="marcarTodas($any($event.target).checked)" title="Marcar todo lo sugerido" />
+              </th>
+              <th>Insumo</th>
+              <th class="text-right">Stock</th>
+              <th class="text-right">Mínimo</th>
+              <th class="text-right">Reservado</th>
+              <th class="text-right">Demanda</th>
+              <th class="text-right">En órdenes</th>
+              <th class="text-right">A comprar</th>
+              <th class="w-24">Paquetes</th>
+              <th class="w-24">Unid./paq.</th>
+              <th class="w-28">Costo total</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (f of filasVisibles(); track f.sugerida.insumoId) {
+              <tr [class.bg-accent-soft]="f.marcada">
+                <td><input type="checkbox" class="checkbox" [(ngModel)]="f.marcada" (ngModelChange)="refrescarFilas()" /></td>
+                <td>
+                  <div class="font-medium">{{ f.sugerida.nombre }}</div>
+                  <div class="text-muted">{{ f.sugerida.codigo }} · {{ f.sugerida.unidadBase }}</div>
+                </td>
+                <td class="text-right" [class.text-accent-2]="f.sugerida.stockActual < f.sugerida.stockMinimo">
+                  {{ cantidad(f.sugerida.stockActual) }}
+                </td>
+                <td class="text-right text-muted">{{ cantidad(f.sugerida.stockMinimo) }}</td>
+                <td class="text-right">{{ cantidad(f.sugerida.reservado) }}</td>
+                <td class="text-right">{{ cantidad(f.sugerida.demanda) }}</td>
+                <td class="text-right text-muted">{{ cantidad(f.sugerida.pendienteEnOrdenes) }}</td>
+                <td class="text-right font-semibold">{{ cantidad(f.sugerida.aComprar) }}</td>
+                <td><input type="number" min="0" step="any" class="input px-2 py-1 text-right" [(ngModel)]="f.paquetes" (ngModelChange)="refrescarFilas()" [disabled]="!f.marcada" /></td>
+                <td><input type="number" min="0" step="any" class="input px-2 py-1 text-right" [(ngModel)]="f.unidadesPorPaquete" (ngModelChange)="refrescarFilas()" [disabled]="!f.marcada" /></td>
+                <td><input type="number" min="0" step="0.01" class="input px-2 py-1 text-right" [(ngModel)]="f.costoTotal" (ngModelChange)="refrescarFilas()" [disabled]="!f.marcada" /></td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="11" class="py-10 text-center text-muted">No hay nada que comprar con estos parámetros. 🎉</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </div>
+
+    <div class="card flex flex-wrap items-end gap-4 p-4">
+      <div class="min-w-[14rem]">
+        <label class="field-label">Proveedor</label>
+        <select class="input" [ngModel]="proveedorParaOrden()" (ngModelChange)="proveedorParaOrden.set($event)">
+          <option value="">Seleccionar...</option>
+          @for (p of proveedoresActivos(); track p.id) {
+            <option [value]="p.id">{{ p.nombre }}</option>
+          }
+        </select>
+      </div>
+      <div class="pb-2 text-muted">
+        {{ marcadas().length }} insumo(s) · total {{ soles(totalOrden()) }}
+        @if (!proveedoresActivos().length) {
+          · <button type="button" class="btn-text" (click)="cambiarPestana('proveedores')">crea un proveedor primero</button>
+        }
+      </div>
+      <button
+        type="button"
+        class="btn-primary ml-auto"
+        [disabled]="!marcadas().length || !proveedorParaOrden() || trabajando()"
+        (click)="crearOrdenDesdeSugeridas()"
+      >
+        Crear orden en borrador
+      </button>
+    </div>
+  }
+
+  <!-- ===================== ÓRDENES ===================== -->
+  @if (pestana() === "ordenes") {
+    <div [class]="orden() ? 'grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]' : 'grid items-start gap-6'">
+      <div>
+        <div class="mb-3 flex items-center gap-3">
+          <select class="input w-auto" [ngModel]="filtroEstado()" (ngModelChange)="filtroEstado.set($event); cargarOrdenes()">
+            <option value="">Todos los estados</option>
+            @for (e of estadosOc; track e) {
+              <option [value]="e">{{ etiquetaOc[e] }}</option>
+            }
+          </select>
+        </div>
+        <div class="table-wrap overflow-x-auto">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Proveedor</th>
+                <th>Fecha</th>
+                <th>Estado</th>
+                <th class="text-right">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (o of ordenes(); track o.id) {
+                <tr class="cursor-pointer" [class.bg-accent-soft]="orden()?.id === o.id" (click)="verOrden(o.id)">
+                  <td class="font-medium">#{{ o.numero }}</td>
+                  <td>
+                    <div>{{ o.proveedor }}</div>
+                    <div class="text-muted">{{ o.lineas }} línea(s)</div>
+                  </td>
+                  <td class="whitespace-nowrap">{{ o.fecha }}</td>
+                  <td><span [class]="'badge ' + claseOc[o.estado]">{{ etiquetaOc[o.estado] }}</span></td>
+                  <td class="whitespace-nowrap text-right">{{ soles(o.total) }}</td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="5" class="py-10 text-center text-muted">Aún no hay órdenes. Créalas desde la lista sugerida.</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      @if (orden(); as o) {
+        <section class="card space-y-5">
+          <header class="flex flex-wrap items-start justify-between gap-3 border-b border-line pb-3">
+            <div>
+              <h2 class="panel-title">Orden #{{ o.numero }} · {{ o.proveedor }}</h2>
+              <p class="panel-subtitle">{{ o.fecha }} · total {{ soles(o.total) }}</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <span [class]="'badge ' + claseOc[o.estado]">{{ etiquetaOc[o.estado] }}</span>
+              @if (o.estado === "borrador") {
+                <button type="button" class="btn-primary" [disabled]="trabajando()" (click)="cambiarEstadoOrden('enviada')">Marcar enviada</button>
+              }
+              @if (o.estado === "borrador" || o.estado === "enviada") {
+                <button type="button" class="btn-secondary" [disabled]="trabajando()" (click)="cambiarEstadoOrden('anulada')">Anular</button>
+              }
+              <button type="button" class="btn-action" (click)="orden.set(null)" title="Cerrar" aria-label="Cerrar"><app-icon name="cerrar" [size]="18" /></button>
+            </div>
+          </header>
+
+          @if (o.estado === "enviada" || o.estado === "recibida_parcial") {
+            <div>
+              <h3 class="mb-2 font-medium">Registrar recepción</h3>
+              <p class="mb-3 text-muted">Ingresa lo que llegó: paquetes × unidades por paquete se suma al stock en unidad base.</p>
+            </div>
+          }
+
+          <div class="overflow-x-auto">
+            <table class="table">
+              <thead>
+                <tr>
+                  @if (o.estado === "enviada" || o.estado === "recibida_parcial") {
+                    <th class="w-8"></th>
+                  }
+                  <th>Insumo</th>
+                  <th class="text-right">Pedido</th>
+                  <th class="text-right">Recibido</th>
+                  @if (o.estado === "enviada" || o.estado === "recibida_parcial") {
+                    <th class="w-24">Paq.</th>
+                    <th class="w-28">Unid./paq.</th>
+                    <th class="w-32">Costo (S/)</th>
+                    <th class="text-right">Suma</th>
+                  } @else {
+                    <th class="text-right">Costo unit.</th>
+                    <th class="text-right">Costo total</th>
+                  }
+                </tr>
+              </thead>
+              <tbody>
+                @for (l of o.lineas; track l.id; let i = $index) {
+                  @let f = filasRecepcion()[i];
+                  <tr>
+                    @if (o.estado === "enviada" || o.estado === "recibida_parcial") {
+                      <td>
+                        @if (f.pendiente > 0) {
+                          <input type="checkbox" class="checkbox" [(ngModel)]="f.marcada" />
+                        }
+                      </td>
+                    }
+                    <td>
+                      <div class="font-medium">{{ l.nombre }}</div>
+                      <div class="text-muted">{{ l.codigo }} · {{ cantidad(l.paquetes) }} × {{ cantidad(l.unidadesPorPaquete) }}</div>
+                    </td>
+                    <td class="text-right">{{ cantidad(l.cantidadBase) }} {{ l.unidadBase }}</td>
+                    <td class="text-right" [class.text-estado-listo-fg]="+l.cantidadRecibida >= +l.cantidadBase">
+                      {{ cantidad(l.cantidadRecibida) }}
+                    </td>
+                    @if ((o.estado === "enviada" || o.estado === "recibida_parcial") && f.pendiente <= 0) {
+                      <td colspan="4" class="text-right"><span class="badge badge-success">Completo</span></td>
+                    } @else if (o.estado === "enviada" || o.estado === "recibida_parcial") {
+                      <td><input type="number" min="0" step="any" class="input px-2 py-1 text-right" [(ngModel)]="f.paquetes" [disabled]="!f.marcada" /></td>
+                      <td><input type="number" min="0" step="any" class="input px-2 py-1 text-right" [(ngModel)]="f.unidadesPorPaquete" [disabled]="!f.marcada" /></td>
+                      <td><input type="number" min="0" step="0.01" class="input px-2 py-1 text-right" [(ngModel)]="f.costoTotal" [disabled]="!f.marcada" /></td>
+                      <td class="whitespace-nowrap text-right font-medium">+{{ cantidad(cantidadRecibir(f)) }}</td>
+                    } @else {
+                      <td class="text-right">{{ soles(l.costoUnitario) }}</td>
+                      <td class="text-right">{{ soles(l.costoTotal) }}</td>
+                    }
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          @if (o.estado === "enviada" || o.estado === "recibida_parcial") {
+            <div class="flex flex-wrap items-end gap-3 border-t border-line pt-4">
+              <div class="flex-1">
+                <label class="field-label">Nota (guía, factura...)</label>
+                <input class="input" [ngModel]="notaRecepcion()" (ngModelChange)="notaRecepcion.set($event)" />
+              </div>
+              <button type="button" class="btn-primary" [disabled]="trabajando()" (click)="recibir()">Registrar recepción</button>
+            </div>
+          }
+        </section>
+      }
+    </div>
+  }
+
+  <!-- ===================== PROVEEDORES ===================== -->
+  @if (pestana() === "proveedores") {
+    <form [formGroup]="proveedorForm" (ngSubmit)="crearProveedor()" class="card mb-4 grid gap-4 p-4 sm:grid-cols-4 sm:items-end">
+      <div class="sm:col-span-2">
+        <label class="field-label">Nombre</label>
+        <input formControlName="nombre" class="input" />
+      </div>
+      <div>
+        <label class="field-label">RUC</label>
+        <input formControlName="ruc" class="input" placeholder="11 dígitos" />
+      </div>
+      <div>
+        <label class="field-label">Teléfono</label>
+        <input formControlName="telefono" class="input" />
+      </div>
+      <div class="sm:col-span-4 flex justify-end">
+        <button type="submit" class="btn-primary" [disabled]="proveedorForm.invalid || trabajando()">+ Agregar proveedor</button>
+      </div>
+    </form>
+
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>RUC</th>
+            <th>Teléfono</th>
+            <th>Estado</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (p of proveedores(); track p.id) {
+            <tr [class.opacity-60]="!p.activo">
+              <td class="font-medium">{{ p.nombre }}</td>
+              <td>{{ p.ruc ?? "—" }}</td>
+              <td>{{ p.telefono ?? "—" }}</td>
+              <td>
+                <span class="badge" [class.badge-success]="p.activo" [class.badge-neutral]="!p.activo">{{ p.activo ? "Activo" : "Inactivo" }}</span>
+              </td>
+              <td>
+                <div class="acciones">
+                  @if (p.activo) {
+                    <button type="button" class="btn-action btn-action-danger" (click)="alternarProveedor(p)" [disabled]="trabajando()" title="Desactivar proveedor" aria-label="Desactivar proveedor"><app-icon name="eliminar" [size]="16" /></button>
+                  } @else {
+                    <button type="button" class="btn-action btn-action-ok" (click)="alternarProveedor(p)" [disabled]="trabajando()" title="Reactivar proveedor" aria-label="Reactivar proveedor"><app-icon name="restaurar" [size]="16" /></button>
+                  }
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5" class="py-10 text-center text-muted">Sin proveedores todavía.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

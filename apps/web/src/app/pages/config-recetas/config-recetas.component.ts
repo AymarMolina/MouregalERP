@@ -1,4 +1,5 @@
 import { Component, OnInit, computed, inject, signal } from "@angular/core";
+import { IconComponent } from "../../shared/icon/icon.component";
 import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
 import type { RecetaLineaInput, RolRecetaLinea, Talla } from "@erp/shared";
 import { ROL_RECETA_LINEA, TALLA } from "@erp/shared";
@@ -9,7 +10,7 @@ import { ProductosService } from "../../core/catalogo/productos.service";
 
 @Component({
   selector: "app-config-recetas",
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, IconComponent],
   templateUrl: "./config-recetas.component.html",
 })
 export class ConfigRecetasComponent implements OnInit {

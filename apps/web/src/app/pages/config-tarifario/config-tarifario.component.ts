@@ -1,11 +1,12 @@
 import { Component, OnInit, inject, signal } from "@angular/core";
+import { IconComponent } from "../../shared/icon/icon.component";
 import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms";
 import type { Distrito } from "../../core/catalogo/catalogo.types";
 import { CostosVehiculoService, DistritosService } from "../../core/catalogo/distritos.service";
 
 @Component({
   selector: "app-config-tarifario",
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, IconComponent],
   templateUrl: "./config-tarifario.component.html",
 })
 export class ConfigTarifarioComponent implements OnInit {

@@ -18,6 +18,7 @@ export interface Insumo {
   stockActual: string;
   costoPromedio: string;
   esFlor: boolean;
+  esCaja: boolean;
   activo: boolean;
 }
 

@@ -1,0 +1,141 @@
+<div class="p-6">
+  <div class="page-header">
+    <div>
+      <h1 class="panel-title">Delivery</h1>
+      <p class="panel-subtitle">Despacho y entrega. Se actualiza solo cada 15 segundos.</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-3">
+      <label class="flex items-center gap-2 text-text">
+        <input type="checkbox" class="checkbox" [ngModel]="soloMios()" (ngModelChange)="soloMios.set($event)" />
+        Solo mis pedidos y sin asignar
+      </label>
+      <input
+        type="date"
+        class="input w-auto"
+        [ngModel]="fecha()"
+        (ngModelChange)="fecha.set($event); cargar(true)"
+        title="Fecha de los entregados que se muestran"
+      />
+      <button type="button" class="btn-secondary" (click)="cargar(true)">Actualizar</button>
+    </div>
+  </div>
+
+  @if (error()) {
+    <p class="mb-4 rounded-md bg-accent-soft px-3 py-2 text-accent-2">{{ error() }}</p>
+  }
+  @if (aviso()) {
+    <p class="mb-4 rounded-md bg-estado-listo-bg px-3 py-2 text-estado-listo-fg">{{ aviso() }}</p>
+  }
+
+  @if (loading()) {
+    <p class="text-muted">Cargando...</p>
+  }
+  @if (!loading() && tablero(); as t) {
+    @if (!t.permitirEntregaConSaldo) {
+      <p class="mb-4 text-muted">Los pedidos con saldo pendiente no se pueden marcar entregados hasta cobrarlo.</p>
+    }
+
+    <div class="grid gap-6 lg:grid-cols-3">
+      @for (col of columnas(); track col.titulo) {
+        <section>
+          <h2 class="mb-3 flex items-center gap-2 font-medium">
+            {{ col.titulo }}
+            <span class="badge badge-neutral">{{ col.pedidos.length }}</span>
+          </h2>
+
+          <div class="space-y-3">
+            @for (p of col.pedidos; track p.id) {
+              <article class="card space-y-3 p-4" [class.opacity-70]="p.estado === 'entregado'">
+                <header class="flex items-start justify-between gap-2">
+                  <div>
+                    <a [routerLink]="['/pedidos', p.id]" class="text-base font-semibold hover:underline">#{{ p.numero }}</a>
+                    <div class="tabular text-muted">{{ cuando(p.fechaEntrega, p.horaEntrega) }}</div>
+                  </div>
+                  <div class="flex flex-col items-end gap-1">
+                    <span class="badge" [class]="'badge ' + claseEstado[p.estado]">{{ etiquetaEstado[p.estado] }}</span>
+                    <span class="badge badge-neutral uppercase">{{ p.vehiculo }}</span>
+                  </div>
+                </header>
+
+                <div>
+                  <div class="font-medium">{{ p.distrito }}</div>
+                  <div>{{ p.direccion }}</div>
+                  @if (p.referencia) {
+                    <div class="text-muted">Ref.: {{ p.referencia }}</div>
+                  }
+                </div>
+
+                <div class="flex items-center justify-between rounded-md bg-bg px-3 py-2">
+                  <div>
+                    <div>{{ p.nombreReceptor }}</div>
+                    <div class="flex items-center gap-1 text-muted">
+                      <span class="tabular mr-1">{{ p.telefonoReceptor }}</span>
+                      <a [href]="'tel:' + p.telefonoReceptor" class="btn-action h-7 w-7" title="Llamar" aria-label="Llamar"><app-icon name="telefono" [size]="15" /></a>
+                      <a [href]="telefonoWhatsapp(p.telefonoReceptor)" target="_blank" rel="noopener" class="btn-action btn-action-ok h-7 w-7" title="Escribir por WhatsApp" aria-label="Escribir por WhatsApp"><app-icon name="whatsapp" [size]="15" /></a>
+                    </div>
+                  </div>
+                  @if (p.repartidor) {
+                    <div class="text-right text-muted">
+                      <div class="text-xs uppercase tracking-wide">Repartidor</div>
+                      <div class="text-text">{{ p.repartidor }}</div>
+                    </div>
+                  }
+                </div>
+
+                <div class="flex items-center justify-between">
+                  @if (p.saldo > 0) {
+                    <div>
+                      <span class="badge badge-warn">Saldo {{ soles(p.saldo) }}</span>
+                      @if (p.linkSaldo) {
+                        <button type="button" class="btn-action ml-1 h-7 w-7 align-middle" (click)="copiarLink(p.linkSaldo.url)" title="Copiar link del saldo" aria-label="Copiar link del saldo"><app-icon name="copiar" [size]="15" /></button>
+                      }
+                    </div>
+                  } @else {
+                    <span class="badge badge-success">Pagado</span>
+                  }
+                  <span class="text-muted">Total {{ soles(p.total) }}</span>
+                </div>
+
+                @if (p.estado === "listo") {
+                  <div class="flex flex-wrap items-center gap-2 border-t border-line pt-3">
+                    @if (!esRepartidor()) {
+                      <select
+                        class="input w-auto flex-1"
+                        [ngModel]="repartidorPorPedido()[p.id] ?? p.repartidorId ?? ''"
+                        (ngModelChange)="elegirRepartidor(p.id, $event)"
+                      >
+                        <option value="">Sin repartidor</option>
+                        @for (r of t.repartidores; track r.id) {
+                          <option [value]="r.id">{{ r.nombre }}</option>
+                        }
+                      </select>
+                    }
+                    <button type="button" class="btn-primary flex-1" [disabled]="trabajando() === p.id" (click)="despachar(p)">
+                      {{ trabajando() === p.id ? "Despachando..." : p.saldo > 0 && !p.linkSaldo ? "Enviar link y despachar" : "Despachar" }}
+                    </button>
+                  </div>
+                }
+
+                @if (p.estado === "en_camino" && puedeEntregar()) {
+                  <div class="border-t border-line pt-3">
+                    <button
+                      type="button"
+                      class="btn-primary w-full"
+                      [disabled]="trabajando() === p.id || (p.saldo > 0 && !t.permitirEntregaConSaldo)"
+                      (click)="entregar(p)"
+                      [title]="p.saldo > 0 && !t.permitirEntregaConSaldo ? 'Cobra el saldo antes de entregar' : ''"
+                    >
+                      {{ trabajando() === p.id ? "Guardando..." : "Marcar entregado" }}
+                    </button>
+                  </div>
+                }
+              </article>
+            } @empty {
+              <div class="card py-8 text-center text-muted">{{ col.vacio }}</div>
+            }
+          </div>
+        </section>
+      }
+    </div>
+  }
+</div>
