@@ -24,7 +24,7 @@
             >
               <div class="flex justify-between">
                 <span class="font-medium">#{{ p.numero }}</span>
-                <span class="text-muted">{{ p.horaEntrega }}</span>
+                <span class="tabular text-muted">{{ cuando(p.fechaEntrega, p.horaEntrega) }}</span>
               </div>
               <div class="text-muted">{{ p.nombreReceptor }}</div>
             </button>
@@ -48,7 +48,7 @@
             >
               <div class="flex justify-between">
                 <span class="font-medium">#{{ p.numero }}</span>
-                <span class="text-muted">{{ p.horaEntrega }}</span>
+                <span class="tabular text-muted">{{ cuando(p.fechaEntrega, p.horaEntrega) }}</span>
               </div>
               <div class="text-muted">{{ p.nombreReceptor }}</div>
             </button>
@@ -72,7 +72,7 @@
             >
               <div class="flex justify-between">
                 <span class="font-medium">#{{ p.numero }}</span>
-                <span class="text-muted">{{ p.horaEntrega }}</span>
+                <span class="tabular text-muted">{{ cuando(p.fechaEntrega, p.horaEntrega) }}</span>
               </div>
               <div class="text-muted">{{ p.nombreReceptor }}</div>
             </button>
@@ -88,10 +88,14 @@
         <div class="flex items-center justify-between border-b border-line pb-3">
           <div>
             <h2 class="panel-title text-base">Pedido #{{ pedido.numero }}</h2>
-            <p class="panel-subtitle">{{ pedido.horaEntrega }} · {{ pedido.nombreReceptor }}</p>
+            <p class="panel-subtitle">{{ cuando(pedido.fechaEntrega, pedido.horaEntrega) }} · {{ pedido.nombreReceptor }}</p>
           </div>
-          <button type="button" (click)="cerrar()" class="btn-icon">✕</button>
+          <button type="button" class="btn-action" (click)="cerrar()" title="Cerrar" aria-label="Cerrar"><app-icon name="cerrar" [size]="18" /></button>
         </div>
+
+        @if (error()) {
+          <p class="rounded-md bg-accent-soft px-3 py-2 text-accent-2">{{ error() }}</p>
+        }
 
         @if (pedido.dedicatoria) {
           <p class="rounded-md bg-sidebar px-3 py-2 italic">"{{ pedido.dedicatoria }}"</p>
@@ -174,7 +178,11 @@
         }
 
         @if (pedido.estado === "listo") {
-          <button type="button" (click)="pasarAEnCamino()" class="btn-primary">Pasar a en camino</button>
+          @if (puedeDespachar()) {
+            <button type="button" (click)="pasarAEnCamino()" class="btn-primary">Pasar a en camino</button>
+          } @else {
+            <p class="text-muted">Listo para despacho: lo despacha Delivery.</p>
+          }
         }
       </div>
     }

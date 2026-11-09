@@ -2,6 +2,8 @@ import { Component, inject, signal } from "@angular/core";
 import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms";
 import { Router } from "@angular/router";
 import { AuthService } from "../../core/auth/auth.service";
+import { rutaInicio } from "../../core/auth/inicio";
+import { mensajeError } from "../../core/http/errores";
 
 @Component({
   selector: "app-login",
@@ -27,9 +29,9 @@ export class LoginComponent {
     const { email, password } = this.form.getRawValue();
     try {
       await this.auth.login(email, password);
-      await this.router.navigateByUrl("/hoy");
-    } catch {
-      this.error.set("Credenciales inválidas");
+      await this.router.navigateByUrl(rutaInicio(this.auth.user()?.rol));
+    } catch (err) {
+      this.error.set(mensajeError(err, "Credenciales inválidas"));
     } finally {
       this.loading.set(false);
     }

@@ -1,18 +1,12 @@
+import { inject } from "@angular/core";
 import { Routes } from "@angular/router";
 import type { RolUsuario } from "@erp/shared";
 import { authGuard } from "./core/auth/auth.guard";
+import { AuthService } from "./core/auth/auth.service";
+import { rutaInicio } from "./core/auth/inicio";
 import { roleGuard } from "./core/auth/role.guard";
 import { ShellComponent } from "./layout/shell/shell.component";
-import { ConfigRecetasComponent } from "./pages/config-recetas/config-recetas.component";
-import { ConfigReglasComponent } from "./pages/config-reglas/config-reglas.component";
-import { ConfigTarifarioComponent } from "./pages/config-tarifario/config-tarifario.component";
-import { HoyComponent } from "./pages/hoy/hoy.component";
-import { InventarioComponent } from "./pages/inventario/inventario.component";
 import { LoginComponent } from "./pages/login/login.component";
-import { PedidoDetalleComponent } from "./pages/pedido-detalle/pedido-detalle.component";
-import { PedidoNuevoComponent } from "./pages/pedido-nuevo/pedido-nuevo.component";
-import { PlaceholderComponent } from "./pages/placeholder/placeholder.component";
-import { ProduccionComponent } from "./pages/produccion/produccion.component";
 
 const TODOS: RolUsuario[] = ["admin", "vendedora", "produccion", "almacen", "delivery"];
 
@@ -23,88 +17,92 @@ export const routes: Routes = [
     component: ShellComponent,
     canActivate: [authGuard],
     children: [
-      { path: "", redirectTo: "hoy", pathMatch: "full" },
+      {
+        path: "",
+        pathMatch: "full",
+        redirectTo: () => rutaInicio(inject(AuthService).user()?.rol),
+      },
       {
         path: "mapa",
-        component: PlaceholderComponent,
+        loadComponent: () => import("./pages/mapa/mapa.component").then((m) => m.MapaComponent),
         canActivate: [roleGuard],
-        data: { titulo: "Mapa del flujo", roles: TODOS },
+        data: { roles: TODOS },
       },
       {
         path: "hoy",
-        component: HoyComponent,
+        loadComponent: () => import("./pages/hoy/hoy.component").then((m) => m.HoyComponent),
         canActivate: [roleGuard],
         data: { roles: ["admin", "vendedora", "produccion"] },
       },
       {
         path: "pedidos/nuevo",
-        component: PedidoNuevoComponent,
+        loadComponent: () => import("./pages/pedido-nuevo/pedido-nuevo.component").then((m) => m.PedidoNuevoComponent),
         canActivate: [roleGuard],
         data: { roles: ["admin", "vendedora"] },
       },
       {
         path: "pedidos/:id",
-        component: PedidoDetalleComponent,
+        loadComponent: () => import("./pages/pedido-detalle/pedido-detalle.component").then((m) => m.PedidoDetalleComponent),
         canActivate: [roleGuard],
         data: { roles: ["admin", "vendedora", "produccion", "delivery"] },
       },
       {
         path: "produccion",
-        component: ProduccionComponent,
+        loadComponent: () => import("./pages/produccion/produccion.component").then((m) => m.ProduccionComponent),
         canActivate: [roleGuard],
         data: { roles: ["admin", "produccion"] },
       },
       {
         path: "delivery",
-        component: PlaceholderComponent,
+        loadComponent: () => import("./pages/delivery/delivery.component").then((m) => m.DeliveryComponent),
         canActivate: [roleGuard],
-        data: { titulo: "Delivery", roles: ["admin", "delivery", "vendedora"] },
+        data: { roles: ["admin", "delivery", "vendedora"] },
       },
       {
         path: "pagos",
-        component: PlaceholderComponent,
+        loadComponent: () => import("./pages/pagos/pagos.component").then((m) => m.PagosComponent),
         canActivate: [roleGuard],
-        data: { titulo: "Pagos", roles: ["admin", "vendedora"] },
+        data: { roles: ["admin", "vendedora"] },
       },
       {
         path: "inventario",
-        component: InventarioComponent,
+        loadComponent: () => import("./pages/inventario/inventario.component").then((m) => m.InventarioComponent),
         canActivate: [roleGuard],
         data: { roles: ["admin", "almacen"] },
       },
       {
         path: "compras",
-        component: PlaceholderComponent,
+        loadComponent: () => import("./pages/compras/compras.component").then((m) => m.ComprasComponent),
         canActivate: [roleGuard],
-        data: { titulo: "Compras", roles: ["admin", "almacen"] },
+        data: { roles: ["admin", "almacen"] },
       },
       {
         path: "config/recetas",
-        component: ConfigRecetasComponent,
+        loadComponent: () => import("./pages/config-recetas/config-recetas.component").then((m) => m.ConfigRecetasComponent),
         canActivate: [roleGuard],
         data: { roles: ["admin", "produccion", "almacen"] },
       },
       {
         path: "config/reglas",
-        component: ConfigReglasComponent,
+        loadComponent: () => import("./pages/config-reglas/config-reglas.component").then((m) => m.ConfigReglasComponent),
         canActivate: [roleGuard],
         data: { roles: ["admin"] },
       },
       {
         path: "config/tarifario",
-        component: ConfigTarifarioComponent,
+        loadComponent: () => import("./pages/config-tarifario/config-tarifario.component").then((m) => m.ConfigTarifarioComponent),
         canActivate: [roleGuard],
         data: { roles: ["admin"] },
       },
       {
         path: "reportes",
-        component: PlaceholderComponent,
+        loadComponent: () => import("./pages/reportes/reportes.component").then((m) => m.ReportesComponent),
         canActivate: [roleGuard],
-        data: { titulo: "Reportes", roles: ["admin"] },
+        data: { roles: ["admin"] },
       },
       {
         path: "config/integraciones",
-        component: PlaceholderComponent,
+        loadComponent: () => import("./pages/placeholder/placeholder.component").then((m) => m.PlaceholderComponent),
         canActivate: [roleGuard],
         data: { titulo: "Integraciones", roles: ["admin"] },
       },

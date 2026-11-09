@@ -32,6 +32,7 @@ export class InsumosService {
         unidadBase: input.unidadBase,
         stockMinimo: String(input.stockMinimo),
         esFlor: input.esFlor,
+        esCaja: input.esCaja,
       })
       .returning();
   }
@@ -49,6 +50,7 @@ export class InsumosService {
           stockMinimo: String(input.stockMinimo),
         }),
         ...(input.esFlor !== undefined && { esFlor: input.esFlor }),
+        ...(input.esCaja !== undefined && { esCaja: input.esCaja }),
         ...(input.activo !== undefined && { activo: input.activo }),
         updatedAt: new Date(),
       })

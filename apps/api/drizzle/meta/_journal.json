@@ -8,6 +8,13 @@
       "when": 1793999450300,
       "tag": "0000_giant_amazoness",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1794192715710,
+      "tag": "0001_insumo_caja_token_version",
+      "breakpoints": true
     }
   ]
 }

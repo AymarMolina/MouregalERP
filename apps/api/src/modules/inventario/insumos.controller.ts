@@ -6,6 +6,7 @@ import {
   Patch,
   Post,
   Query,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { insumoInputSchema } from '@erp/shared';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -33,14 +34,14 @@ export class InsumosController {
 
   @Roles('admin', 'almacen')
   @Patch(':id')
-  update(@Param('id') id: string, @Body() body: unknown) {
+  update(@Param('id', ParseUUIDPipe) id: string, @Body() body: unknown) {
     return this.insumos.update(id, insumoInputSchema.partial().parse(body));
   }
 
   @Roles('admin', 'almacen', 'produccion')
   @Get(':id/kardex')
   kardexDe(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Query('desde') desde?: string,
     @Query('hasta') hasta?: string,
   ) {

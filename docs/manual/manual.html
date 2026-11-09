@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Manual de usuario · ERP Mouregal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A4; margin: 18mm 16mm 20mm 16mm; }
+  @page :first { margin: 0; }
+  * { box-sizing: border-box; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { margin: 0; font-family: "Inter", system-ui, sans-serif; font-size: 10.5pt; line-height: 1.55; color: #1f2329; font-feature-settings: "cv11", "ss01"; }
+  h1, h2, h3 { letter-spacing: -0.015em; color: #1f2329; }
+  h1 { font-size: 22pt; font-weight: 700; margin: 0 0 4mm; }
+  h2 { font-size: 15pt; font-weight: 600; margin: 9mm 0 3mm; padding-bottom: 2mm; border-bottom: 1px solid #eceef1; }
+  h2, h3 { break-after: avoid; page-break-after: avoid; }
+  h3 { font-size: 11.5pt; font-weight: 600; margin: 6mm 0 2mm; }
+  p { margin: 0 0 3mm; }
+  ul, ol { margin: 0 0 3mm; padding-left: 6mm; }
+  li { margin-bottom: 1.2mm; }
+  strong { font-weight: 600; }
+  .muted { color: #6b7280; }
+  .capitulo { break-before: page; }
+  .no-break { break-inside: avoid; }
+
+  /* Portada */
+  .portada { height: 297mm; display: flex; flex-direction: column; background: #1e2229; color: #fff; padding: 28mm 22mm; }
+  .portada .marca { display: flex; align-items: center; gap: 5mm; }
+  .portada .marca .logo { width: 22mm; height: 22mm; border-radius: 5mm; background: #fff; display: flex; align-items: center; justify-content: center; }
+  .portada .marca .logo img { width: 16mm; height: 16mm; }
+  .portada .marca div { font-size: 16pt; font-weight: 600; }
+  .portada .marca small { display: block; font-size: 10pt; font-weight: 400; color: #c3c8d0; }
+  .portada .titulo { margin-top: auto; }
+  .portada .titulo .kicker { display: inline-block; background: #e9b824; color: #1f2329; font-weight: 600; font-size: 9pt; padding: 1.5mm 4mm; border-radius: 10mm; margin-bottom: 6mm; }
+  .portada .titulo h1 { color: #fff; font-size: 34pt; line-height: 1.1; margin-bottom: 5mm; }
+  .portada .titulo p { color: #c3c8d0; font-size: 12pt; max-width: 130mm; }
+  .portada .pie { margin-top: 20mm; padding-top: 6mm; border-top: 1px solid #2c313a; color: #7d848f; font-size: 9pt; display: flex; justify-content: space-between; }
+
+  /* Índice */
+  .indice ol { list-style: none; padding: 0; counter-reset: cap; }
+  .indice li { display: flex; align-items: baseline; gap: 3mm; padding: 2.2mm 0; border-bottom: 1px solid #f1f2f4; margin: 0; }
+  .indice li::before { counter-increment: cap; content: counter(cap, decimal-leading-zero); font-weight: 600; color: #b7791f; width: 8mm; font-variant-numeric: tabular-nums; }
+  .indice li span { color: #6b7280; margin-left: auto; font-size: 9.5pt; }
+
+  /* Capturas */
+  figure { margin: 4mm 0 5mm; break-inside: avoid; }
+  figure img { width: 100%; display: block; border-radius: 3mm; box-shadow: 0 1mm 4mm -1mm rgba(16,24,40,.18); border: 1px solid #eceef1; }
+  figcaption { font-size: 8.5pt; color: #6b7280; margin-top: 2mm; }
+  figure img { max-height: 118mm; object-fit: cover; object-position: top left; }
+  figure.recorte img { max-height: 105mm; }
+
+  /* Bloques */
+  .nota, .ojo { border-radius: 2.5mm; padding: 3mm 4mm; margin: 3mm 0 4mm; break-inside: avoid; font-size: 10pt; }
+  .nota { background: #fff3c4; }
+  .ojo { background: #f3e3e3; color: #5b2a2a; }
+  .nota b, .ojo b { font-weight: 600; }
+  .pasos { counter-reset: paso; list-style: none; padding: 0; }
+  .pasos > li { position: relative; padding-left: 9mm; margin-bottom: 2.5mm; }
+  .pasos > li::before { counter-increment: paso; content: counter(paso); position: absolute; left: 0; top: 0.2mm; width: 6mm; height: 6mm; border-radius: 50%; background: #1e2229; color: #fff; font-size: 8.5pt; font-weight: 600; display: flex; align-items: center; justify-content: center; }
+  table { width: 100%; border-collapse: collapse; margin: 3mm 0 5mm; font-size: 9.5pt; break-inside: avoid; font-variant-numeric: tabular-nums; }
+  th { text-align: left; font-weight: 500; color: #6b7280; font-size: 8.5pt; padding: 2mm 3mm; border-bottom: 1px solid #eceef1; }
+  td { padding: 2.2mm 3mm; border-bottom: 1px solid #f1f2f4; vertical-align: top; }
+  .badge { display: inline-block; border-radius: 10mm; padding: 0.4mm 2.5mm; font-size: 8.5pt; font-weight: 500; white-space: nowrap; }
+  .e-pendiente { background: #ece7dd; color: #5d5848; }
+  .e-armado { background: #f6e2d5; color: #8f4a2a; }
+  .e-listo { background: #dfeadb; color: #2f5a35; }
+  .e-camino { background: #dde7f3; color: #2c5585; }
+  .e-entregado { background: #ecebe6; color: #8a877c; }
+  .e-cancelado { background: #f3e3e3; color: #8a3b3b; }
+  .flujo { display: flex; flex-wrap: wrap; align-items: center; gap: 2mm; margin: 3mm 0 4mm; }
+  .flujo .flecha { color: #9ca3af; }
+  .dos { display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; }
+  .ico { width: 3.6mm; height: 3.6mm; vertical-align: -0.6mm; color: #1f2329; }
+  .iconos td:first-child { width: 10mm; text-align: center; }
+  kbd, code { font-family: ui-monospace, Consolas, monospace; font-size: 9pt; background: #f1f2f4; border-radius: 1mm; padding: 0.3mm 1.5mm; }
+</style>
+</head>
+<body>
+
+<!-- ===================== PORTADA ===================== -->
+<section class="portada">
+  <div class="marca">
+    <span class="logo"><img src="logo.png" alt=""></span>
+    <div>Mouregal<small>ERP Florería</small></div>
+  </div>
+  <div class="titulo">
+    <span class="kicker">Manual de usuario</span>
+    <h1>Cómo usar el ERP<br>día a día</h1>
+    <p>Del pedido a la entrega: ventas, producción, despacho, pagos, inventario, compras y reportes, explicado por rol y paso a paso.</p>
+  </div>
+  <div class="pie"><span>Versión 1.0 · Fases 1–5</span><span>Noviembre 2026</span></div>
+</section>
+
+<!-- ===================== ÍNDICE ===================== -->
+<section class="capitulo indice">
+  <h1>Contenido</h1>
+  <ol>
+    <li>Antes de empezar: roles e ingreso <span>Todos</span></li>
+    <li>Mapa del flujo y navegación <span>Todos</span></li>
+    <li>Hoy: el resumen del día <span>Admin · Vendedora · Producción</span></li>
+    <li>Registrar un pedido nuevo <span>Admin · Vendedora</span></li>
+    <li>Detalle del pedido y cancelaciones <span>Admin · Vendedora · Producción · Delivery</span></li>
+    <li>Producción: armar y confirmar consumo <span>Admin · Producción</span></li>
+    <li>Delivery: despachar y entregar <span>Admin · Delivery · Vendedora</span></li>
+    <li>Pagos y saldos <span>Admin · Vendedora</span></li>
+    <li>Inventario y Kardex <span>Admin · Almacén</span></li>
+    <li>Compras: sugeridas, órdenes y recepción <span>Admin · Almacén</span></li>
+    <li>Configuración: recetas, reglas y tarifario <span>Admin</span></li>
+    <li>Reportes <span>Admin</span></li>
+    <li>Preguntas frecuentes y glosario <span>Todos</span></li>
+  </ol>
+  <div class="nota" style="margin-top:8mm"><b>Cómo leer este manual.</b> Cada capítulo indica qué roles lo usan. Las capturas muestran datos de ejemplo; en tu sistema verás tus propios pedidos y productos.</div>
+</section>
+
+<!-- ===================== 1. ROLES E INGRESO ===================== -->
+<section class="capitulo">
+  <h1>1. Antes de empezar</h1>
+  <p>El ERP pone el pedido en el centro: <strong>se escribe una sola vez</strong> y de ahí salen el precio, la comanda para producción, el consumo de inventario, el despacho y el cobro. Nadie vuelve a copiar el pedido a otra hoja.</p>
+
+  <h2>Roles y accesos</h2>
+  <p>Cada persona entra con su usuario y ve solo las pantallas de su rol. Al ingresar, el sistema abre directamente su pantalla de trabajo.</p>
+  <table>
+    <tr><th>Rol</th><th>Qué hace</th><th>Pantalla de inicio</th></tr>
+    <tr><td><strong>Administrador</strong></td><td>Todo, incluida la configuración (recetas, reglas, tarifas) y los reportes.</td><td>Hoy</td></tr>
+    <tr><td><strong>Vendedora</strong></td><td>Crea pedidos, ve el día, gestiona pagos y saldos, puede despachar.</td><td>Hoy</td></tr>
+    <tr><td><strong>Producción</strong></td><td>Tablero de armado, asigna encargada, responde consultas, confirma lo usado. Ve las recetas.</td><td>Producción</td></tr>
+    <tr><td><strong>Almacén</strong></td><td>Inventario, Kardex, compras y recepción de mercadería. Ve las recetas.</td><td>Inventario</td></tr>
+    <tr><td><strong>Delivery</strong></td><td>Tablero de despacho: despacha y marca entregado.</td><td>Delivery</td></tr>
+  </table>
+
+  <h2>Ingresar al sistema</h2>
+  <div class="dos">
+    <div>
+      <ol class="pasos">
+        <li>Abre el ERP en el navegador (Chrome o Edge, en computadora o tablet).</li>
+        <li>Escribe tu <strong>correo</strong> y tu <strong>contraseña</strong> y pulsa <strong>Ingresar</strong>.</li>
+        <li>Se abre tu pantalla de inicio. La sesión se mantiene sola mientras trabajas.</li>
+      </ol>
+      <div class="ojo"><b>Seguridad.</b> Tras <b>5 intentos fallidos</b> el ingreso se bloquea por 15 minutos. Si olvidaste tu contraseña, pídele al administrador que la restablezca.</div>
+      <p><strong>Cerrar sesión:</strong> botón <strong>⟵]</strong> junto a tu nombre, abajo en el menú. Cierra la sesión en todos tus dispositivos.</p>
+    </div>
+    <figure><img src="img/c-01-login.png" alt=""><figcaption>Pantalla de ingreso.</figcaption></figure>
+  </div>
+</section>
+
+<!-- ===================== 2. MAPA Y NAVEGACIÓN ===================== -->
+<section class="capitulo">
+  <h1>2. Mapa del flujo y navegación</h1>
+  <p>El menú oscuro de la izquierda agrupa las pantallas por etapa del negocio. La opción en amarillo es donde estás; arriba, la barra muestra la sección y la pantalla actual.</p>
+  <p>La pantalla <strong>Mapa del flujo</strong> resume las 7 partes del proceso y lleva a cada módulo. Si un paso aparece atenuado, tu rol no tiene acceso a esa etapa.</p>
+  <figure><img src="img/c-02-mapa.png" alt=""><figcaption>Mapa del flujo: las 7 partes del proceso con acceso directo a cada módulo.</figcaption></figure>
+
+  <h2>El recorrido de un pedido</h2>
+  <div class="flujo">
+    <span class="badge e-pendiente">Pendiente</span><span class="flecha">→</span>
+    <span class="badge e-armado">En armado</span><span class="flecha">→</span>
+    <span class="badge e-listo">Listo</span><span class="flecha">→</span>
+    <span class="badge e-camino">En camino</span><span class="flecha">→</span>
+    <span class="badge e-entregado">Entregado</span>
+  </div>
+  <table>
+    <tr><th>Paso</th><th>Quién</th><th>Condición</th></tr>
+    <tr><td>Pendiente → En armado</td><td>Producción / Admin</td><td>Tener encargada asignada y ninguna consulta abierta.</td></tr>
+    <tr><td>En armado → Listo</td><td>Producción / Admin</td><td>Se pasa solo al <strong>confirmar el consumo</strong>.</td></tr>
+    <tr><td>Listo → En camino</td><td>Delivery / Vendedora / Admin</td><td>Si hay saldo, primero se genera y envía el link de pago.</td></tr>
+    <tr><td>En camino → Entregado</td><td>Delivery / Admin</td><td>Con saldo pendiente no se puede, salvo que el administrador lo habilite.</td></tr>
+    <tr><td>Cualquiera → <span class="badge e-cancelado">Cancelado</span></td><td>Vendedora (antes de armar) / Admin</td><td>Lo ya consumido no vuelve al stock: cuenta como merma.</td></tr>
+  </table>
+  <p class="muted">Cada cambio de estado queda en el historial del pedido con fecha, hora y usuario, y se avisa al cliente.</p>
+
+  <h2>Íconos de acción</h2>
+  <p>Las acciones de las tablas y paneles son íconos. Al pasar el mouse sobre uno aparece su nombre.</p>
+  <table class="iconos">
+    <tr><td><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L18.5 9.5a2.12 2.12 0 0 0-3-3L5 17v3z"/><path d="M13.5 6.5l3 3"/></svg></td><td><strong>Editar</strong> el registro (insumo, producto, distrito).</td><td><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4"/><path d="M3 4v4.5h4.5"/><path d="M12 7.5V12l3 2"/></svg></td><td><strong>Kardex</strong>: movimientos del insumo.</td></tr>
+    <tr><td><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M6 7l1 13h10l1-13"/><path d="M9 7V4h6v3"/></svg></td><td><strong>Desactivar o quitar</strong> (producto, regla, distrito, proveedor, línea de receta).</td><td><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4"/><path d="M3 4v4.5h4.5"/></svg></td><td><strong>Reactivar</strong> un registro desactivado.</td></tr>
+    <tr><td><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></td><td><strong>Guardar</strong> la fila que estás editando.</td><td><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12"/><path d="M18 6 6 18"/></svg></td><td><strong>Cancelar</strong> la edición o <strong>cerrar</strong> un panel.</td></tr>
+    <tr><td><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z"/><path d="M8 12.5l2.8 2.8L16.5 9.5"/></svg></td><td><strong>Confirmar</strong> un pago recibido.</td><td><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z"/><path d="M5.7 5.7l12.6 12.6"/></svg></td><td><strong>Anular</strong> un cobro pendiente.</td></tr>
+    <tr><td><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 9h11v11H9z"/><path d="M5 15H4V4h11v1"/></svg></td><td><strong>Copiar</strong> el link de pago.</td><td><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h3.5l2 5-2.5 1.5a11 11 0 0 0 5.5 5.5l1.5-2.5 5 2V19a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 11.5a8.5 8.5 0 0 1-12.6 7.4L3.5 20l1.2-4.2a8.5 8.5 0 1 1 15.8-4.3z"/><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5"/></svg></td><td><strong>Llamar</strong> o escribir por <strong>WhatsApp</strong> a quien recibe.</td></tr>
+  </table>
+</section>
+
+<!-- ===================== 3. HOY ===================== -->
+<section class="capitulo">
+  <h1>3. Hoy: el resumen del día</h1>
+  <p class="muted">Admin · Vendedora · Producción</p>
+  <p>Es el tablero de control. Se <strong>actualiza solo cada 15 segundos</strong>: puedes dejarlo abierto en la computadora del mostrador.</p>
+  <figure><img src="img/c-03-hoy.png" alt=""><figcaption>Hoy: indicadores, ventas de 14 días y estado de los pedidos del día.</figcaption></figure>
+
+  <h3>Qué muestra</h3>
+  <ul>
+    <li><strong>Indicadores (arriba):</strong> pedidos del día, ventas del día, ticket promedio y saldo por cobrar. La flecha verde o roja compara con <strong>el mismo día de la semana pasada</strong> (un sábado contra el sábado anterior).</li>
+    <li><strong>Ventas · últimos 14 días:</strong> pasa el mouse sobre la curva para ver el monto y los pedidos de cada día.</li>
+    <li><strong>Pedidos de hoy por estado:</strong> cuántos hay en cada etapa.</li>
+    <li><strong>Pedidos del día:</strong> busca por número, cliente, receptor o distrito y filtra por estado con las píldoras. Pulsa el número del pedido para abrirlo.</li>
+    <li><strong>Entregas por hora:</strong> carga de trabajo del día según la hora de entrega.</li>
+    <li><strong>Requiere atención:</strong> consultas a producción sin responder e insumos por debajo del stock mínimo.</li>
+  </ul>
+</section>
+
+<!-- ===================== 4. NUEVO PEDIDO ===================== -->
+<section class="capitulo">
+  <h1>4. Registrar un pedido nuevo</h1>
+  <p class="muted">Admin · Vendedora</p>
+  <p>El precio, el vehículo de envío y la disponibilidad los calcula el sistema; no hace falta sumar nada a mano. Un pedido puede tener varios productos.</p>
+  <figure class="recorte"><img src="img/c-04-nuevo-pedido.png" alt=""><figcaption>Nuevo pedido: configuración del producto y resumen a la derecha.</figcaption></figure>
+
+  <ol class="pasos">
+    <li><strong>Canal y distrito.</strong> Elige el canal (vendedora, WhatsApp, Shopify) y el distrito de entrega. El distrito define la tarifa de envío.</li>
+    <li><strong>Producto.</strong> Elige producto, <strong>talla</strong> y cantidad. Las tallas sin stock aparecen marcadas “sin stock”.</li>
+    <li><strong>Flor, papel y extras.</strong> Toca una opción para cambiarla. Junto a cada una ves cuánto suma o resta. Las opciones <strong>atenuadas</strong> no tienen insumos suficientes y no se pueden elegir.</li>
+    <li><strong>Pedido especial (opcional).</strong> Si el cliente pide algo que no está en la lista (“lazo dorado”, “tonos pastel”), escríbelo aquí: se abre una <strong>consulta a Producción</strong>.</li>
+    <li>Pulsa <strong>+ Agregar al pedido</strong>. El producto pasa al resumen de la derecha. Repite para agregar otro.</li>
+    <li><strong>Entrega y cliente.</strong> Completa cliente, fecha y hora, dirección, quién recibe, dedicatoria y el <strong>% de adelanto</strong>.</li>
+    <li>Revisa el resumen (productos, envío, total, adelanto y saldo); quita un producto con <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M6 7l1 13h10l1-13"/><path d="M9 7V4h6v3"/></svg> si hace falta y pulsa <strong>Confirmar pedido</strong>.</li>
+  </ol>
+
+  <div class="nota"><b>Moto o carro.</b> El sistema elige <b>carro</b> si algún producto es talla L, lleva caja o un extra que exige carro (como la caja redonda). Si no, va en <b>moto</b>. El envío se cobra según la tarifa del distrito para ese vehículo.</div>
+  <div class="nota"><b>Etiqueta “consultar”.</b> Algunos cambios (por ejemplo rosas por girasoles en el Ramo Clásico) están configurados para pasar por Producción. Puedes venderlos, pero el pedido no se arma hasta que Producción responda.</div>
+  <div class="ojo"><b>“No hay stock para esta selección”.</b> El sistema reserva los insumos de los pedidos pendientes y en armado. Si otro pedido tomó el stock mientras llenabas el formulario, al confirmar verás qué falta y la cotización se actualiza: cambia la flor, la talla o la fecha.</div>
+</section>
+
+<!-- ===================== 5. DETALLE ===================== -->
+<section class="capitulo">
+  <h1>5. Detalle del pedido y cancelaciones</h1>
+  <p>Abre un pedido desde Hoy, Pagos o Delivery pulsando su número. Ahí está todo lo del pedido en una sola vista.</p>
+  <figure class="recorte"><img src="img/c-05-detalle.png" alt=""><figcaption>Detalle: comanda, entrega, historial, resumen de pagos.</figcaption></figure>
+  <ul>
+    <li><strong>Comanda:</strong> cada producto con talla, flor, papel, extras y los cambios con su precio. La dedicatoria aparece resaltada.</li>
+    <li><strong>Entrega:</strong> quién recibe, teléfono, dirección y vehículo.</li>
+    <li><strong>Historial:</strong> cada cambio de estado con fecha, hora y nota.</li>
+    <li><strong>Resumen y pagos:</strong> total, pagado, saldo y cada cobro con su estado.</li>
+  </ul>
+  <h3>Cancelar un pedido</h3>
+  <p>Pulsa <strong>Cancelar pedido</strong> y escribe el motivo. La vendedora puede cancelar mientras el pedido está pendiente o en armado. Si ya está <strong>listo o en camino</strong>, solo el administrador puede cancelarlo, porque los insumos ya se usaron: quedan registrados como merma y no vuelven al stock. Los cobros pendientes del pedido se anulan solos.</p>
+</section>
+
+<!-- ===================== 6. PRODUCCIÓN ===================== -->
+<section class="capitulo">
+  <h1>6. Producción: armar y confirmar consumo</h1>
+  <p class="muted">Admin · Producción</p>
+  <p>El tablero tiene tres columnas ordenadas por hora de entrega: <span class="badge e-pendiente">Pendiente</span> <span class="badge e-armado">En armado</span> <span class="badge e-listo">Listo</span>. Se actualiza solo cada 15 segundos. Pulsa una tarjeta para abrir su comanda.</p>
+  <figure><img src="img/c-06-produccion.png" alt=""><figcaption>Tablero de producción.</figcaption></figure>
+
+  <h3>Empezar a armar</h3>
+  <ol class="pasos">
+    <li>Abre un pedido <strong>pendiente</strong>.</li>
+    <li>Elige la <strong>encargada</strong> que lo va a armar.</li>
+    <li>Si tiene una <strong>consulta</strong> (pedido especial), escribe la respuesta y pulsa <strong>Aprobar</strong> o <strong>Rechazar</strong>. Mientras haya una consulta abierta, el pedido no puede pasar a armado.</li>
+    <li>Pulsa <strong>Pasar a en armado</strong>.</li>
+  </ol>
+
+  <h3>Confirmar lo que se usó</h3>
+  <p>Al terminar el arreglo, abre el pedido <strong>en armado</strong>. La tabla <strong>Receta vs. usado</strong> trae la receta exacta del pedido (ya con los cambios de flor, papel y extras).</p>
+  <figure><img src="img/c-06-produccion-consumo.png" alt=""><figcaption>Receta vs. usado: la merma se calcula sola.</figcaption></figure>
+  <ol class="pasos">
+    <li>En <strong>Usado</strong> viene la cantidad de la receta. Cámbiala solo si usaste otra cantidad.</li>
+    <li>Si usaste <strong>más</strong> de lo que dice la receta, la diferencia aparece como <strong>merma</strong> (ej. receta 50 tallos, usaste 53 → merma 3).</li>
+    <li>Pulsa <strong>Confirmar consumo</strong>: se descuenta el inventario y el pedido pasa a <span class="badge e-listo">Listo</span>.</li>
+  </ol>
+  <div class="ojo"><b>Una sola vez.</b> El consumo se confirma una vez por pedido. Si dos personas confirman a la vez, el sistema solo acepta la primera y no descuenta dos veces.</div>
+</section>
+
+<!-- ===================== 7. DELIVERY ===================== -->
+<section class="capitulo">
+  <h1>7. Delivery: despachar y entregar</h1>
+  <p class="muted">Admin · Delivery · Vendedora</p>
+  <p>Tarjetas de despacho en tres columnas: <strong>listos para despachar</strong>, <strong>en camino</strong> y <strong>entregados del día</strong>. Cada tarjeta muestra destino, referencia, quién recibe (con acceso a llamada y WhatsApp), vehículo y saldo.</p>
+  <figure><img src="img/c-07-delivery.png" alt=""><figcaption>Tablero de delivery. “Solo mis pedidos y sin asignar” muestra solo lo tuyo; la fecha elige qué entregados ver.</figcaption></figure>
+  <h3>Despachar</h3>
+  <ol class="pasos">
+    <li>En un pedido listo, el administrador o la vendedora eligen el <strong>repartidor</strong>. Si eres repartidor, el pedido se te asigna a ti al despacharlo.</li>
+    <li>Pulsa <strong>Enviar link y despachar</strong> (o <strong>Despachar</strong> si ya está pagado). Si hay saldo, el sistema genera el link de pago y se lo envía al cliente antes de salir.</li>
+    <li>El ícono <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 9h11v11H9z"/><path d="M5 15H4V4h11v1"/></svg> junto al saldo copia el link para reenviarlo si el cliente lo pide. <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h3.5l2 5-2.5 1.5a11 11 0 0 0 5.5 5.5l1.5-2.5 5 2V19a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg> llama y <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 11.5a8.5 8.5 0 0 1-12.6 7.4L3.5 20l1.2-4.2a8.5 8.5 0 1 1 15.8-4.3z"/><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5"/></svg> abre WhatsApp con quien recibe.</li>
+  </ol>
+  <h3>Entregar</h3>
+  <p>Al llegar, pulsa <strong>Marcar entregado</strong>. Si el pedido aún debe saldo, el botón queda bloqueado hasta que se cobre (Pagos). El administrador puede habilitar entregas con saldo; en ese caso queda una advertencia en el historial.</p>
+</section>
+
+<!-- ===================== 8. PAGOS ===================== -->
+<section class="capitulo">
+  <h1>8. Pagos y saldos</h1>
+  <p class="muted">Admin · Vendedora</p>
+  <p>Tabla de pedidos con su total, lo pagado y el saldo. Arriba ves el <strong>saldo total por cobrar</strong>. Busca por número, cliente o teléfono, filtra por fecha de entrega y, si quieres ver también los pagados, desmarca “Solo con saldo pendiente”.</p>
+  <figure><img src="img/c-08-pagos.png" alt=""><figcaption>Pagos con el panel de un pedido abierto.</figcaption></figure>
+  <p>Pulsa una fila para abrir el panel del pedido:</p>
+  <ul>
+    <li><strong>Movimientos:</strong> cada cobro (adelanto o saldo) con su estado. En un cobro pendiente: <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 9h11v11H9z"/><path d="M5 15H4V4h11v1"/></svg> copia el link, <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z"/><path d="M8 12.5l2.8 2.8L16.5 9.5"/></svg> lo confirma como pagado (te pide el número de operación) y <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z"/><path d="M5.7 5.7l12.6 12.6"/></svg> lo anula.</li>
+    <li><strong>Generar / regenerar link del saldo:</strong> crea un solo link por todo lo que falta pagar y se lo envía al cliente. Los cobros pendientes anteriores se anulan.</li>
+    <li><strong>Registrar pago recibido:</strong> para pagos por Yape, Plin, transferencia o efectivo. Elige tipo y método, el monto (no puede superar el saldo) y el número de operación.</li>
+  </ul>
+  <div class="nota"><b>El adelanto.</b> Al crear el pedido se genera el cobro del adelanto según el % elegido. Cuando el cliente paga, confírmalo aquí. Si el pago cubre todo el saldo, los demás cobros pendientes se anulan solos.</div>
+</section>
+
+<!-- ===================== 9. INVENTARIO ===================== -->
+<section class="capitulo">
+  <h1>9. Inventario y Kardex</h1>
+  <p class="muted">Admin · Almacén</p>
+  <p>Lista de insumos con stock actual, stock mínimo, costo promedio y valor. Todo se maneja en <strong>unidad base</strong> (tallo, gramo, hoja, metro o unidad).</p>
+  <figure><img src="img/c-09-inventario.png" alt=""><figcaption>Inventario de insumos.</figcaption></figure>
+  <div class="no-break"><h3>Kardex de un insumo</h3>
+  <p>Pulsa <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4"/><path d="M3 4v4.5h4.5"/><path d="M12 7.5V12l3 2"/></svg> en un insumo para ver cada entrada y salida con su saldo: apertura, compras, consumos de pedidos y mermas. El Kardex nunca se edita: cada movimiento queda registrado.</p>
+  <figure class="recorte"><img src="img/c-09-kardex.png" alt=""><figcaption>Kardex con el saldo después de cada movimiento.</figcaption></figure></div>
+  <h3>Crear o editar un insumo</h3>
+  <p>Para corregir uno existente pulsa <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L18.5 9.5a2.12 2.12 0 0 0-3-3L5 17v3z"/><path d="M13.5 6.5l3 3"/></svg>, cambia los datos en la misma fila y guarda con <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>. Con <strong>+ Nuevo insumo</strong> indica código (ej. <code>ROS-ROJ</code>), nombre, categoría, unidad y stock mínimo. Marca <strong>Es flor</strong> si puede ser flor principal o de cambio, y <strong>Es caja</strong> si los pedidos que la lleven deben salir en carro.</p>
+  <h3>Saldo de apertura</h3>
+  <p>El conteo inicial del almacén se carga una sola vez con <strong>Cargar apertura (CSV)</strong>, en formato <code>codigo,cantidad,costoUnitario</code>. Si algún código no existe o el insumo ya tiene movimientos, no se carga nada y verás la lista de errores.</p>
+  <div class="nota"><b>Ajustes de stock.</b> Las correcciones manuales (sobrantes o faltantes de conteo) aún no tienen pantalla. Por ahora, pídeselas al administrador del sistema; quedan registradas en el Kardex con su nota.</div>
+</section>
+
+<!-- ===================== 10. COMPRAS ===================== -->
+<section class="capitulo">
+  <h1>10. Compras: sugeridas, órdenes y recepción</h1>
+  <p class="muted">Admin · Almacén</p>
+  <h3>Compras sugeridas</h3>
+  <p>El sistema calcula cuánto comprar de cada insumo para cubrir el <strong>stock mínimo</strong>, lo <strong>reservado</strong> por pedidos pendientes y la <strong>demanda</strong> de los próximos días (consumo promedio de las últimas 4 semanas), y descuenta lo que ya está pedido en órdenes abiertas.</p>
+  <figure class="recorte"><img src="img/c-10-compras-sugeridas.png" alt=""><figcaption>Lista sugerida: marca lo que vas a pedir.</figcaption></figure>
+  <ol class="pasos">
+    <li>Ajusta los días de demanda y pulsa <strong>Recalcular</strong> si hace falta.</li>
+    <li>Marca los insumos a comprar y ajusta <strong>paquetes</strong>, <strong>unidades por paquete</strong> y <strong>costo total</strong>.</li>
+    <li>Elige el <strong>proveedor</strong> y pulsa <strong>Crear orden en borrador</strong>.</li>
+  </ol>
+  <div class="no-break"><h3>Órdenes y recepción</h3>
+  <figure class="recorte"><img src="img/c-10-compras-orden.png" alt=""><figcaption>Orden recibida parcialmente: solo se piden las líneas que faltan.</figcaption></figure></div>
+  <ol class="pasos">
+    <li>Revisa la orden en borrador y pulsa <strong>Marcar enviada</strong> cuando la envíes al proveedor (o <strong>Anular</strong>).</li>
+    <li>Cuando llegue la mercadería, abre la orden: marca las líneas recibidas e ingresa <strong>paquetes × unidades por paquete</strong> y el costo real.</li>
+    <li>Pulsa <strong>Registrar recepción</strong>. El stock sube en unidad base (2 paquetes × 50 hojas = 100 hojas) y el <strong>costo promedio</strong> del insumo se recalcula.</li>
+  </ol>
+  <p>Puedes recibir por partes: la orden queda <strong>Recibida parcial</strong> hasta completar todas las líneas.</p>
+  <h3>Proveedores</h3>
+  <p>En la pestaña <strong>Proveedores</strong> agrega nombre, RUC (11 dígitos) y teléfono. <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M6 7l1 13h10l1-13"/><path d="M9 7V4h6v3"/></svg> desactiva un proveedor y <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4"/><path d="M3 4v4.5h4.5"/></svg> lo reactiva.</p>
+</section>
+
+<!-- ===================== 11. CONFIGURACIÓN ===================== -->
+<section class="capitulo">
+  <h1>11. Configuración</h1>
+  <p class="muted">Admin (Producción y Almacén pueden ver las recetas)</p>
+  <h2>Recetas y productos</h2>
+  <p>La tabla muestra cada producto con su precio y <strong>margen</strong> por talla (precio menos el costo de la receta al costo promedio actual). Pulsa <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L18.5 9.5a2.12 2.12 0 0 0-3-3L5 17v3z"/><path d="M13.5 6.5l3 3"/></svg> para abrir su ficha y <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M6 7l1 13h10l1-13"/><path d="M9 7V4h6v3"/></svg> para desactivarlo.</p>
+  <figure class="recorte"><img src="img/c-11-recetas-detalle.png" alt=""><figcaption>Edición de un producto: datos, flores permitidas y receta por talla.</figcaption></figure>
+  <ul>
+    <li><strong>Datos:</strong> nombre, flor principal, papel por defecto, si usa papel y precios S/M/L.</li>
+    <li><strong>Flores permitidas:</strong> qué flores se aceptan como cambio. El recargo se define en Reglas de cambio.</li>
+    <li><strong>Receta:</strong> elige la talla (S/M/L) y lista cada insumo con su cantidad y su <strong>rol</strong>: <code>flor_principal</code> (se reemplaza si el cliente cambia la flor), <code>papel</code> (se reemplaza si cambia el papel) u <code>otro</code>. Quita una línea con <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M6 7l1 13h10l1-13"/><path d="M9 7V4h6v3"/></svg> y pulsa <strong>Guardar receta</strong>.</li>
+    <li><strong>Copiar a:</strong> copia la receta de una talla a otra como punto de partida.</li>
+  </ul>
+  <div class="no-break"><h2>Reglas de cambio</h2>
+  <figure class="recorte"><img src="img/c-12-reglas.png" alt=""><figcaption>Reglas de cambio.</figcaption></figure></div>
+  <p>Definen qué cambios se permiten y cuánto suman o restan: tipo (flor, papel...), producto (vacío = todos), insumo de origen y de destino, modo <strong>fijo</strong> o <strong>por unidad</strong> (por cada flor de la receta) y monto, que puede ser negativo. El estado <strong>consultar</strong> hace que ese cambio pase por Producción.</p>
+  <div class="no-break"><h2>Tarifario</h2>
+  <figure class="recorte"><img src="img/c-13-tarifario.png" alt=""><figcaption>Tarifas por distrito y costo por viaje.</figcaption></figure></div>
+  <p>Edita un distrito con <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L18.5 9.5a2.12 2.12 0 0 0-3-3L5 17v3z"/><path d="M13.5 6.5l3 3"/></svg> y guarda con <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>. Tarifa de envío en <strong>moto</strong> y <strong>carro</strong> por distrito, y el <strong>costo por viaje</strong> de cada vehículo, que se usa en el reporte de envíos.</p>
+  <p class="muted">Integraciones (Shopify y WhatsApp) llegará en la siguiente fase.</p>
+</section>
+
+<!-- ===================== 12. REPORTES ===================== -->
+<section class="capitulo">
+  <h1>12. Reportes</h1>
+  <p class="muted">Admin</p>
+  <p>Elige el rango de fechas (o un atajo: 7, 30, 90 días, este mes) y pulsa <strong>Aplicar</strong>. Todos los reportes usan la fecha de entrega del pedido.</p>
+  <figure class="recorte"><img src="img/c-14-reportes-margen.png" alt=""><figcaption>Margen real por producto y talla.</figcaption></figure>
+  <table>
+    <tr><th>Reporte</th><th>Qué responde</th></tr>
+    <tr><td><strong>Margen</strong></td><td>Cuánto se ganó por producto y talla: precio cobrado menos lo que Producción confirmó que usó (incluida la merma), valorizado al costo del Kardex.</td></tr>
+    <tr><td><strong>Merma</strong></td><td>Cantidad y valor perdido por insumo: lo usado de más en producción y lo consumido en pedidos cancelados.</td></tr>
+    <tr><td><strong>Más vendidos</strong></td><td>Ranking gráfico del top 10 y tabla con unidades, pedidos e ingresos por producto y talla.</td></tr>
+    <tr><td><strong>Envíos</strong></td><td>Lo cobrado de envío frente al costo de los viajes, por distrito y vehículo.</td></tr>
+  </table>
+  <figure class="recorte"><img src="img/c-14-reportes-merma.png" alt=""><figcaption>Merma por insumo.</figcaption></figure>
+</section>
+
+<!-- ===================== 13. FAQ ===================== -->
+<section class="capitulo">
+  <h1>13. Preguntas frecuentes</h1>
+  <h3>¿Por qué una flor, talla o extra aparece atenuado?</h3>
+  <p>No hay insumos suficientes para armarlo, contando lo reservado por otros pedidos. Pasa el mouse sobre la opción para ver qué falta.</p>
+  <h3>No puedo pasar un pedido a “en armado”.</h3>
+  <p>Falta asignar la encargada o tiene una consulta sin responder.</p>
+  <h3>No puedo despachar.</h3>
+  <p>El pedido tiene saldo y aún no se generó el link: usa <strong>Enviar link y despachar</strong>.</p>
+  <h3>No puedo marcar entregado.</h3>
+  <p>El pedido debe saldo. Confirma el pago en <strong>Pagos</strong> o pide al administrador que habilite entregas con saldo.</p>
+  <h3>Me equivoqué en lo usado al confirmar el consumo.</h3>
+  <p>El consumo no se edita. Pide un ajuste de stock al administrador del sistema; queda registrado en el Kardex.</p>
+  <h3>¿El precio puede cambiar después de vender?</h3>
+  <p>No. El pedido guarda el precio y los cambios del momento de la venta; si luego cambian las tarifas o las reglas, los pedidos anteriores no se alteran. Solo cambia si Producción aprueba una consulta con ajuste de precio.</p>
+
+  <div class="no-break"><h2>Glosario</h2>
+  <table>
+    <tr><td style="width:38mm"><strong>Receta</strong></td><td>Insumos y cantidades de un producto por talla.</td></tr>
+    <tr><td><strong>Receta efectiva</strong></td><td>La receta del pedido concreto, ya con los cambios de flor, papel y extras.</td></tr>
+    <tr><td><strong>Reservado</strong></td><td>Insumos comprometidos por pedidos pendientes y en armado.</td></tr>
+    <tr><td><strong>Disponible</strong></td><td>Stock actual menos lo reservado. Es lo que se puede vender.</td></tr>
+    <tr><td><strong>Merma</strong></td><td>Lo usado por encima de la receta, o lo consumido en un pedido cancelado.</td></tr>
+    <tr><td><strong>Kardex</strong></td><td>Registro de cada entrada y salida de un insumo con su saldo.</td></tr>
+    <tr><td><strong>Costo promedio</strong></td><td>Costo por unidad base, recalculado en cada compra (promedio ponderado).</td></tr>
+    <tr><td><strong>Unidad base</strong></td><td>La unidad en que se cuenta un insumo: tallo, g, hoja, m o und.</td></tr>
+    <tr><td><strong>Consulta</strong></td><td>Pedido especial o cambio no listado que Producción debe aprobar.</td></tr>
+    <tr><td><strong>Saldo</strong></td><td>Total del pedido menos lo pagado.</td></tr>
+  </table></div>
+</section>
+
+</body>
+</html>

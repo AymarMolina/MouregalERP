@@ -1,0 +1,241 @@
+<div class="p-6">
+  <div class="page-header">
+    <div>
+      <h1 class="panel-title">Reportes</h1>
+      <p class="panel-subtitle">Margen real, merma, productos más vendidos y envío cobrado vs. costo por viaje.</p>
+    </div>
+  </div>
+
+  <div class="card mb-5 flex flex-wrap items-end gap-4 p-4">
+    <div>
+      <label class="field-label">Desde</label>
+      <input type="date" class="input" [ngModel]="desde()" (ngModelChange)="desde.set($event)" />
+    </div>
+    <div>
+      <label class="field-label">Hasta</label>
+      <input type="date" class="input" [ngModel]="hasta()" (ngModelChange)="hasta.set($event)" />
+    </div>
+    <button type="button" class="btn-primary" [disabled]="loading()" (click)="cargar()">Aplicar</button>
+    <div class="flex flex-wrap gap-1 pb-0.5">
+      @for (a of atajos; track a.dias) {
+        <button type="button" class="btn-text" (click)="usarAtajo(a.dias)">{{ a.label }}</button>
+      }
+      <button type="button" class="btn-text" (click)="mesActual()">Este mes</button>
+    </div>
+    <p class="ml-auto pb-2 text-muted">Se filtra por fecha de entrega del pedido.</p>
+  </div>
+
+  <nav class="mb-5 flex gap-1 border-b border-line">
+    @for (t of pestanas; track t.id) {
+      <button
+        type="button"
+        (click)="pestana.set(t.id)"
+        class="-mb-px border-b-2 px-4 py-2 font-medium transition"
+        [class.border-accent]="pestana() === t.id"
+        [class.text-text]="pestana() === t.id"
+        [class.border-transparent]="pestana() !== t.id"
+        [class.text-muted]="pestana() !== t.id"
+      >
+        {{ t.label }}
+      </button>
+    }
+  </nav>
+
+  @if (error()) {
+    <p class="mb-4 rounded-md bg-accent-soft px-3 py-2 text-accent-2">{{ error() }}</p>
+  }
+
+  @if (loading()) {
+    <p class="text-muted">Calculando...</p>
+  } @else {
+    <!-- MARGEN -->
+    @if (pestana() === "margen" && margen(); as m) {
+      <p class="mb-3 text-muted">
+        Pedidos ya producidos (listo, en camino o entregado). Costo real = lo que Producción confirmó que usó, incluida la merma,
+        valorizado al costo del Kardex.
+      </p>
+      <div class="table-wrap overflow-x-auto">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th>Talla</th>
+              <th class="text-right">Unidades</th>
+              <th class="text-right">Ingresos</th>
+              <th class="text-right">Costo real</th>
+              <th class="text-right">Margen</th>
+              <th class="text-right">%</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (f of m.filas; track f.producto + f.talla) {
+              <tr>
+                <td class="font-medium">{{ f.producto }}</td>
+                <td>{{ f.talla }}</td>
+                <td class="text-right">{{ f.unidades }}</td>
+                <td class="text-right">{{ soles(f.ingresos) }}</td>
+                <td class="text-right">{{ soles(f.costo) }}</td>
+                <td class="text-right font-semibold" [class.text-red-700]="f.margen < 0">{{ soles(f.margen) }}</td>
+                <td class="text-right" [class.text-red-700]="f.margenPct < 0">{{ f.margenPct }}%</td>
+              </tr>
+            } @empty {
+              <tr><td colspan="7" class="py-10 text-center text-muted">Sin pedidos producidos en el rango.</td></tr>
+            }
+          </tbody>
+          @if (m.filas.length) {
+            <tfoot class="bg-sidebar/70 font-semibold">
+              <tr>
+                <td class="px-4 py-2.5" colspan="3">Total</td>
+                <td class="px-4 py-2.5 text-right">{{ soles(m.totales.ingresos) }}</td>
+                <td class="px-4 py-2.5 text-right">{{ soles(m.totales.costo) }}</td>
+                <td class="px-4 py-2.5 text-right">{{ soles(m.totales.margen) }}</td>
+                <td class="px-4 py-2.5 text-right">{{ m.totales.margenPct }}%</td>
+              </tr>
+            </tfoot>
+          }
+        </table>
+      </div>
+    }
+
+    <!-- MERMA -->
+    @if (pestana() === "merma" && merma(); as m) {
+      <p class="mb-3 text-muted">
+        Producción: lo usado por encima de la receta. Cancelación: insumos de pedidos cancelados después de armarse.
+      </p>
+      <div class="table-wrap overflow-x-auto">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Insumo</th>
+              <th class="text-right">Merma producción</th>
+              <th class="text-right">Valor</th>
+              <th class="text-right">Por cancelación</th>
+              <th class="text-right">Valor</th>
+              <th class="text-right">Valor total</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (f of m.filas; track f.insumoId) {
+              <tr>
+                <td>
+                  <div class="font-medium">{{ f.nombre }}</div>
+                  <div class="text-muted">{{ f.codigo }}</div>
+                </td>
+                <td class="text-right">{{ cantidad(f.cantidadProduccion) }} {{ f.unidadBase }}</td>
+                <td class="text-right">{{ soles(f.valorProduccion) }}</td>
+                <td class="text-right">{{ cantidad(f.cantidadCancelacion) }} {{ f.unidadBase }}</td>
+                <td class="text-right">{{ soles(f.valorCancelacion) }}</td>
+                <td class="text-right font-semibold text-accent-2">{{ soles(f.valorTotal) }}</td>
+              </tr>
+            } @empty {
+              <tr><td colspan="6" class="py-10 text-center text-muted">Sin merma en el rango.</td></tr>
+            }
+          </tbody>
+          @if (m.filas.length) {
+            <tfoot class="bg-sidebar/70 font-semibold">
+              <tr>
+                <td class="px-4 py-2.5">Total</td>
+                <td></td>
+                <td class="px-4 py-2.5 text-right">{{ soles(m.totales.valorProduccion) }}</td>
+                <td></td>
+                <td class="px-4 py-2.5 text-right">{{ soles(m.totales.valorCancelacion) }}</td>
+                <td class="px-4 py-2.5 text-right">{{ soles(m.totales.valorTotal) }}</td>
+              </tr>
+            </tfoot>
+          }
+        </table>
+      </div>
+    }
+
+    <!-- MÁS VENDIDOS -->
+    @if (pestana() === "vendidos" && vendidos(); as v) {
+      @if (v.filas.length) {
+        <section class="card mb-4">
+          <h2 class="panel-title">Top {{ topVendidos().length }} por unidades vendidas</h2>
+          <p class="panel-subtitle mb-3">Producto y talla · pedidos no cancelados</p>
+          <app-bar-chart
+            [datos]="topVendidos()"
+            [horizontal]="true"
+            [formato]="formatoUnidades"
+            titulo="Productos más vendidos por unidades"
+            [alto]="Math.max(160, topVendidos().length * 34)"
+          />
+        </section>
+      }
+      <div class="table-wrap overflow-x-auto">
+        <table class="table">
+          <thead>
+            <tr>
+              <th class="w-10">#</th>
+              <th>Producto</th>
+              <th>Talla</th>
+              <th class="text-right">Unidades</th>
+              <th class="text-right">Pedidos</th>
+              <th class="text-right">Ingresos</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (f of v.filas; track f.producto + f.talla; let i = $index) {
+              <tr>
+                <td class="text-muted">{{ i + 1 }}</td>
+                <td class="font-medium">{{ f.producto }}</td>
+                <td>{{ f.talla }}</td>
+                <td class="text-right font-medium">{{ f.unidades }}</td>
+                <td class="text-right">{{ f.pedidos }}</td>
+                <td class="text-right">{{ soles(f.ingresos) }}</td>
+              </tr>
+            } @empty {
+              <tr><td colspan="6" class="py-10 text-center text-muted">Sin ventas en el rango.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <!-- ENVÍOS -->
+    @if (pestana() === "envios" && envios(); as e) {
+      <p class="mb-3 text-muted">Pedidos despachados. Costo = viajes × costo por viaje del vehículo (Tarifario).</p>
+      <div class="table-wrap overflow-x-auto">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Distrito</th>
+              <th>Vehículo</th>
+              <th class="text-right">Viajes</th>
+              <th class="text-right">Cobrado</th>
+              <th class="text-right">Costo</th>
+              <th class="text-right">Diferencia</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (f of e.filas; track f.distrito + f.vehiculo) {
+              <tr>
+                <td class="font-medium">{{ f.distrito }}</td>
+                <td><span class="badge badge-neutral uppercase">{{ f.vehiculo }}</span></td>
+                <td class="text-right">{{ f.viajes }}</td>
+                <td class="text-right">{{ soles(f.cobrado) }}</td>
+                <td class="text-right">{{ soles(f.costo) }}</td>
+                <td class="text-right font-semibold" [class.text-red-700]="f.diferencia < 0" [class.text-estado-listo-fg]="f.diferencia >= 0">
+                  {{ soles(f.diferencia) }}
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="6" class="py-10 text-center text-muted">Sin despachos en el rango.</td></tr>
+            }
+          </tbody>
+          @if (e.filas.length) {
+            <tfoot class="bg-sidebar/70 font-semibold">
+              <tr>
+                <td class="px-4 py-2.5" colspan="2">Total</td>
+                <td class="px-4 py-2.5 text-right">{{ e.totales.viajes }}</td>
+                <td class="px-4 py-2.5 text-right">{{ soles(e.totales.cobrado) }}</td>
+                <td class="px-4 py-2.5 text-right">{{ soles(e.totales.costo) }}</td>
+                <td class="px-4 py-2.5 text-right">{{ soles(e.totales.diferencia) }}</td>
+              </tr>
+            </tfoot>
+          }
+        </table>
+      </div>
+    }
+  }
+</div>

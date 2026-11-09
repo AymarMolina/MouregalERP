@@ -5,7 +5,10 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { and, desc, eq, gte, lte } from 'drizzle-orm';
-import type { AjusteInventarioInput } from '@erp/shared';
+import {
+  costoPromedioPonderado,
+  type AjusteInventarioInput,
+} from '@erp/shared';
 import { DB } from '../../db/db.module';
 import type { Db, Tx } from '../../db/client';
 import { insumos, kardexMovimientos } from '../../db/schema';
@@ -22,7 +25,8 @@ export interface RegistrarMovimientoInput {
     | 'devolucion';
   entrada?: number;
   salida?: number;
-  costoUnitario: number;
+  /** Si se omite, se valoriza al costo_promedio vigente del insumo (leído con la fila bloqueada). */
+  costoUnitario?: number;
   referenciaTipo?: string;
   referenciaId?: string;
   nota?: string;
@@ -70,7 +74,9 @@ export class KardexService {
       tipo: input.tipo,
       entrada: String(entrada),
       salida: String(salida),
-      costoUnitario: String(input.costoUnitario),
+      costoUnitario: String(
+        input.costoUnitario ?? Number(insumo.costoPromedio),
+      ),
       saldoResultante: String(saldoResultante),
       referenciaTipo: input.referenciaTipo,
       referenciaId: input.referenciaId,
@@ -78,9 +84,26 @@ export class KardexService {
       usuarioId: input.usuarioId,
     });
 
+    // 5.8 — cada compra recalcula el costo promedio ponderado.
+    const costoPromedio =
+      input.tipo === 'compra' && entrada > 0
+        ? costoPromedioPonderado({
+            stockActual: Number(insumo.stockActual),
+            costoPromedio: Number(insumo.costoPromedio),
+            cantidad: entrada,
+            costoUnitario: input.costoUnitario ?? Number(insumo.costoPromedio),
+          })
+        : undefined;
+
     await tx
       .update(insumos)
-      .set({ stockActual: String(saldoResultante), updatedAt: new Date() })
+      .set({
+        stockActual: String(saldoResultante),
+        ...(costoPromedio !== undefined && {
+          costoPromedio: String(costoPromedio),
+        }),
+        updatedAt: new Date(),
+      })
       .where(eq(insumos.id, input.insumoId));
 
     return saldoResultante;
@@ -97,10 +120,14 @@ export class KardexService {
 
   async historial(insumoId: string, desde?: string, hasta?: string) {
     const condiciones = [eq(kardexMovimientos.insumoId, insumoId)];
-    if (desde) condiciones.push(gte(kardexMovimientos.fecha, new Date(desde)));
+    // Fechas de negocio en America/Lima (UTC-5 fijo, Perú no usa horario de verano).
+    if (desde)
+      condiciones.push(
+        gte(kardexMovimientos.fecha, new Date(`${desde}T00:00:00-05:00`)),
+      );
     if (hasta)
       condiciones.push(
-        lte(kardexMovimientos.fecha, new Date(`${hasta}T23:59:59`)),
+        lte(kardexMovimientos.fecha, new Date(`${hasta}T23:59:59.999-05:00`)),
       );
 
     return this.db
@@ -114,20 +141,12 @@ export class KardexService {
     input: AjusteInventarioInput,
     usuarioId: string,
   ): Promise<void> {
-    const [insumo] = await this.db
-      .select()
-      .from(insumos)
-      .where(eq(insumos.id, input.insumoId))
-      .limit(1);
-    if (!insumo) throw new NotFoundException('Insumo no encontrado');
-
     await this.db.transaction(async (tx) => {
       await this.registrarMovimiento(tx, {
         insumoId: input.insumoId,
         tipo: input.tipo,
         entrada: input.tipo === 'ajuste_positivo' ? input.cantidad : 0,
         salida: input.tipo === 'ajuste_negativo' ? input.cantidad : 0,
-        costoUnitario: Number(insumo.costoPromedio),
         referenciaTipo: 'ajuste',
         nota: input.nota,
         usuarioId,

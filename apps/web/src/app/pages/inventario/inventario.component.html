@@ -60,10 +60,16 @@
         <input type="number" formControlName="stockMinimo" class="input" />
       </div>
       <div class="col-span-6 flex items-center justify-between border-t border-line pt-4">
-        <label class="flex items-center gap-2 text-text">
-          <input type="checkbox" formControlName="esFlor" class="checkbox" />
-          Es flor (principal o de cambio)
-        </label>
+        <div class="flex flex-wrap items-center gap-6">
+          <label class="flex items-center gap-2 text-text">
+            <input type="checkbox" formControlName="esFlor" class="checkbox" />
+            Es flor (principal o de cambio)
+          </label>
+          <label class="flex items-center gap-2 text-text" title="Los pedidos que lleven este insumo salen en carro">
+            <input type="checkbox" formControlName="esCaja" class="checkbox" />
+            Es caja (obliga envío en carro)
+          </label>
+        </div>
         <button type="submit" [disabled]="form.invalid" class="btn-primary">Guardar insumo</button>
       </div>
     </form>
@@ -105,9 +111,11 @@
                 <td class="text-right text-muted">{{ i.stockActual }}</td>
                 <td class="text-right text-muted">{{ i.costoPromedio }}</td>
                 <td><input type="checkbox" formControlName="activo" class="checkbox" /></td>
-                <td class="whitespace-nowrap">
-                  <button type="button" (click)="guardarEdicion(i.id)" class="btn-text">Guardar</button>
-                  <button type="button" (click)="cancelarEdicion()" class="btn-text text-muted">Cancelar</button>
+                <td>
+                  <div class="acciones">
+                    <button type="button" class="btn-action btn-action-ok" (click)="guardarEdicion(i.id)" title="Guardar cambios" aria-label="Guardar cambios"><app-icon name="check" [size]="16" /></button>
+                    <button type="button" class="btn-action" (click)="cancelarEdicion()" title="Cancelar edición" aria-label="Cancelar edición"><app-icon name="cerrar" [size]="16" /></button>
+                  </div>
                 </td>
               </tr>
             } @else {
@@ -132,9 +140,11 @@
                     <span class="badge badge-neutral">No</span>
                   }
                 </td>
-                <td class="whitespace-nowrap">
-                  <button type="button" (click)="editar(i)" class="btn-text">Editar</button>
-                  <button type="button" (click)="verKardex(i)" class="btn-text">Kardex</button>
+                <td>
+                  <div class="acciones">
+                    <button type="button" class="btn-action" (click)="verKardex(i)" title="Ver Kardex" aria-label="Ver Kardex"><app-icon name="historial" [size]="16" /></button>
+                    <button type="button" class="btn-action" (click)="editar(i)" title="Editar insumo" aria-label="Editar insumo"><app-icon name="editar" [size]="16" /></button>
+                  </div>
                 </td>
               </tr>
             }
@@ -151,7 +161,7 @@
           <h2 class="panel-title text-base">Kardex — {{ insumo.nombre }}</h2>
           <p class="panel-subtitle">{{ insumo.codigo }} · stock actual {{ insumo.stockActual }} {{ insumo.unidadBase }}</p>
         </div>
-        <button type="button" (click)="cerrarKardex()" class="btn-icon">✕</button>
+        <button type="button" class="btn-action" (click)="cerrarKardex()" title="Cerrar" aria-label="Cerrar"><app-icon name="cerrar" [size]="18" /></button>
       </div>
 
       @if (cargandoKardex()) {

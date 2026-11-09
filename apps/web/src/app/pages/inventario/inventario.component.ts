@@ -1,4 +1,5 @@
 import { DatePipe } from "@angular/common";
+import { IconComponent } from "../../shared/icon/icon.component";
 import { Component, OnInit, inject, signal } from "@angular/core";
 import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms";
 import type { InsumoCategoria, UnidadBase } from "@erp/shared";
@@ -8,7 +9,7 @@ import { InsumosService, type KardexMovimiento } from "../../core/catalogo/insum
 
 @Component({
   selector: "app-inventario",
-  imports: [ReactiveFormsModule, DatePipe],
+  imports: [ReactiveFormsModule, DatePipe, IconComponent],
   templateUrl: "./inventario.component.html",
 })
 export class InventarioComponent implements OnInit {
@@ -36,6 +37,7 @@ export class InventarioComponent implements OnInit {
     unidadBase: ["tallo" as UnidadBase, Validators.required],
     stockMinimo: [0, [Validators.required, Validators.min(0)]],
     esFlor: [false],
+    esCaja: [false],
   });
 
   readonly editForm = this.fb.nonNullable.group({
@@ -67,7 +69,7 @@ export class InventarioComponent implements OnInit {
   async crear(): Promise<void> {
     if (this.form.invalid) return;
     await this.insumosService.create(this.form.getRawValue());
-    this.form.reset({ categoria: "flor", unidadBase: "tallo", stockMinimo: 0, esFlor: false });
+    this.form.reset({ categoria: "flor", unidadBase: "tallo", stockMinimo: 0, esFlor: false, esCaja: false });
     this.mostrarForm.set(false);
     await this.cargar();
   }

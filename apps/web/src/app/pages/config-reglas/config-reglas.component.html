@@ -98,7 +98,9 @@
                 }
               </td>
               <td>
-                <button type="button" (click)="eliminar(r.id)" class="btn-text">Desactivar</button>
+                <div class="acciones">
+                  <button type="button" class="btn-action btn-action-danger" (click)="eliminar(r.id)" title="Desactivar regla" aria-label="Desactivar regla"><app-icon name="eliminar" [size]="16" /></button>
+                </div>
               </td>
             </tr>
           }

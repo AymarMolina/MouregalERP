@@ -71,9 +71,11 @@
                 <td class="text-right"><input type="number" step="0.01" formControlName="tarifaMoto" class="input w-24 py-1 text-right" /></td>
                 <td class="text-right"><input type="number" step="0.01" formControlName="tarifaCarro" class="input w-24 py-1 text-right" /></td>
                 <td class="text-muted">{{ d.activo ? "Sí" : "No" }}</td>
-                <td class="whitespace-nowrap">
-                  <button type="button" (click)="guardarEdicion(d.id)" class="btn-text">Guardar</button>
-                  <button type="button" (click)="cancelarEdicion()" class="btn-text text-muted">Cancelar</button>
+                <td>
+                  <div class="acciones">
+                    <button type="button" class="btn-action btn-action-ok" (click)="guardarEdicion(d.id)" title="Guardar cambios" aria-label="Guardar cambios"><app-icon name="check" [size]="16" /></button>
+                    <button type="button" class="btn-action" (click)="cancelarEdicion()" title="Cancelar edición" aria-label="Cancelar edición"><app-icon name="cerrar" [size]="16" /></button>
+                  </div>
                 </td>
               </tr>
             } @else {
@@ -88,9 +90,11 @@
                     <span class="badge badge-neutral">No</span>
                   }
                 </td>
-                <td class="whitespace-nowrap">
-                  <button type="button" (click)="editar(d)" class="btn-text">Editar</button>
-                  <button type="button" (click)="eliminar(d.id)" class="btn-text">Desactivar</button>
+                <td>
+                  <div class="acciones">
+                    <button type="button" class="btn-action" (click)="editar(d)" title="Editar tarifas" aria-label="Editar tarifas"><app-icon name="editar" [size]="16" /></button>
+                    <button type="button" class="btn-action btn-action-danger" (click)="eliminar(d.id)" title="Desactivar distrito" aria-label="Desactivar distrito"><app-icon name="eliminar" [size]="16" /></button>
+                  </div>
                 </td>
               </tr>
             }

@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Param, Post, Query, Req } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Query,
+  Req,
+} from '@nestjs/common';
 import type { Request } from 'express';
 import { consultaResolverSchema, type EstadoConsulta } from '@erp/shared';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -18,7 +27,7 @@ export class ConsultasController {
   @Roles('admin', 'produccion')
   @Post(':id/resolver')
   resolver(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() body: unknown,
     @Req() req: Request & { user: JwtPayload },
   ) {

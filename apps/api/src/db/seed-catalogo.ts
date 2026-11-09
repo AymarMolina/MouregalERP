@@ -226,6 +226,7 @@ async function seedInsumos(
         costoPromedio: String(row.costo),
         stockActual: String(row.apertura),
         esFlor: row.esFlor,
+        esCaja: row.codigo.startsWith('CAJ'),
       })
       .returning();
     codigoAId.set(row.codigo, creado.id);

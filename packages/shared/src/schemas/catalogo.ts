@@ -11,6 +11,8 @@ export const insumoInputSchema = z.object({
   unidadBase: z.enum(UNIDAD_BASE),
   stockMinimo: cantidadBase.default(0),
   esFlor: z.boolean().default(false),
+  /** Insumo de tipo caja: el pedido que lo lleve sale en carro (5.5). */
+  esCaja: z.boolean().default(false),
   activo: z.boolean().optional(),
 });
 export type InsumoInput = z.infer<typeof insumoInputSchema>;
