@@ -1,0 +1,14 @@
+# Todo el texto del repo usa LF, en cualquier sistema operativo.
+# Coincide con Prettier (endOfLine: lf): así `pnpm lint` no marca archivos
+# como modificados en Windows (core.autocrlf=true convertía a CRLF).
+* text=auto eol=lf
+
+# Binarios: nunca convertir.
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.webp binary
+*.ico  binary
+*.pdf  binary
+*.woff binary
+*.woff2 binary
