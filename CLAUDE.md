@@ -91,7 +91,7 @@ Estética de **dashboard SaaS sobrio** (tipo Linear/Stripe), nada que parezca "a
 
 ## Trampas conocidas
 
-- Muchos archivos tienen fin de línea **CRLF** (Windows, `core.autocrlf=true`). Las ediciones con scripts deben normalizar `\r\n`; eslint/prettier los reescribe en LF y git lo normaliza al commitear.
+- Fin de línea: **LF en todo el repo**, forzado por `.gitattributes` (`* text=auto eol=lf`), `endOfLine: "lf"` en Prettier y `.editorconfig`. Si un clon viejo de Windows aún tiene CRLF, se corrige una vez con `git rm --cached -r -q . && git reset --hard` (con el árbol limpio).
 - **Angular:** `@else if (x(); as y)` no compila (el alias solo va en el `@if` principal). Usa `@else if (x()) { @let y = x()!; … }`.
 - **zod + TS 5.5:** un `.refine((m) => m !== "link")` estrecha el tipo inferido, así que los formularios deben usar el tipo estrecho.
 - **`@erp/shared`** se publica en CJS (`dist/`, para Nest y Jest) y ESM (`dist/esm/`, para Angular). Siempre `pnpm build:shared` tras cambiarlo.
