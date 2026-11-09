@@ -7,6 +7,7 @@ import {
 import { and, desc, eq, gte, lte } from 'drizzle-orm';
 import {
   costoPromedioPonderado,
+  errorCantidadPorUnidad,
   type AjusteInventarioInput,
 } from '@erp/shared';
 import { DB } from '../../db/db.module';
@@ -63,6 +64,14 @@ export class KardexService {
       .for('update')
       .limit(1);
     if (!insumo) throw new NotFoundException('Insumo no encontrado');
+
+    // Tallos, hojas y unidades no se fraccionan.
+    const error = errorCantidadPorUnidad(
+      insumo.nombre,
+      insumo.unidadBase,
+      entrada || salida,
+    );
+    if (error) throw new BadRequestException(error);
 
     const saldoResultante =
       Math.round(

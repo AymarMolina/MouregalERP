@@ -32,13 +32,32 @@ export class AuthService {
     return this.accessToken;
   }
 
-  async login(email: string, password: string): Promise<void> {
+  /**
+   * `recordar`: true guarda el refresh token en localStorage (sobrevive al
+   * cerrar el navegador); false lo guarda en sessionStorage (se pierde al cerrarlo).
+   */
+  async login(email: string, password: string, recordar = true): Promise<void> {
     const res = await firstValueFrom(
       this.http.post<LoginResponse>(`${environment.apiUrl}/auth/login`, { email, password }),
     );
     this.accessToken = res.accessToken;
     this.user.set(res.user);
-    localStorage.setItem(REFRESH_TOKEN_KEY, res.refreshToken);
+    this.borrarRefreshToken();
+    (recordar ? localStorage : sessionStorage).setItem(REFRESH_TOKEN_KEY, res.refreshToken);
+  }
+
+  /** El refresh token vive en uno de los dos almacenamientos según "Recuérdame". */
+  private leerRefreshToken(): { token: string; storage: Storage } | null {
+    for (const storage of [sessionStorage, localStorage]) {
+      const token = storage.getItem(REFRESH_TOKEN_KEY);
+      if (token) return { token, storage };
+    }
+    return null;
+  }
+
+  private borrarRefreshToken(): void {
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
+    sessionStorage.removeItem(REFRESH_TOKEN_KEY);
   }
 
   /** Restaura la sesión al arrancar la app a partir del refresh token guardado. */
@@ -71,14 +90,16 @@ export class AuthService {
   private renovacionEnCurso: Promise<string | null> | null = null;
 
   private async ejecutarRenovacion(): Promise<string | null> {
-    const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
-    if (!refreshToken) return null;
+    const guardado = this.leerRefreshToken();
+    if (!guardado) return null;
     try {
       const tokens = await firstValueFrom(
-        this.http.post<RefreshResponse>(`${environment.apiUrl}/auth/refresh`, { refreshToken }),
+        this.http.post<RefreshResponse>(`${environment.apiUrl}/auth/refresh`, {
+          refreshToken: guardado.token,
+        }),
       );
       this.accessToken = tokens.accessToken;
-      localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refreshToken);
+      guardado.storage.setItem(REFRESH_TOKEN_KEY, tokens.refreshToken);
       return tokens.accessToken;
     } catch {
       this.clearSession();
@@ -98,6 +119,6 @@ export class AuthService {
   private clearSession(): void {
     this.accessToken = null;
     this.user.set(null);
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
+    this.borrarRefreshToken();
   }
 }

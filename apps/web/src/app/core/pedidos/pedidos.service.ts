@@ -63,9 +63,9 @@ export class PedidosService {
     return firstValueFrom(this.http.post<PedidoDetalle>(`${this.base}/${id}/consumo`, { lineas }));
   }
 
-  recetaEfectiva(id: string): Promise<{ insumoId: string; nombre: string; cantidad: number }[]> {
+  recetaEfectiva(id: string): Promise<{ insumoId: string; nombre: string; unidadBase: string; cantidad: number }[]> {
     return firstValueFrom(
-      this.http.get<{ insumoId: string; nombre: string; cantidad: number }[]>(`${this.base}/${id}/receta-efectiva`),
+      this.http.get<{ insumoId: string; nombre: string; unidadBase: string; cantidad: number }[]>(`${this.base}/${id}/receta-efectiva`),
     );
   }
 }

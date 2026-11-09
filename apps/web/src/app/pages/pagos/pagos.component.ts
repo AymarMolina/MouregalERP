@@ -1,5 +1,8 @@
 import { Component, OnInit, computed, inject, signal } from "@angular/core";
 import { IconComponent } from "../../shared/icon/icon.component";
+import { RowMenuComponent } from "../../shared/tabla/row-menu.component";
+import { Tabla } from "../../shared/tabla/tabla";
+import { TABLA_CONTROLES } from "../../shared/tabla/tabla-controles.component";
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { RouterLink } from "@angular/router";
 import type { MetodoPago, TipoPago } from "@erp/shared";
@@ -25,7 +28,7 @@ const METODOS_MANUALES: { valor: MetodoManual; etiqueta: string }[] = [
 
 @Component({
   selector: "app-pagos",
-  imports: [FormsModule, ReactiveFormsModule, RouterLink, IconComponent],
+  imports: [FormsModule, ReactiveFormsModule, RouterLink, IconComponent, RowMenuComponent, ...TABLA_CONTROLES],
   templateUrl: "./pagos.component.html",
 })
 export class PagosComponent implements OnInit {
@@ -60,6 +63,22 @@ export class PagosComponent implements OnInit {
         f.clienteNombre.toLowerCase().includes(q) ||
         (f.clienteTelefono ?? "").includes(q),
     );
+  });
+
+  readonly tabla = new Tabla(() => this.visibles(), {
+    id: (f) => f.id,
+    porPagina: 12,
+    nombreCsv: "pagos-saldos",
+    csv: (f) => ({
+      pedido: f.numero,
+      cliente: f.clienteNombre,
+      telefono: f.clienteTelefono ?? "",
+      fecha_entrega: f.fechaEntrega,
+      estado: ETIQUETA_ESTADO_PEDIDO[f.estado],
+      total: f.total,
+      pagado: f.totalPagado,
+      saldo: f.saldo,
+    }),
   });
 
   readonly totalSaldo = computed(() => this.visibles().reduce((acc, f) => acc + f.saldo, 0));

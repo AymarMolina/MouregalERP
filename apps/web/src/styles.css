@@ -4,8 +4,8 @@
 
 html,
 body {
-  background-color: #f6f5f1;
-  color: #1f2329;
+  background-color: #f8f9fa;
+  color: #111827;
   font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
   font-size: 13px;
   font-weight: 400;
@@ -24,13 +24,13 @@ input[type="number"] {
 @layer components {
   /* ---------- Botones ---------- */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-lg bg-accent px-3.5 py-2 font-medium text-text transition-colors hover:bg-[#dcab17] active:bg-[#cfa112] disabled:pointer-events-none disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-1.5 rounded-lg bg-gray-900 px-3.5 py-2 font-semibold text-white shadow-sm transition-colors hover:bg-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-1 active:bg-black disabled:pointer-events-none disabled:opacity-50;
   }
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-lg border border-line bg-surface px-3.5 py-2 font-medium text-text transition-colors hover:bg-gray-50 disabled:pointer-events-none disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3.5 py-2 font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/15 disabled:pointer-events-none disabled:opacity-50;
   }
   .btn-text {
-    @apply inline-flex items-center gap-1 rounded-md px-2 py-1 font-medium text-accent-2 transition-colors hover:bg-accent-soft disabled:pointer-events-none disabled:opacity-50;
+    @apply inline-flex items-center gap-1 rounded-md px-2 py-1 font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-900 disabled:pointer-events-none disabled:opacity-50;
   }
   .btn-icon {
     @apply inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-gray-100 hover:text-text;
@@ -54,25 +54,25 @@ input[type="number"] {
     @apply mb-1 block text-xs font-medium text-muted;
   }
   .page-title {
-    @apply text-xl font-semibold tracking-[-0.015em] text-text;
+    @apply text-[22px] font-semibold tracking-[-0.02em] text-gray-900;
   }
   .input,
   select.input {
-    @apply w-full rounded-lg border border-line bg-surface px-3 py-2 text-text transition-colors placeholder:text-muted/70 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30;
+    @apply w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-text transition-colors placeholder:text-gray-400 hover:border-gray-300 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10;
   }
   .checkbox {
-    @apply h-4 w-4 rounded border-gray-300 text-accent-2 accent-[#b7791f] focus:ring-accent/40;
+    @apply h-4 w-4 cursor-pointer rounded border-gray-300 accent-[#9b73a1] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40;
   }
 
   /* ---------- Superficies ---------- */
   .card {
-    @apply rounded-xl bg-surface p-5 shadow-card;
+    @apply rounded-xl border border-gray-200/80 bg-white p-5;
   }
   .panel-title {
-    @apply text-[15px] font-semibold tracking-[-0.01em] text-text;
+    @apply text-[15px] font-semibold tracking-[-0.01em] text-gray-900;
   }
   .panel-subtitle {
-    @apply mt-0.5 text-muted;
+    @apply mt-0.5 text-gray-500;
   }
   .page-header {
     @apply mb-6 flex flex-wrap items-start justify-between gap-3;
@@ -80,16 +80,16 @@ input[type="number"] {
 
   /* ---------- KPI ---------- */
   .kpi {
-    @apply flex items-start gap-3 rounded-xl bg-surface p-4 shadow-card;
+    @apply flex items-start gap-3 rounded-xl border border-gray-200/80 bg-white p-4;
   }
   .kpi-icon {
-    @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent-soft text-accent-2;
+    @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600;
   }
   .kpi-label {
     @apply text-[13px] text-muted;
   }
   .kpi-value {
-    @apply mt-0.5 text-[26px] font-semibold leading-tight tracking-[-0.02em] text-text;
+    @apply mt-1 text-[26px] font-semibold leading-tight tracking-[-0.02em] text-gray-900;
   }
   .kpi-delta {
     @apply mt-1 text-xs text-muted;
@@ -97,7 +97,7 @@ input[type="number"] {
 
   /* ---------- Toolbar de tablas: búsqueda + filtros píldora ---------- */
   .toolbar {
-    @apply flex flex-wrap items-center gap-2 border-b border-line px-4 py-3;
+    @apply flex flex-wrap items-center gap-2 border-b border-gray-100 px-4 py-3;
   }
   .search {
     @apply relative flex min-w-[12rem] flex-1 items-center sm:max-w-xs;
@@ -106,33 +106,33 @@ input[type="number"] {
     @apply pointer-events-none absolute left-2.5 h-4 w-4 text-muted;
   }
   .search > input {
-    @apply w-full rounded-lg border border-line bg-surface py-1.5 pl-8 pr-3 text-text placeholder:text-muted/70 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30;
+    @apply w-full rounded-lg border border-gray-200 bg-white py-1.5 pl-8 pr-3 text-text placeholder:text-gray-400 hover:border-gray-300 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10;
   }
   .pill {
-    @apply inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1 text-xs font-medium text-muted transition-colors hover:bg-gray-50 hover:text-text;
+    @apply inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900;
   }
   .pill-active {
-    @apply border-text bg-text text-white hover:bg-text hover:text-white;
+    @apply border-gray-900 bg-gray-900 text-white hover:bg-gray-900 hover:text-white;
   }
 
   /* ---------- Tablas ---------- */
   .table-wrap {
-    @apply overflow-hidden rounded-xl bg-surface shadow-card;
+    @apply overflow-hidden rounded-xl border border-gray-200/80 bg-white;
   }
   table.table {
     @apply w-full border-collapse text-left;
   }
   .table th {
-    @apply border-b border-line px-4 py-2.5 text-xs font-medium text-muted;
+    @apply whitespace-nowrap border-b border-gray-100 px-4 py-3 text-[11px] font-medium uppercase tracking-[0.04em] text-gray-500;
   }
   .table td {
-    @apply border-b border-gray-100 px-4 py-3 align-middle;
+    @apply border-b border-gray-100 px-4 py-3.5 align-middle text-gray-700;
   }
   .table tbody tr:last-child td {
     @apply border-b-0;
   }
   .table tbody tr {
-    @apply transition-colors hover:bg-gray-50/80;
+    @apply transition-colors hover:bg-gray-50/60;
   }
 
   /* ---------- Badges píldora ---------- */
@@ -154,9 +154,71 @@ input[type="number"] {
 
   /* ---------- Carga sutil ---------- */
   .spinner {
-    @apply inline-block h-4 w-4 animate-spin rounded-full border-2 border-gray-200 border-t-accent-2;
+    @apply inline-block h-4 w-4 animate-spin rounded-full border-2 border-gray-200 border-t-gray-700;
   }
   .skeleton {
     @apply animate-pulse rounded-md bg-gray-100;
   }
+
+  /* Primera columna con checkbox de selección masiva */
+  .table th.col-check,
+  .table td.col-check {
+    @apply w-10 pr-0;
+  }
+  .table tbody tr.fila-sel {
+    @apply bg-brand-soft/60 hover:bg-brand-soft;
+  }
+
+  /* Cabecera de tabla: título a la izquierda, paginación a la derecha */
+  .table-head {
+    @apply flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-4 py-3;
+  }
+  .table-title {
+    @apply text-[14px] font-semibold text-gray-900;
+  }
+
+  /* Barra de selección masiva */
+  .seleccion-bar {
+    @apply flex flex-wrap items-center gap-2 border-b border-gray-100 bg-gray-50 px-4 py-2 text-[12px] text-gray-600;
+  }
+
+  /* ---------- Pestañas con indicador inferior ---------- */
+  .tabs {
+    @apply flex items-center gap-5 overflow-x-auto overflow-y-hidden border-b border-gray-200;
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .tab {
+    @apply -mb-px inline-flex items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent pb-2.5 pt-1 font-medium text-gray-500 transition-colors hover:text-gray-900;
+  }
+  .tab-active {
+    @apply border-accent text-gray-900;
+  }
+  .tab-count {
+    @apply rounded-full bg-gray-100 px-1.5 py-px text-[11px] font-medium tabular-nums text-gray-600;
+  }
+  .tab-active .tab-count {
+    @apply bg-brand-soft text-brand-dark;
+  }
+
+  /* Selector con flecha desplegable limpia */
+  select.input,
+  select.select {
+    @apply appearance-none bg-no-repeat pr-8;
+    background-size: 16px 16px;
+    background-position: right 0.6rem center;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='m6 9 6 6 6-6'/%3e%3c/svg%3e");
+  }
+}
+
+/* Badge con punto de estado */
+.badge::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: currentColor;
+  opacity: 0.7;
 }

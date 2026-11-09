@@ -11,6 +11,7 @@ import {
   calcularEnvio,
   calcularSaldo,
   desglosarConsumo,
+  esUnidadEntera,
   faltantes,
   repartirUsado,
   sumarRecetas,
@@ -523,7 +524,11 @@ export class PedidosService {
     if (!total.length) return [];
 
     const insumosInfo = await this.db
-      .select({ id: insumos.id, nombre: insumos.nombre })
+      .select({
+        id: insumos.id,
+        nombre: insumos.nombre,
+        unidadBase: insumos.unidadBase,
+      })
       .from(insumos)
       .where(
         inArray(
@@ -531,11 +536,12 @@ export class PedidosService {
           total.map((l) => l.insumoId),
         ),
       );
-    const nombrePorInsumo = new Map(insumosInfo.map((i) => [i.id, i.nombre]));
+    const infoPorInsumo = new Map(insumosInfo.map((i) => [i.id, i]));
 
     return total.map((l) => ({
       insumoId: l.insumoId,
-      nombre: nombrePorInsumo.get(l.insumoId) ?? '—',
+      nombre: infoPorInsumo.get(l.insumoId)?.nombre ?? '—',
+      unidadBase: infoPorInsumo.get(l.insumoId)?.unidadBase ?? 'und',
       cantidad: l.cantidad,
     }));
   }
@@ -579,6 +585,15 @@ export class PedidosService {
           'Hay líneas de consumo con insumos que no están en la receta del pedido',
         );
 
+      const unidades = new Map(
+        (
+          await tx
+            .select({ id: insumos.id, unidadBase: insumos.unidadBase })
+            .from(insumos)
+            .where(inArray(insumos.id, [...totalPorInsumo.keys()]))
+        ).map((i) => [i.id, i.unidadBase]),
+      );
+
       for (const [insumoId, cantidadReceta] of totalPorInsumo) {
         const linea = input.lineas.find((l) => l.insumoId === insumoId);
         const cantidadUsada = linea ? linea.cantidadUsada : cantidadReceta;
@@ -617,7 +632,8 @@ export class PedidosService {
               )?.cantidad ?? 0,
           }))
           .filter((p) => p.cantidadReceta > 0);
-        for (const parte of repartirUsado(partes, cantidadUsada)) {
+        const enteros = esUnidadEntera(unidades.get(insumoId) ?? '');
+        for (const parte of repartirUsado(partes, cantidadUsada, { enteros })) {
           await tx.insert(pedidoConsumos).values({
             pedidoItemId: parte.id,
             insumoId,

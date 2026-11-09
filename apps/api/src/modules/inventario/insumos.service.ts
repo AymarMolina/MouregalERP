@@ -5,7 +5,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { asc, eq } from 'drizzle-orm';
-import type { AperturaInput, InsumoInput } from '@erp/shared';
+import {
+  errorCantidadPorUnidad,
+  type AperturaInput,
+  type InsumoInput,
+} from '@erp/shared';
 import { DB } from '../../db/db.module';
 import type { Db } from '../../db/client';
 import { insumos, kardexMovimientos } from '../../db/schema';
@@ -82,6 +86,15 @@ export class InsumosService {
         .limit(1);
       if (!insumo) {
         errores.push(`Insumo con código "${linea.codigo}" no existe`);
+        continue;
+      }
+      const errorUnidad = errorCantidadPorUnidad(
+        insumo.nombre,
+        insumo.unidadBase,
+        linea.cantidad,
+      );
+      if (errorUnidad) {
+        errores.push(errorUnidad);
         continue;
       }
       const [movimientoPrevio] = await this.db

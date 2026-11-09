@@ -1,63 +1,137 @@
-<div class="p-6">
+<div class="mx-auto max-w-[1400px] p-6">
   <div class="page-header">
     <div>
-      <h1 class="panel-title">Reportes</h1>
-      <p class="panel-subtitle">Margen real, merma, productos más vendidos y envío cobrado vs. costo por viaje.</p>
+      <h1 class="page-title">Reportes</h1>
+      <p class="panel-subtitle">Cobros, margen real, merma, productos más vendidos y envío cobrado vs. costo por viaje.</p>
     </div>
   </div>
 
   <div class="card mb-5 flex flex-wrap items-end gap-4 p-4">
     <div>
       <label class="field-label">Desde</label>
-      <input type="date" class="input" [ngModel]="desde()" (ngModelChange)="desde.set($event)" />
+      <input type="date" class="input" [ngModel]="desde()" (ngModelChange)="desde.set($event); atajo.set(null)" />
     </div>
     <div>
       <label class="field-label">Hasta</label>
-      <input type="date" class="input" [ngModel]="hasta()" (ngModelChange)="hasta.set($event)" />
+      <input type="date" class="input" [ngModel]="hasta()" (ngModelChange)="hasta.set($event); atajo.set(null)" />
     </div>
     <button type="button" class="btn-primary" [disabled]="loading()" (click)="cargar()">Aplicar</button>
-    <div class="flex flex-wrap gap-1 pb-0.5">
+    <nav class="tabs border-b-0 pb-0.5" aria-label="Período">
       @for (a of atajos; track a.dias) {
-        <button type="button" class="btn-text" (click)="usarAtajo(a.dias)">{{ a.label }}</button>
+        <button type="button" class="tab" [class.tab-active]="atajo() === a.dias" (click)="usarAtajo(a.dias)">{{ a.label }}</button>
       }
-      <button type="button" class="btn-text" (click)="mesActual()">Este mes</button>
-    </div>
-    <p class="ml-auto pb-2 text-muted">Se filtra por fecha de entrega del pedido.</p>
+      <button type="button" class="tab" [class.tab-active]="atajo() === 'mes'" (click)="mesActual()">Este mes</button>
+    </nav>
+    <p class="ml-auto max-w-sm pb-2 text-right text-xs text-muted">Cada reporte usa la fecha real: cobros por fecha de pago, margen por fecha de armado, envíos por fecha de salida y más vendidos por fecha de venta.</p>
   </div>
 
-  <nav class="mb-5 flex gap-1 border-b border-line">
+  <nav class="tabs mb-5" aria-label="Reporte">
     @for (t of pestanas; track t.id) {
-      <button
-        type="button"
-        (click)="pestana.set(t.id)"
-        class="-mb-px border-b-2 px-4 py-2 font-medium transition"
-        [class.border-accent]="pestana() === t.id"
-        [class.text-text]="pestana() === t.id"
-        [class.border-transparent]="pestana() !== t.id"
-        [class.text-muted]="pestana() !== t.id"
-      >
+      <button type="button" class="tab" [class.tab-active]="pestana() === t.id" (click)="pestana.set(t.id)">
         {{ t.label }}
       </button>
     }
   </nav>
 
   @if (error()) {
-    <p class="mb-4 rounded-md bg-accent-soft px-3 py-2 text-accent-2">{{ error() }}</p>
+    <p class="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-red-800">{{ error() }}</p>
   }
 
   @if (loading()) {
-    <p class="text-muted">Calculando...</p>
+    <div class="table-wrap space-y-3 p-4">
+      <div class="flex items-center gap-2 text-muted"><span class="spinner"></span> Calculando reportes</div>
+      @for (i of [1, 2, 3, 4]; track i) {
+        <div class="skeleton h-6"></div>
+      }
+    </div>
   } @else {
+    <!-- COBROS -->
+    @if (pestana() === "cobros" && cobros(); as c) {
+      <div class="mb-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div class="kpi">
+          <div class="min-w-0">
+            <div class="kpi-label">Total cobrado</div>
+            <div class="kpi-value">{{ soles(c.totales.monto) }}</div>
+            <div class="kpi-delta">{{ c.totales.cobros }} {{ c.totales.cobros === 1 ? "cobro confirmado" : "cobros confirmados" }}</div>
+          </div>
+        </div>
+        @for (m of c.porMetodo; track m.metodo) {
+          <div class="kpi">
+            <div class="min-w-0">
+              <div class="kpi-label capitalize">{{ m.metodo }}</div>
+              <div class="kpi-value">{{ soles(m.monto) }}</div>
+              <div class="kpi-delta">{{ m.cobros }} {{ m.cobros === 1 ? "cobro" : "cobros" }}</div>
+            </div>
+          </div>
+        }
+      </div>
+      <div class="table-wrap">
+        <div class="table-head">
+          <h2 class="table-title">Cobros confirmados</h2>
+          <app-paginacion [tabla]="tablaCobros" />
+        </div>
+        <app-seleccion-bar [tabla]="tablaCobros" />
+        <div class="overflow-x-auto">
+          <table class="table">
+            <thead>
+              <tr>
+                <th class="col-check"><app-check-todos [tabla]="tablaCobros" /></th>
+                <th>Fecha de pago</th>
+                <th>Pedido</th>
+                <th>Cliente</th>
+                <th>Tipo</th>
+                <th>Método</th>
+                <th>Estado del pedido</th>
+                <th class="text-right">Monto</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (f of tablaCobros.filas(); track f.pagoId) {
+                <tr [class.fila-sel]="tablaCobros.marcado(f)">
+                  <td class="col-check"><app-check-fila [tabla]="tablaCobros" [fila]="f" [etiqueta]="'Seleccionar cobro del pedido #' + f.numero" /></td>
+                  <td class="tabular">{{ fechaHora(f.pagadoAt) }}</td>
+                  <td><a [routerLink]="['/pedidos', f.pedidoId]" class="font-semibold text-gray-900 hover:underline">#{{ f.numero }}</a></td>
+                  <td>{{ f.cliente }}</td>
+                  <td class="capitalize">{{ f.tipo }}</td>
+                  <td class="capitalize">{{ f.metodo }}</td>
+                  <td>{{ etiquetaEstado[f.estadoPedido] }}</td>
+                  <td class="text-right font-medium text-gray-900">{{ soles(f.monto) }}</td>
+                </tr>
+              } @empty {
+                <tr><td colspan="8" class="py-10 text-center text-muted">Sin cobros confirmados en el rango.</td></tr>
+              }
+            </tbody>
+            @if (c.filas.length) {
+              <tfoot class="font-semibold text-gray-900">
+                <tr>
+                  <td></td>
+                  <td class="px-4 py-2.5" colspan="6">Total</td>
+                  <td class="px-4 py-2.5 text-right">{{ soles(c.totales.monto) }}</td>
+                </tr>
+              </tfoot>
+            }
+          </table>
+        </div>
+      </div>
+    }
+
     <!-- MARGEN -->
     @if (pestana() === "margen" && margen(); as m) {
       <p class="mb-3 text-muted">
-        Pedidos ya producidos (listo, en camino o entregado). Costo real = lo que Producción confirmó que usó, incluida la merma,
+        Pedidos que se armaron en el rango (quedaron listos) y no se cancelaron. Costo real = lo que Producción confirmó que usó, incluida la merma,
         valorizado al costo del Kardex.
       </p>
-      <div class="table-wrap overflow-x-auto">
+      <div class="table-wrap">
+        <div class="table-head">
+          <h2 class="table-title">Margen por producto y talla</h2>
+          <app-paginacion [tabla]="tablaMargen" />
+        </div>
+        <app-seleccion-bar [tabla]="tablaMargen" />
+        <div class="overflow-x-auto">
         <table class="table">
           <thead>
             <tr>
+              <th class="col-check"><app-check-todos [tabla]="tablaMargen" /></th>
               <th>Producto</th>
               <th>Talla</th>
               <th class="text-right">Unidades</th>
@@ -68,8 +142,9 @@
             </tr>
           </thead>
           <tbody>
-            @for (f of m.filas; track f.producto + f.talla) {
-              <tr>
+            @for (f of tablaMargen.filas(); track f.producto + f.talla) {
+              <tr [class.fila-sel]="tablaMargen.marcado(f)">
+                <td class="col-check"><app-check-fila [tabla]="tablaMargen" [fila]="f" /></td>
                 <td class="font-medium">{{ f.producto }}</td>
                 <td>{{ f.talla }}</td>
                 <td class="text-right">{{ f.unidades }}</td>
@@ -79,12 +154,13 @@
                 <td class="text-right" [class.text-red-700]="f.margenPct < 0">{{ f.margenPct }}%</td>
               </tr>
             } @empty {
-              <tr><td colspan="7" class="py-10 text-center text-muted">Sin pedidos producidos en el rango.</td></tr>
+              <tr><td colspan="8" class="py-10 text-center text-muted">Sin pedidos producidos en el rango.</td></tr>
             }
           </tbody>
           @if (m.filas.length) {
-            <tfoot class="bg-sidebar/70 font-semibold">
+            <tfoot class="font-semibold text-gray-900">
               <tr>
+                <td></td>
                 <td class="px-4 py-2.5" colspan="3">Total</td>
                 <td class="px-4 py-2.5 text-right">{{ soles(m.totales.ingresos) }}</td>
                 <td class="px-4 py-2.5 text-right">{{ soles(m.totales.costo) }}</td>
@@ -94,6 +170,7 @@
             </tfoot>
           }
         </table>
+        </div>
       </div>
     }
 
@@ -102,10 +179,17 @@
       <p class="mb-3 text-muted">
         Producción: lo usado por encima de la receta. Cancelación: insumos de pedidos cancelados después de armarse.
       </p>
-      <div class="table-wrap overflow-x-auto">
+      <div class="table-wrap">
+        <div class="table-head">
+          <h2 class="table-title">Merma por insumo</h2>
+          <app-paginacion [tabla]="tablaMerma" />
+        </div>
+        <app-seleccion-bar [tabla]="tablaMerma" />
+        <div class="overflow-x-auto">
         <table class="table">
           <thead>
             <tr>
+              <th class="col-check"><app-check-todos [tabla]="tablaMerma" /></th>
               <th>Insumo</th>
               <th class="text-right">Merma producción</th>
               <th class="text-right">Valor</th>
@@ -115,8 +199,9 @@
             </tr>
           </thead>
           <tbody>
-            @for (f of m.filas; track f.insumoId) {
-              <tr>
+            @for (f of tablaMerma.filas(); track f.insumoId) {
+              <tr [class.fila-sel]="tablaMerma.marcado(f)">
+                <td class="col-check"><app-check-fila [tabla]="tablaMerma" [fila]="f" /></td>
                 <td>
                   <div class="font-medium">{{ f.nombre }}</div>
                   <div class="text-muted">{{ f.codigo }}</div>
@@ -125,15 +210,16 @@
                 <td class="text-right">{{ soles(f.valorProduccion) }}</td>
                 <td class="text-right">{{ cantidad(f.cantidadCancelacion) }} {{ f.unidadBase }}</td>
                 <td class="text-right">{{ soles(f.valorCancelacion) }}</td>
-                <td class="text-right font-semibold text-accent-2">{{ soles(f.valorTotal) }}</td>
+                <td class="text-right font-semibold text-gray-900">{{ soles(f.valorTotal) }}</td>
               </tr>
             } @empty {
-              <tr><td colspan="6" class="py-10 text-center text-muted">Sin merma en el rango.</td></tr>
+              <tr><td colspan="7" class="py-10 text-center text-muted">Sin merma en el rango.</td></tr>
             }
           </tbody>
           @if (m.filas.length) {
-            <tfoot class="bg-sidebar/70 font-semibold">
+            <tfoot class="font-semibold text-gray-900">
               <tr>
+                <td></td>
                 <td class="px-4 py-2.5">Total</td>
                 <td></td>
                 <td class="px-4 py-2.5 text-right">{{ soles(m.totales.valorProduccion) }}</td>
@@ -144,6 +230,7 @@
             </tfoot>
           }
         </table>
+        </div>
       </div>
     }
 
@@ -162,10 +249,17 @@
           />
         </section>
       }
-      <div class="table-wrap overflow-x-auto">
+      <div class="table-wrap">
+        <div class="table-head">
+          <h2 class="table-title">Productos más vendidos</h2>
+          <app-paginacion [tabla]="tablaVendidos" />
+        </div>
+        <app-seleccion-bar [tabla]="tablaVendidos" />
+        <div class="overflow-x-auto">
         <table class="table">
           <thead>
             <tr>
+              <th class="col-check"><app-check-todos [tabla]="tablaVendidos" /></th>
               <th class="w-10">#</th>
               <th>Producto</th>
               <th>Talla</th>
@@ -175,9 +269,10 @@
             </tr>
           </thead>
           <tbody>
-            @for (f of v.filas; track f.producto + f.talla; let i = $index) {
-              <tr>
-                <td class="text-muted">{{ i + 1 }}</td>
+            @for (f of tablaVendidos.filas(); track f.producto + f.talla; let i = $index) {
+              <tr [class.fila-sel]="tablaVendidos.marcado(f)">
+                <td class="col-check"><app-check-fila [tabla]="tablaVendidos" [fila]="f" /></td>
+                <td class="text-muted">{{ (tablaVendidos.paginaActual() - 1) * tablaVendidos.porPagina + i + 1 }}</td>
                 <td class="font-medium">{{ f.producto }}</td>
                 <td>{{ f.talla }}</td>
                 <td class="text-right font-medium">{{ f.unidades }}</td>
@@ -185,20 +280,28 @@
                 <td class="text-right">{{ soles(f.ingresos) }}</td>
               </tr>
             } @empty {
-              <tr><td colspan="6" class="py-10 text-center text-muted">Sin ventas en el rango.</td></tr>
+              <tr><td colspan="7" class="py-10 text-center text-muted">Sin ventas en el rango.</td></tr>
             }
           </tbody>
         </table>
+        </div>
       </div>
     }
 
     <!-- ENVÍOS -->
     @if (pestana() === "envios" && envios(); as e) {
-      <p class="mb-3 text-muted">Pedidos despachados. Costo = viajes × costo por viaje del vehículo (Tarifario).</p>
-      <div class="table-wrap overflow-x-auto">
+      <p class="mb-3 text-muted">Pedidos que salieron a reparto en el rango. Costo = viajes × costo por viaje del vehículo (Tarifario).</p>
+      <div class="table-wrap">
+        <div class="table-head">
+          <h2 class="table-title">Envíos por distrito y vehículo</h2>
+          <app-paginacion [tabla]="tablaEnvios" />
+        </div>
+        <app-seleccion-bar [tabla]="tablaEnvios" />
+        <div class="overflow-x-auto">
         <table class="table">
           <thead>
             <tr>
+              <th class="col-check"><app-check-todos [tabla]="tablaEnvios" /></th>
               <th>Distrito</th>
               <th>Vehículo</th>
               <th class="text-right">Viajes</th>
@@ -208,8 +311,9 @@
             </tr>
           </thead>
           <tbody>
-            @for (f of e.filas; track f.distrito + f.vehiculo) {
-              <tr>
+            @for (f of tablaEnvios.filas(); track f.distrito + f.vehiculo) {
+              <tr [class.fila-sel]="tablaEnvios.marcado(f)">
+                <td class="col-check"><app-check-fila [tabla]="tablaEnvios" [fila]="f" /></td>
                 <td class="font-medium">{{ f.distrito }}</td>
                 <td><span class="badge badge-neutral uppercase">{{ f.vehiculo }}</span></td>
                 <td class="text-right">{{ f.viajes }}</td>
@@ -220,12 +324,13 @@
                 </td>
               </tr>
             } @empty {
-              <tr><td colspan="6" class="py-10 text-center text-muted">Sin despachos en el rango.</td></tr>
+              <tr><td colspan="7" class="py-10 text-center text-muted">Sin despachos en el rango.</td></tr>
             }
           </tbody>
           @if (e.filas.length) {
-            <tfoot class="bg-sidebar/70 font-semibold">
+            <tfoot class="font-semibold text-gray-900">
               <tr>
+                <td></td>
                 <td class="px-4 py-2.5" colspan="2">Total</td>
                 <td class="px-4 py-2.5 text-right">{{ e.totales.viajes }}</td>
                 <td class="px-4 py-2.5 text-right">{{ soles(e.totales.cobrado) }}</td>
@@ -235,6 +340,7 @@
             </tfoot>
           }
         </table>
+        </div>
       </div>
     }
   }

@@ -63,6 +63,22 @@ export class ShellComponent {
     });
   }
 
+  readonly busqueda = signal("");
+
+  /** Va a la primera pantalla cuyo nombre coincide con lo escrito. */
+  irA(ev: Event): void {
+    ev.preventDefault();
+    const q = this.busqueda().trim().toLowerCase();
+    if (!q) return;
+    const item = this.groups()
+      .flatMap((g) => g.items)
+      .find((i) => i.label.toLowerCase().includes(q));
+    if (item) {
+      this.busqueda.set("");
+      void this.router.navigateByUrl(item.path);
+    }
+  }
+
   toggleMenu(): void {
     this.menuAbierto.set(!this.menuAbierto());
   }
