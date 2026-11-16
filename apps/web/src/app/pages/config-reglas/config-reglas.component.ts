@@ -1,5 +1,8 @@
 import { Component, OnInit, inject, signal } from "@angular/core";
 import { IconComponent } from "../../shared/icon/icon.component";
+import { RowMenuComponent } from "../../shared/tabla/row-menu.component";
+import { Tabla } from "../../shared/tabla/tabla";
+import { TABLA_CONTROLES } from "../../shared/tabla/tabla-controles.component";
 import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms";
 import type { AjusteModo, EstadoRegla, TipoCambio } from "@erp/shared";
 import { AJUSTE_MODO, ESTADO_REGLA, TIPO_CAMBIO } from "@erp/shared";
@@ -10,7 +13,7 @@ import { ReglasCambioService } from "../../core/catalogo/reglas-cambio.service";
 
 @Component({
   selector: "app-config-reglas",
-  imports: [ReactiveFormsModule, IconComponent],
+  imports: [ReactiveFormsModule, IconComponent, RowMenuComponent, ...TABLA_CONTROLES],
   templateUrl: "./config-reglas.component.html",
 })
 export class ConfigReglasComponent implements OnInit {
@@ -26,6 +29,21 @@ export class ConfigReglasComponent implements OnInit {
   readonly reglas = signal<ReglaCambio[]>([]);
   readonly productos = signal<Producto[]>([]);
   readonly insumos = signal<Insumo[]>([]);
+  readonly tabla = new Tabla(() => this.reglas(), {
+    id: (r) => r.id,
+    porPagina: 10,
+    nombreCsv: "reglas-cambio",
+    csv: (r) => ({
+      tipo: r.tipo,
+      producto: this.nombreProducto(r.productoId),
+      origen: this.nombreInsumo(r.insumoOrigenId),
+      destino: this.nombreInsumo(r.insumoDestinoId),
+      descripcion: r.descripcion,
+      ajuste: r.ajusteMonto,
+      modo: r.ajusteModo,
+      estado: r.estado,
+    }),
+  });
   readonly loading = signal(true);
   readonly mostrarForm = signal(false);
 

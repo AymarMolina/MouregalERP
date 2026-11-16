@@ -1,15 +1,20 @@
 import { DatePipe } from "@angular/common";
 import { IconComponent } from "../../shared/icon/icon.component";
-import { Component, OnInit, inject, signal } from "@angular/core";
+import { RowMenuComponent } from "../../shared/tabla/row-menu.component";
+import { Tabla } from "../../shared/tabla/tabla";
+import { TABLA_CONTROLES } from "../../shared/tabla/tabla-controles.component";
+import { Component, OnInit, computed, inject, signal } from "@angular/core";
+import { RouterLink } from "@angular/router";
 import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms";
 import type { InsumoCategoria, UnidadBase } from "@erp/shared";
 import { INSUMO_CATEGORIA, UNIDAD_BASE } from "@erp/shared";
+import { cantidad } from "../../core/util/formato";
 import type { Insumo } from "../../core/catalogo/catalogo.types";
 import { InsumosService, type KardexMovimiento } from "../../core/catalogo/insumos.service";
 
 @Component({
   selector: "app-inventario",
-  imports: [ReactiveFormsModule, DatePipe, IconComponent],
+  imports: [ReactiveFormsModule, DatePipe, IconComponent, RouterLink, RowMenuComponent, ...TABLA_CONTROLES],
   templateUrl: "./inventario.component.html",
 })
 export class InventarioComponent implements OnInit {
@@ -18,6 +23,11 @@ export class InventarioComponent implements OnInit {
 
   readonly categorias: InsumoCategoria[] = [...INSUMO_CATEGORIA];
   readonly unidades: UnidadBase[] = [...UNIDAD_BASE];
+  readonly cantidad = cantidad;
+  /** Costo unitario: 2 a 4 decimales (los insumos por gramo cuestan céntimos). */
+  costo(valor: string | number): string {
+    return `S/ ${Number(valor).toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`;
+  }
 
   readonly insumos = signal<Insumo[]>([]);
   readonly loading = signal(true);
@@ -51,8 +61,78 @@ export class InventarioComponent implements OnInit {
   }
 
   stockBajo(insumo: Insumo): boolean {
-    return Number(insumo.stockActual) < Number(insumo.stockMinimo);
+    return this.estadoStock(insumo) !== "ok";
   }
+
+  /** agotado: sin stock · bajo: por debajo del mínimo · ok: en o sobre el mínimo. */
+  estadoStock(insumo: Insumo): "agotado" | "bajo" | "ok" {
+    const stock = Number(insumo.stockActual);
+    if (stock <= 0) return "agotado";
+    return stock < Number(insumo.stockMinimo) ? "bajo" : "ok";
+  }
+
+  /** "tallo" → "tallos" según la cantidad; g y m no cambian. */
+  unidad(u: string, n: number | string): string {
+    if (Number(n) === 1) return u === "und" ? "unidad" : u;
+    return ({ tallo: "tallos", hoja: "hojas", und: "unidades" } as Record<string, string>)[u] ?? u;
+  }
+
+  /** Cuánto falta para llegar al stock mínimo. */
+  faltaParaMinimo(insumo: Insumo): number {
+    return Math.max(0, Number(insumo.stockMinimo) - Number(insumo.stockActual));
+  }
+
+  /** "todos" o solo los que necesitan reposición. */
+  readonly filtroStock = signal<"todos" | "alerta">("todos");
+
+  alternarFiltroStock(): void {
+    this.filtroStock.set(this.filtroStock() === "alerta" ? "todos" : "alerta");
+  }
+
+  readonly resumenStock = computed(() => {
+    const lista = this.insumos().filter((i) => i.activo);
+    const agotados = lista.filter((i) => this.estadoStock(i) === "agotado").length;
+    const bajos = lista.filter((i) => this.estadoStock(i) === "bajo").length;
+    return { agotados, bajos, total: agotados + bajos };
+  });
+
+  readonly insumosVisibles = computed(() => {
+    if (this.filtroStock() === "todos") return this.insumos();
+    const peso = { agotado: 0, bajo: 1, ok: 2 } as const;
+    return this.insumos()
+      .filter((i) => this.estadoStock(i) !== "ok")
+      .sort((a, b) => peso[this.estadoStock(a)] - peso[this.estadoStock(b)]);
+  });
+
+  readonly tabla = new Tabla(() => this.insumosVisibles(), {
+    id: (i) => i.id,
+    porPagina: 15,
+    nombreCsv: "insumos",
+    csv: (i) => ({
+      codigo: i.codigo,
+      nombre: i.nombre,
+      categoria: i.categoria,
+      unidad: i.unidadBase,
+      minimo: i.stockMinimo,
+      stock: i.stockActual,
+      costo_promedio: i.costoPromedio,
+      activo: i.activo ? "Sí" : "No",
+    }),
+  });
+
+  readonly tablaKardex = new Tabla(() => this.kardexMovimientos(), {
+    id: (m) => m.id,
+    porPagina: 10,
+    nombreCsv: "kardex",
+    csv: (m) => ({
+      fecha: m.fecha,
+      tipo: m.tipo,
+      entrada: m.entrada,
+      salida: m.salida,
+      saldo: m.saldoResultante,
+      nota: m.nota ?? "",
+    }),
+  });
 
   async cargar(): Promise<void> {
     this.loading.set(true);
@@ -96,7 +176,11 @@ export class InventarioComponent implements OnInit {
 
   async verKardex(insumo: Insumo): Promise<void> {
     this.kardexDe.set(insumo);
+    this.tablaKardex.limpiar();
+    this.tablaKardex.pagina.set(1);
     this.cargandoKardex.set(true);
+    // El panel se pinta debajo de la tabla: llevarlo a la vista.
+    setTimeout(() => document.getElementById("panel-kardex")?.scrollIntoView({ behavior: "smooth", block: "start" }));
     this.kardexMovimientos.set(await this.insumosService.kardex(insumo.id));
     this.cargandoKardex.set(false);
   }

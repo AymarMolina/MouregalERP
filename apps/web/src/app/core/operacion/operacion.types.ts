@@ -162,3 +162,20 @@ export interface ReporteEnvios {
   filas: { distrito: string; vehiculo: Vehiculo; viajes: number; cobrado: number; costo: number; diferencia: number }[];
   totales: { viajes: number; cobrado: number; costo: number; diferencia: number };
 }
+
+export interface ReporteCobros {
+  rango: Rango;
+  filas: {
+    pagoId: string;
+    pagadoAt: string | null;
+    tipo: string;
+    metodo: string;
+    monto: number;
+    pedidoId: string;
+    numero: number;
+    estadoPedido: EstadoPedido;
+    cliente: string;
+  }[];
+  porMetodo: { metodo: string; cobros: number; monto: number }[];
+  totales: { cobros: number; monto: number };
+}

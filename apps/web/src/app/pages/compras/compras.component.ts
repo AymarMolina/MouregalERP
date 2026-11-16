@@ -1,5 +1,9 @@
+import { descargarExcel } from "../../shared/tabla/excel";
 import { Component, OnInit, computed, inject, signal } from "@angular/core";
 import { IconComponent } from "../../shared/icon/icon.component";
+import { RowMenuComponent } from "../../shared/tabla/row-menu.component";
+import { Tabla } from "../../shared/tabla/tabla";
+import { TABLA_CONTROLES } from "../../shared/tabla/tabla-controles.component";
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import type { EstadoOc } from "@erp/shared";
 import { mensajeError } from "../../core/http/errores";
@@ -45,7 +49,7 @@ const ETIQUETA_OC: Record<EstadoOc, string> = {
 
 @Component({
   selector: "app-compras",
-  imports: [FormsModule, ReactiveFormsModule, IconComponent],
+  imports: [FormsModule, ReactiveFormsModule, IconComponent, RowMenuComponent, ...TABLA_CONTROLES],
   templateUrl: "./compras.component.html",
 })
 export class ComprasComponent implements OnInit {
@@ -59,6 +63,30 @@ export class ComprasComponent implements OnInit {
   readonly estadosOc = Object.keys(ETIQUETA_OC) as EstadoOc[];
 
   readonly pestana = signal<Pestana>("sugeridas");
+
+  /** Lista sugerida visible en Excel (mismo orden y filtro que la pantalla). */
+  exportarSugeridas(): void {
+    descargarExcel(
+      "compras-sugeridas",
+      this.filasVisibles().map((f) => ({
+        codigo: f.sugerida.codigo,
+        insumo: f.sugerida.nombre,
+        unidad: f.sugerida.unidadBase,
+        stockActual: f.sugerida.stockActual,
+        stockMinimo: f.sugerida.stockMinimo,
+        reservado: f.sugerida.reservado,
+        demanda: f.sugerida.demanda,
+        pendienteEnOrdenes: f.sugerida.pendienteEnOrdenes,
+        aComprar: f.sugerida.aComprar,
+        costoPromedio: f.sugerida.costoPromedio,
+        marcada: f.marcada ? "Sí" : "No",
+        paquetes: f.paquetes,
+        unidadesPorPaquete: f.unidadesPorPaquete,
+        costoTotal: f.costoTotal,
+      })),
+      "Compras sugeridas",
+    );
+  }
   readonly error = signal<string | null>(null);
   readonly aviso = signal<string | null>(null);
   readonly trabajando = signal(false);
@@ -82,8 +110,33 @@ export class ComprasComponent implements OnInit {
   readonly filasRecepcion = signal<FilaRecepcion[]>([]);
   readonly notaRecepcion = signal("");
 
+  readonly tablaOrdenes = new Tabla(() => this.ordenes(), {
+    id: (o) => o.id,
+    porPagina: 10,
+    nombreCsv: "ordenes-compra",
+    csv: (o) => ({
+      orden: o.numero,
+      proveedor: o.proveedor,
+      fecha: o.fecha,
+      estado: ETIQUETA_OC[o.estado],
+      lineas: o.lineas,
+      total: o.total,
+    }),
+  });
+
   // Proveedores
   readonly proveedores = signal<Proveedor[]>([]);
+  readonly tablaProveedores = new Tabla(() => this.proveedores(), {
+    id: (p) => p.id,
+    porPagina: 10,
+    nombreCsv: "proveedores",
+    csv: (p) => ({
+      nombre: p.nombre,
+      ruc: p.ruc ?? "",
+      telefono: p.telefono ?? "",
+      estado: p.activo ? "Activo" : "Inactivo",
+    }),
+  });
   readonly proveedoresActivos = computed(() => this.proveedores().filter((p) => p.activo));
   readonly proveedorForm = this.fb.nonNullable.group({
     nombre: ["", Validators.required],

@@ -169,10 +169,12 @@ describe('Flujo de pedido (integración, Postgres en memoria)', () => {
     const fila = reporteMerma.filas.find((f) => f.codigo === 'ROS-ROJ');
     expect(fila?.cantidadProduccion).toBe(3);
     expect(fila?.valorProduccion).toBe(5.4);
-    const margen = await e.reportes.margen({
-      desde: '2026-11-10',
-      hasta: '2026-11-10',
+    // Margen cuenta el día en que el pedido se armó (hoy), no su fecha de
+    // entrega programada.
+    const hoyLima = new Date().toLocaleDateString('en-CA', {
+      timeZone: 'America/Lima',
     });
+    const margen = await e.reportes.margen({ desde: hoyLima, hasta: hoyLima });
     expect(margen.filas[0]).toMatchObject({
       producto: 'Ramo Clásico de Rosas',
       talla: 'L',

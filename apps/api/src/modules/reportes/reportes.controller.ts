@@ -41,6 +41,11 @@ export class ReportesController {
   envios(@Query('desde') desde?: string, @Query('hasta') hasta?: string) {
     return this.reportes.envios(rango(desde, hasta));
   }
+
+  @Get('cobros')
+  cobros(@Query('desde') desde?: string, @Query('hasta') hasta?: string) {
+    return this.reportes.cobros(rango(desde, hasta));
+  }
 }
 
 @Module({

@@ -63,12 +63,23 @@
   }
 
   @if (loading()) {
-    <p class="text-muted">Cargando...</p>
+    <div class="table-wrap mb-6 space-y-3 p-4">
+      @for (i of [1, 2, 3]; track i) {
+        <div class="skeleton h-6"></div>
+      }
+    </div>
   } @else {
     <div class="table-wrap mb-6">
+      <div class="table-head">
+        <h2 class="table-title">Productos</h2>
+        <app-paginacion [tabla]="tabla" />
+      </div>
+      <app-seleccion-bar [tabla]="tabla" />
+      <div class="overflow-x-auto">
       <table class="table">
         <thead>
           <tr>
+            <th class="col-check"><app-check-todos [tabla]="tabla" /></th>
             <th>Producto</th>
             <th class="text-right">Precio S</th>
             <th class="text-right">Margen S</th>
@@ -76,13 +87,14 @@
             <th class="text-right">Margen M</th>
             <th class="text-right">Precio L</th>
             <th class="text-right">Margen L</th>
-            <th></th>
+            <th class="w-10"><span class="sr-only">Acciones</span></th>
           </tr>
         </thead>
         <tbody>
-          @for (p of productos(); track p.id) {
-            <tr [class.bg-accent-soft]="seleccionado()?.id === p.id">
-              <td class="font-medium">{{ p.nombre }}</td>
+          @for (p of tabla.filas(); track p.id) {
+            <tr [class.fila-sel]="tabla.marcado(p)" [class.bg-brand-soft]="seleccionado()?.id === p.id">
+              <td class="col-check"><app-check-fila [tabla]="tabla" [fila]="p" [etiqueta]="'Seleccionar ' + p.nombre" /></td>
+              <td class="font-medium text-gray-900">{{ p.nombre }}</td>
               <td class="text-right">{{ tallaDe(p, "S")?.precioBase }}</td>
               <td class="text-right text-muted">{{ tallaDe(p, "S")?.margen }}</td>
               <td class="text-right">{{ tallaDe(p, "M")?.precioBase }}</td>
@@ -90,17 +102,22 @@
               <td class="text-right">{{ tallaDe(p, "L")?.precioBase }}</td>
               <td class="text-right text-muted">{{ tallaDe(p, "L")?.margen }}</td>
               <td>
-                <div class="acciones">
+                <app-row-menu [etiqueta]="'Acciones de ' + p.nombre">
                   <button type="button" class="btn-action" (click)="seleccionar(p)" title="Editar producto y receta" aria-label="Editar producto y receta"><app-icon name="editar" [size]="16" /></button>
                   @if (esAdmin()) {
                     <button type="button" class="btn-action btn-action-danger" (click)="desactivar(p.id)" title="Desactivar producto" aria-label="Desactivar producto"><app-icon name="eliminar" [size]="16" /></button>
                   }
-                </div>
+                </app-row-menu>
               </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="9" class="py-10 text-center text-muted">No hay productos activos.</td>
             </tr>
           }
         </tbody>
       </table>
+      </div>
     </div>
   }
 
@@ -221,7 +238,8 @@
                     </select>
                   </td>
                   <td>
-                    <input type="number" step="0.001" formControlName="cantidad" class="input w-28 py-1" />
+                    <input type="number" [step]="pasoDe(linea.value.insumoId)" min="0" formControlName="cantidad" class="input w-28 py-1" />
+                    <span class="ml-1 text-xs text-muted">{{ unidadDe(linea.value.insumoId) }}</span>
                   </td>
                   <td>
                     <select formControlName="rol" class="input w-36 py-1">

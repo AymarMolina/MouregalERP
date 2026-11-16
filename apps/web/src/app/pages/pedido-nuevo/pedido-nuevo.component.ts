@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal } from "@angular/core";
+import { Component, HostListener, OnInit, computed, inject, signal } from "@angular/core";
 import { IconComponent } from "../../shared/icon/icon.component";
 import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms";
 import { Router } from "@angular/router";
@@ -10,7 +10,8 @@ import { ProductosService } from "../../core/catalogo/productos.service";
 import { mensajeError } from "../../core/http/errores";
 import { CotizacionesService, PedidosService } from "../../core/pedidos/pedidos.service";
 import type { ResultadoCotizacion, ResultadoCotizacionPedido } from "../../core/pedidos/pedidos.types";
-import { hoyLima, soles } from "../../core/util/formato";
+import { cantidad, diasDesdeHoy, hoyLima, soles } from "../../core/util/formato";
+import type { NombreIcono } from "../../shared/icon/icon.component";
 
 /** Ítem ya agregado al pedido, con lo necesario para mostrarlo. */
 interface ItemCarrito {
@@ -18,6 +19,15 @@ interface ItemCarrito {
   producto: string;
   detalle: string;
 }
+
+/** Pasos del kiosko: destino → productos → entrega y pago. */
+export type Paso = 1 | 2 | 3;
+
+const CANAL_INFO: Record<Canal, { etiqueta: string; icono: NombreIcono }> = {
+  vendedora: { etiqueta: "En tienda", icono: "tienda" },
+  whatsapp: { etiqueta: "WhatsApp", icono: "whatsapp" },
+  shopify: { etiqueta: "Web (Shopify)", icono: "bolsa" },
+};
 
 @Component({
   selector: "app-pedido-nuevo",
@@ -33,9 +43,23 @@ export class PedidoNuevoComponent implements OnInit {
   private readonly router = inject(Router);
 
   readonly soles = soles;
+  readonly cantidad = cantidad;
   readonly canales: Canal[] = [...CANAL];
   readonly tallas: Talla[] = [...TALLA];
   readonly hoy = hoyLima();
+  readonly manana = diasDesdeHoy(1);
+  readonly canalInfo = CANAL_INFO;
+  readonly horasRapidas = ["09:00", "11:00", "13:00", "15:00", "17:00", "19:00"];
+  readonly adelantosRapidos = [0, 50, 100];
+
+  readonly pasos: { n: Paso; titulo: string; detalle: string; icono: NombreIcono }[] = [
+    { n: 1, titulo: "Destino", detalle: "Canal y distrito", icono: "tarifario" },
+    { n: 2, titulo: "Productos", detalle: "Arma el pedido", icono: "flor" },
+    { n: 3, titulo: "Entrega y pago", detalle: "Cliente, fecha y adelanto", icono: "calendario" },
+  ];
+  readonly paso = signal<Paso>(1);
+  /** Valores del formulario como signals, para que los computed reaccionen. */
+  readonly distritoSel = signal("");
 
   readonly productos = signal<Producto[]>([]);
   readonly distritos = signal<Distrito[]>([]);
@@ -95,7 +119,12 @@ export class PedidoNuevoComponent implements OnInit {
     this.loading.set(true);
     try {
       const [productos, distritos] = await Promise.all([this.productosService.list(), this.distritosService.list()]);
-      this.productos.set(productos.filter((p) => p.activo));
+      // Primero los que ya se pueden vender (tienen precio); luego los que falta configurar.
+      this.productos.set(
+        productos
+          .filter((p) => p.activo)
+          .sort((a, b) => Number(this.precioDesde(a) === null) - Number(this.precioDesde(b) === null)),
+      );
       this.distritos.set(distritos.filter((d) => d.activo));
     } catch (err) {
       this.error.set(mensajeError(err, "No se pudo cargar el catálogo."));
@@ -265,6 +294,94 @@ export class PedidoNuevoComponent implements OnInit {
     } finally {
       this.enviando.set(false);
     }
+  }
+
+  // ---------- Kiosko: selección por toque ----------
+
+  irAPaso(paso: Paso): void {
+    this.paso.set(paso);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  elegirCanal(canal: Canal): void {
+    this.form.controls.canal.setValue(canal);
+  }
+
+  async elegirDistrito(id: string): Promise<void> {
+    this.form.controls.distritoId.setValue(id);
+    this.distritoSel.set(id);
+    await this.onDistritoChange();
+  }
+
+  distritoNombre(): string {
+    return this.distritos().find((d) => d.id === this.distritoSel())?.nombre ?? "";
+  }
+
+  /** Abre el configurador del producto (la "ventana" del kiosko). */
+  async abrirProducto(id: string): Promise<void> {
+    this.itemForm.reset({ productoId: id, talla: this.primeraTalla(id), cantidad: 1, cambioNoListado: "" });
+    await this.onProductoChange();
+  }
+
+  @HostListener("document:keydown.escape")
+  alPresionarEscape(): void {
+    if (this.productoAbierto()) this.cerrarProducto();
+  }
+
+  cerrarProducto(): void {
+    this.itemForm.reset({ productoId: "", talla: "S", cantidad: 1, cambioNoListado: "" });
+    this.cotizacion.set(null);
+    this.extraIds.set(new Set());
+  }
+
+  productoAbierto(): Producto | null {
+    const id = this.itemForm.value.productoId;
+    return id ? (this.productos().find((p) => p.id === id) ?? null) : null;
+  }
+
+  async elegirTalla(talla: Talla): Promise<void> {
+    this.itemForm.controls.talla.setValue(talla);
+    await this.onCambioBasico();
+  }
+
+  async cambiarCantidad(delta: number): Promise<void> {
+    const nueva = Math.max(1, (this.itemForm.value.cantidad ?? 1) + delta);
+    this.itemForm.controls.cantidad.setValue(nueva);
+    await this.onCambioBasico();
+  }
+
+  /** Precio más bajo entre las tallas activas, para la tarjeta "desde S/ …". */
+  precioDesde(p: Producto): number | null {
+    const precios = p.tallas.filter((t) => t.activo).map((t) => Number(t.precioBase));
+    return precios.length ? Math.min(...precios) : null;
+  }
+
+  private primeraTalla(productoId: string): Talla {
+    const p = this.productos().find((x) => x.id === productoId);
+    return this.tallas.find((t) => p?.tallas.some((pt) => pt.talla === t && pt.activo)) ?? "S";
+  }
+
+  cantidadEnCarrito(): number {
+    return this.carrito().reduce((acc, c) => acc + c.input.cantidad, 0);
+  }
+
+  elegirFecha(fecha: string): void {
+    this.form.controls.fechaEntrega.setValue(fecha);
+  }
+
+  elegirHora(hora: string): void {
+    this.form.controls.horaEntrega.setValue(hora);
+  }
+
+  elegirAdelanto(pct: number): void {
+    this.form.controls.porcentajeAdelanto.setValue(pct);
+  }
+
+  /** Para pintar los pasos completos en la barra de progreso. */
+  pasoListo(paso: Paso): boolean {
+    if (paso === 1) return !!this.distritoSel();
+    if (paso === 2) return this.carrito().length > 0;
+    return this.form.valid;
   }
 
   opcionTalla(talla: Talla) {

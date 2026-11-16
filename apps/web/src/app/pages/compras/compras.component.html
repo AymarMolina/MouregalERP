@@ -1,29 +1,21 @@
 <div class="p-6">
   <div class="page-header">
     <div>
-      <h1 class="panel-title">Compras</h1>
+      <h1 class="page-title">Compras</h1>
       <p class="panel-subtitle">Lista sugerida, órdenes de compra y recepción en unidad base.</p>
     </div>
   </div>
 
-  <nav class="mb-5 flex gap-1 border-b border-line">
+  <nav class="tabs mb-5">
     @for (t of [{ id: "sugeridas", label: "Compras sugeridas" }, { id: "ordenes", label: "Órdenes de compra" }, { id: "proveedores", label: "Proveedores" }]; track t.id) {
-      <button
-        type="button"
-        (click)="cambiarPestana($any(t.id))"
-        class="-mb-px border-b-2 px-4 py-2 font-medium transition"
-        [class.border-accent]="pestana() === t.id"
-        [class.text-text]="pestana() === t.id"
-        [class.border-transparent]="pestana() !== t.id"
-        [class.text-muted]="pestana() !== t.id"
-      >
+      <button type="button" (click)="cambiarPestana($any(t.id))" class="tab" [class.tab-active]="pestana() === t.id">
         {{ t.label }}
       </button>
     }
   </nav>
 
   @if (error()) {
-    <p class="mb-4 rounded-md bg-accent-soft px-3 py-2 text-accent-2">{{ error() }}</p>
+    <p class="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-red-800">{{ error() }}</p>
   }
   @if (aviso()) {
     <p class="mb-4 rounded-md bg-estado-listo-bg px-3 py-2 text-estado-listo-fg">{{ aviso() }}</p>
@@ -38,6 +30,9 @@
           <input type="number" min="0" max="60" class="input w-24" [ngModel]="dias()" (ngModelChange)="dias.set(+$event)" />
           <span class="text-muted">días</span>
           <button type="button" class="btn-secondary" (click)="cargarSugeridas()">Recalcular</button>
+          <button type="button" class="btn-secondary" (click)="exportarSugeridas()" [disabled]="!filasVisibles().length" title="Descargar la lista sugerida en Excel">
+            <app-icon name="excel" [size]="16" class="text-green-700" /> Excel
+          </button>
         </div>
       </div>
       <label class="flex items-center gap-2 pb-2">
@@ -52,13 +47,17 @@
 
     <div class="table-wrap mb-4 overflow-x-auto">
       @if (cargandoSugeridas()) {
-        <p class="p-4 text-muted">Calculando...</p>
+        <div class="space-y-3 p-4">
+          @for (i of [1, 2, 3, 4]; track i) {
+            <div class="skeleton h-9"></div>
+          }
+        </div>
       } @else {
         <table class="table">
           <thead>
             <tr>
-              <th class="w-8">
-                <input type="checkbox" class="checkbox" (change)="marcarTodas($any($event.target).checked)" title="Marcar todo lo sugerido" />
+              <th class="col-check">
+                <input type="checkbox" class="checkbox" (change)="marcarTodas($any($event.target).checked)" title="Marcar todo lo sugerido" aria-label="Marcar todo lo sugerido" />
               </th>
               <th>Insumo</th>
               <th class="text-right">Stock</th>
@@ -74,11 +73,11 @@
           </thead>
           <tbody>
             @for (f of filasVisibles(); track f.sugerida.insumoId) {
-              <tr [class.bg-accent-soft]="f.marcada">
-                <td><input type="checkbox" class="checkbox" [(ngModel)]="f.marcada" (ngModelChange)="refrescarFilas()" /></td>
+              <tr [class.fila-sel]="f.marcada">
+                <td class="col-check"><input type="checkbox" class="checkbox" [(ngModel)]="f.marcada" (ngModelChange)="refrescarFilas()" [attr.aria-label]="'Marcar ' + f.sugerida.nombre" /></td>
                 <td>
-                  <div class="font-medium">{{ f.sugerida.nombre }}</div>
-                  <div class="text-muted">{{ f.sugerida.codigo }} · {{ f.sugerida.unidadBase }}</div>
+                  <div class="font-medium text-gray-900">{{ f.sugerida.nombre }}</div>
+                  <div class="text-xs text-muted">{{ f.sugerida.codigo }} · {{ f.sugerida.unidadBase }}</div>
                 </td>
                 <td class="text-right" [class.text-accent-2]="f.sugerida.stockActual < f.sugerida.stockMinimo">
                   {{ cantidad(f.sugerida.stockActual) }}
@@ -94,7 +93,7 @@
               </tr>
             } @empty {
               <tr>
-                <td colspan="11" class="py-10 text-center text-muted">No hay nada que comprar con estos parámetros. 🎉</td>
+                <td colspan="11" class="py-10 text-center text-muted">No hay nada que comprar con estos parámetros.</td>
               </tr>
             }
           </tbody>
@@ -133,44 +132,59 @@
   @if (pestana() === "ordenes") {
     <div [class]="orden() ? 'grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]' : 'grid items-start gap-6'">
       <div>
-        <div class="mb-3 flex items-center gap-3">
-          <select class="input w-auto" [ngModel]="filtroEstado()" (ngModelChange)="filtroEstado.set($event); cargarOrdenes()">
-            <option value="">Todos los estados</option>
-            @for (e of estadosOc; track e) {
-              <option [value]="e">{{ etiquetaOc[e] }}</option>
-            }
-          </select>
-        </div>
-        <div class="table-wrap overflow-x-auto">
+        <div class="table-wrap">
+          <div class="px-4 pt-3">
+            <nav class="tabs" aria-label="Filtrar por estado">
+              <button type="button" class="tab" [class.tab-active]="filtroEstado() === ''" (click)="filtroEstado.set(''); cargarOrdenes()">Todas</button>
+              @for (e of estadosOc; track e) {
+                <button type="button" class="tab" [class.tab-active]="filtroEstado() === e" (click)="filtroEstado.set(e); cargarOrdenes()">{{ etiquetaOc[e] }}</button>
+              }
+            </nav>
+          </div>
+          <div class="table-head">
+            <h2 class="table-title">Órdenes</h2>
+            <app-paginacion [tabla]="tablaOrdenes" />
+          </div>
+          <app-seleccion-bar [tabla]="tablaOrdenes" />
+          <div class="overflow-x-auto">
           <table class="table">
             <thead>
               <tr>
+                <th class="col-check"><app-check-todos [tabla]="tablaOrdenes" /></th>
                 <th>#</th>
                 <th>Proveedor</th>
                 <th>Fecha</th>
                 <th>Estado</th>
                 <th class="text-right">Total</th>
+                <th class="w-10"><span class="sr-only">Acciones</span></th>
               </tr>
             </thead>
             <tbody>
-              @for (o of ordenes(); track o.id) {
-                <tr class="cursor-pointer" [class.bg-accent-soft]="orden()?.id === o.id" (click)="verOrden(o.id)">
-                  <td class="font-medium">#{{ o.numero }}</td>
+              @for (o of tablaOrdenes.filas(); track o.id) {
+                <tr class="cursor-pointer" [class.fila-sel]="tablaOrdenes.marcado(o)" [class.bg-brand-soft]="orden()?.id === o.id" (click)="verOrden(o.id)">
+                  <td class="col-check"><app-check-fila [tabla]="tablaOrdenes" [fila]="o" [etiqueta]="'Seleccionar orden #' + o.numero" /></td>
+                  <td class="font-semibold text-gray-900">#{{ o.numero }}</td>
                   <td>
-                    <div>{{ o.proveedor }}</div>
-                    <div class="text-muted">{{ o.lineas }} línea(s)</div>
+                    <div class="text-gray-900">{{ o.proveedor }}</div>
+                    <div class="text-xs text-muted">{{ o.lineas }} línea(s)</div>
                   </td>
                   <td class="whitespace-nowrap">{{ o.fecha }}</td>
                   <td><span [class]="'badge ' + claseOc[o.estado]">{{ etiquetaOc[o.estado] }}</span></td>
-                  <td class="whitespace-nowrap text-right">{{ soles(o.total) }}</td>
+                  <td class="whitespace-nowrap text-right tabular-nums text-gray-900">{{ soles(o.total) }}</td>
+                  <td (click)="$event.stopPropagation()">
+                    <app-row-menu [etiqueta]="'Acciones de la orden #' + o.numero">
+                      <button type="button" class="btn-action" (click)="verOrden(o.id)" aria-label="Ver orden"><app-icon name="pedido" [size]="15" /></button>
+                    </app-row-menu>
+                  </td>
                 </tr>
               } @empty {
                 <tr>
-                  <td colspan="5" class="py-10 text-center text-muted">Aún no hay órdenes. Créalas desde la lista sugerida.</td>
+                  <td colspan="7" class="py-10 text-center text-muted">Aún no hay órdenes. Créalas desde la lista sugerida.</td>
                 </tr>
               }
             </tbody>
           </table>
+          </div>
         </div>
       </div>
 
@@ -292,42 +306,51 @@
     </form>
 
     <div class="table-wrap">
+      <div class="table-head">
+        <h2 class="table-title">Proveedores</h2>
+        <app-paginacion [tabla]="tablaProveedores" />
+      </div>
+      <app-seleccion-bar [tabla]="tablaProveedores" />
+      <div class="overflow-x-auto">
       <table class="table">
         <thead>
           <tr>
+            <th class="col-check"><app-check-todos [tabla]="tablaProveedores" /></th>
             <th>Nombre</th>
             <th>RUC</th>
             <th>Teléfono</th>
             <th>Estado</th>
-            <th></th>
+            <th class="w-10"><span class="sr-only">Acciones</span></th>
           </tr>
         </thead>
         <tbody>
-          @for (p of proveedores(); track p.id) {
-            <tr [class.opacity-60]="!p.activo">
-              <td class="font-medium">{{ p.nombre }}</td>
+          @for (p of tablaProveedores.filas(); track p.id) {
+            <tr [class.fila-sel]="tablaProveedores.marcado(p)" [class.opacity-60]="!p.activo">
+              <td class="col-check"><app-check-fila [tabla]="tablaProveedores" [fila]="p" [etiqueta]="'Seleccionar ' + p.nombre" /></td>
+              <td class="font-medium text-gray-900">{{ p.nombre }}</td>
               <td>{{ p.ruc ?? "—" }}</td>
               <td>{{ p.telefono ?? "—" }}</td>
               <td>
                 <span class="badge" [class.badge-success]="p.activo" [class.badge-neutral]="!p.activo">{{ p.activo ? "Activo" : "Inactivo" }}</span>
               </td>
               <td>
-                <div class="acciones">
+                <app-row-menu [etiqueta]="'Acciones de ' + p.nombre">
                   @if (p.activo) {
-                    <button type="button" class="btn-action btn-action-danger" (click)="alternarProveedor(p)" [disabled]="trabajando()" title="Desactivar proveedor" aria-label="Desactivar proveedor"><app-icon name="eliminar" [size]="16" /></button>
+                    <button type="button" class="btn-action btn-action-danger" (click)="alternarProveedor(p)" [disabled]="trabajando()" title="Desactivar proveedor" aria-label="Desactivar proveedor"><app-icon name="eliminar" [size]="15" /></button>
                   } @else {
-                    <button type="button" class="btn-action btn-action-ok" (click)="alternarProveedor(p)" [disabled]="trabajando()" title="Reactivar proveedor" aria-label="Reactivar proveedor"><app-icon name="restaurar" [size]="16" /></button>
+                    <button type="button" class="btn-action btn-action-ok" (click)="alternarProveedor(p)" [disabled]="trabajando()" title="Reactivar proveedor" aria-label="Reactivar proveedor"><app-icon name="restaurar" [size]="15" /></button>
                   }
-                </div>
+                </app-row-menu>
               </td>
             </tr>
           } @empty {
             <tr>
-              <td colspan="5" class="py-10 text-center text-muted">Sin proveedores todavía.</td>
+              <td colspan="6" class="py-10 text-center text-muted">Sin proveedores todavía.</td>
             </tr>
           }
         </tbody>
       </table>
+      </div>
     </div>
   }
 </div>

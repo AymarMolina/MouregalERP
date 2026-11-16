@@ -19,6 +19,7 @@ import type {
   PedidoConSaldo,
   Proveedor,
   Rango,
+  ReporteCobros,
   ReporteEnvios,
   ReporteMargen,
   ReporteMasVendidos,
@@ -141,5 +142,8 @@ export class ReportesApi {
   }
   envios(r: Partial<Rango>): Promise<ReporteEnvios> {
     return firstValueFrom(this.http.get<ReporteEnvios>(`${api}/reportes/envios${query(r)}`));
+  }
+  cobros(r: Partial<Rango>): Promise<ReporteCobros> {
+    return firstValueFrom(this.http.get<ReporteCobros>(`${api}/reportes/cobros${query(r)}`));
   }
 }

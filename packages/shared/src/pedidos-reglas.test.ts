@@ -48,6 +48,42 @@ describe("desglosarConsumo", () => {
   });
 });
 
+describe("repartirUsado — unidades enteras y bordes", () => {
+  it("con tallos reparte unidades completas y la suma es exacta", () => {
+    const r = repartirUsado(
+      [
+        { id: "a", cantidadReceta: 3 },
+        { id: "b", cantidadReceta: 3 },
+      ],
+      5,
+      { enteros: true },
+    );
+    expect(r.every((x) => Number.isInteger(x.usado))).toBe(true);
+    expect(r.reduce((acc, x) => acc + x.usado, 0)).toBe(5);
+  });
+
+  it("nunca deja una parte negativa (antes: [0.001, 0.001, 0.001, -0.001])", () => {
+    const r = repartirUsado(["a", "b", "c", "d"].map((id) => ({ id, cantidadReceta: 1 })), 0.002);
+    expect(r.every((x) => x.usado >= 0)).toBe(true);
+    expect(r.reduce((acc, x) => acc + x.usado, 0)).toBeCloseTo(0.002, 9);
+  });
+
+  it("respeta la proporción de la receta", () => {
+    const r = repartirUsado(
+      [
+        { id: "a", cantidadReceta: 12 },
+        { id: "b", cantidadReceta: 6 },
+      ],
+      18,
+      { enteros: true },
+    );
+    expect(r).toEqual([
+      { id: "a", usado: 12 },
+      { id: "b", usado: 6 },
+    ]);
+  });
+});
+
 describe("repartirUsado", () => {
   it("reparte proporcional a la receta y la suma es exacta", () => {
     const r = repartirUsado(
@@ -59,7 +95,8 @@ describe("repartirUsado", () => {
       10,
     );
     expect(r.reduce((acc, x) => acc + x.usado, 0)).toBeCloseTo(10, 9);
-    expect(r[0].usado).toBe(3.333);
+    // 10 entre 3 en milésimas: 3.334 + 3.333 + 3.333 (el sobrante va a uno solo).
+    expect(r.map((x) => x.usado).sort()).toEqual([3.333, 3.333, 3.334]);
   });
 
   it("un solo ítem recibe todo lo usado", () => {

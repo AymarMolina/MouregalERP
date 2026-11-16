@@ -20,14 +20,14 @@ Chart.register(LineController, LineElement, PointElement, BarController, BarElem
 
 Chart.defaults.font.family = "Inter, ui-sans-serif, system-ui, sans-serif";
 Chart.defaults.font.size = 11;
-Chart.defaults.color = "#6b7280";
+Chart.defaults.color = "#6d5d72";
 
 export const TOKENS = {
-  texto: "#1f2329",
-  muted: "#6b7280",
-  grilla: "#eceef1",
+  texto: "#2c2b2d",
+  muted: "#6d5d72",
+  grilla: "#e9e0eb",
   superficie: "#ffffff",
-  crosshair: "#9ca3af",
+  crosshair: "#987f9c",
 };
 
 /** Tooltip claro: valor en negrita arriba, detalle debajo (spec de interacción). */

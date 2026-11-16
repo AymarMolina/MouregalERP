@@ -7,6 +7,21 @@ export type RolUsuario = (typeof ROL_USUARIO)[number];
 export const UNIDAD_BASE = ["tallo", "g", "hoja", "m", "und"] as const;
 export type UnidadBase = (typeof UNIDAD_BASE)[number];
 
+/** Unidades que se cuentan (no se pesan ni se miden): solo admiten cantidades enteras. */
+export const UNIDADES_ENTERAS: readonly UnidadBase[] = ["tallo", "hoja", "und"];
+
+export function esUnidadEntera(unidad: string): boolean {
+  return (UNIDADES_ENTERAS as readonly string[]).includes(unidad);
+}
+
+/** null si la cantidad es válida para la unidad; si no, el mensaje de error. */
+export function errorCantidadPorUnidad(nombre: string, unidad: string, cantidad: number): string | null {
+  if (esUnidadEntera(unidad) && !Number.isInteger(cantidad)) {
+    return `${nombre} se cuenta por ${unidad === "und" ? "unidad" : unidad}: la cantidad debe ser entera (llegó ${cantidad}).`;
+  }
+  return null;
+}
+
 export const INSUMO_CATEGORIA = [
   "flor",
   "follaje",

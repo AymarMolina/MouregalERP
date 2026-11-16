@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, eq, gte, inArray, lte, ne } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, lte } from 'drizzle-orm';
 import type { EstadoPedido, RangoFechas } from '@erp/shared';
 import { DB } from '../../db/db.module';
 import type { Db } from '../../db/client';
@@ -7,8 +7,11 @@ import {
   costosVehiculo,
   distritos,
   insumos,
+  clientes,
   kardexMovimientos,
+  pagos,
   pedidoConsumos,
+  pedidoHistorialEstado,
   pedidoItems,
   pedidos,
   productoTallas,
@@ -33,7 +36,35 @@ const r3 = (n: number) => Math.round((n + Number.EPSILON) * 1000) / 1000;
 export class ReportesService {
   constructor(@Inject(DB) private readonly db: Db) {}
 
-  private itemsEnRango(r: RangoFechas, estados: EstadoPedido[]) {
+  /**
+   * Pedidos que pasaron a `estadoNuevo` dentro del rango (hora de Lima) y
+   * hoy están en `estadosActuales`. Los reportes usan la fecha real del hecho
+   * (cuándo se armó, cuándo salió), no la fecha de entrega programada: un
+   * pedido para el 19 que se arma y despacha hoy cuenta hoy.
+   */
+  private async pedidosConTransicion(
+    r: RangoFechas,
+    estadoNuevo: EstadoPedido,
+    estadosActuales: EstadoPedido[],
+  ): Promise<string[]> {
+    const { desde, hasta } = limitesLima(r);
+    const filas = await this.db
+      .selectDistinct({ id: pedidoHistorialEstado.pedidoId })
+      .from(pedidoHistorialEstado)
+      .innerJoin(pedidos, eq(pedidoHistorialEstado.pedidoId, pedidos.id))
+      .where(
+        and(
+          eq(pedidoHistorialEstado.estadoNuevo, estadoNuevo),
+          gte(pedidoHistorialEstado.createdAt, desde),
+          lte(pedidoHistorialEstado.createdAt, hasta),
+          inArray(pedidos.estado, estadosActuales),
+        ),
+      );
+    return filas.map((f) => f.id);
+  }
+
+  private async itemsDePedidos(pedidoIds: string[]) {
+    if (!pedidoIds.length) return [];
     return this.db
       .select({
         itemId: pedidoItems.id,
@@ -45,27 +76,23 @@ export class ReportesService {
         talla: productoTallas.talla,
       })
       .from(pedidoItems)
-      .innerJoin(pedidos, eq(pedidoItems.pedidoId, pedidos.id))
       .innerJoin(
         productoTallas,
         eq(pedidoItems.productoTallaId, productoTallas.id),
       )
       .innerJoin(productos, eq(productoTallas.productoId, productos.id))
-      .where(
-        and(
-          gte(pedidos.fechaEntrega, r.desde),
-          lte(pedidos.fechaEntrega, r.hasta),
-          inArray(pedidos.estado, estados),
-        ),
-      );
+      .where(inArray(pedidoItems.pedidoId, pedidoIds));
   }
 
   /**
    * Margen por producto y talla: precio cobrado vs costo real (lo usado
    * en producción, consumo + merma, valorizado al costo del Kardex).
+   * Cuenta los pedidos que quedaron listos (se armaron) dentro del rango.
    */
   async margen(r: RangoFechas) {
-    const items = await this.itemsEnRango(r, CONSUMIDOS);
+    const items = await this.itemsDePedidos(
+      await this.pedidosConTransicion(r, 'listo', CONSUMIDOS),
+    );
     if (!items.length)
       return { rango: r, filas: [], totales: totalesMargen([]) };
 
@@ -270,15 +297,26 @@ export class ReportesService {
     };
   }
 
-  /** Más vendidos por producto y talla (pedidos no cancelados). */
+  /** Más vendidos por producto y talla: pedidos creados (vendidos) en el rango, sin cancelados. */
   async masVendidos(r: RangoFechas) {
-    const items = await this.itemsEnRango(r, [
-      'pendiente',
-      'en_armado',
-      'listo',
-      'en_camino',
-      'entregado',
-    ]);
+    const { desde, hasta } = limitesLima(r);
+    const vendidos = await this.db
+      .select({ id: pedidos.id })
+      .from(pedidos)
+      .where(
+        and(
+          gte(pedidos.createdAt, desde),
+          lte(pedidos.createdAt, hasta),
+          inArray(pedidos.estado, [
+            'pendiente',
+            'en_armado',
+            'listo',
+            'en_camino',
+            'entregado',
+          ]),
+        ),
+      );
+    const items = await this.itemsDePedidos(vendidos.map((v) => v.id));
     const grupos = new Map<
       string,
       {
@@ -317,25 +355,27 @@ export class ReportesService {
     };
   }
 
-  /** Envío cobrado vs costo por viaje, por vehículo y distrito. */
+  /**
+   * Envío cobrado vs costo por viaje, por vehículo y distrito.
+   * Cuenta los pedidos que salieron a reparto (en camino) dentro del rango.
+   */
   async envios(r: RangoFechas) {
+    const salieron = await this.pedidosConTransicion(r, 'en_camino', [
+      'en_camino',
+      'entregado',
+    ]);
     const [filas, costos] = await Promise.all([
-      this.db
-        .select({
-          vehiculo: pedidos.vehiculo,
-          costoEnvio: pedidos.costoEnvio,
-          distrito: distritos.nombre,
-        })
-        .from(pedidos)
-        .innerJoin(distritos, eq(pedidos.distritoId, distritos.id))
-        .where(
-          and(
-            gte(pedidos.fechaEntrega, r.desde),
-            lte(pedidos.fechaEntrega, r.hasta),
-            inArray(pedidos.estado, ['en_camino', 'entregado']),
-            ne(pedidos.estado, 'cancelado'),
-          ),
-        ),
+      salieron.length
+        ? this.db
+            .select({
+              vehiculo: pedidos.vehiculo,
+              costoEnvio: pedidos.costoEnvio,
+              distrito: distritos.nombre,
+            })
+            .from(pedidos)
+            .innerJoin(distritos, eq(pedidos.distritoId, distritos.id))
+            .where(inArray(pedidos.id, salieron))
+        : Promise.resolve([]),
       this.db.select().from(costosVehiculo),
     ]);
     const costoViaje = new Map(
@@ -386,6 +426,65 @@ export class ReportesService {
         cobrado: r2(lista.reduce((a, f) => a + f.cobrado, 0)),
         costo: r2(lista.reduce((a, f) => a + f.costo, 0)),
         diferencia: r2(lista.reduce((a, f) => a + f.diferencia, 0)),
+      },
+    };
+  }
+
+  /** Cobros confirmados (estado pagado) por fecha de pago: detalle y resumen por método. */
+  async cobros(r: RangoFechas) {
+    const { desde, hasta } = limitesLima(r);
+    const filas = await this.db
+      .select({
+        pagoId: pagos.id,
+        pagadoAt: pagos.pagadoAt,
+        tipo: pagos.tipo,
+        metodo: pagos.metodo,
+        monto: pagos.monto,
+        pedidoId: pedidos.id,
+        numero: pedidos.numero,
+        estadoPedido: pedidos.estado,
+        cliente: clientes.nombre,
+      })
+      .from(pagos)
+      .innerJoin(pedidos, eq(pagos.pedidoId, pedidos.id))
+      .innerJoin(clientes, eq(pedidos.clienteId, clientes.id))
+      .where(
+        and(
+          eq(pagos.estado, 'pagado'),
+          gte(pagos.pagadoAt, desde),
+          lte(pagos.pagadoAt, hasta),
+        ),
+      )
+      .orderBy(desc(pagos.pagadoAt));
+
+    const detalle = filas.map((f) => ({
+      ...f,
+      pagadoAt: f.pagadoAt?.toISOString() ?? null,
+      monto: r2(Number(f.monto)),
+    }));
+    const porMetodo = new Map<
+      string,
+      { metodo: string; cobros: number; monto: number }
+    >();
+    for (const f of detalle) {
+      const g = porMetodo.get(f.metodo) ?? {
+        metodo: f.metodo,
+        cobros: 0,
+        monto: 0,
+      };
+      g.cobros += 1;
+      g.monto += f.monto;
+      porMetodo.set(f.metodo, g);
+    }
+    return {
+      rango: r,
+      filas: detalle,
+      porMetodo: [...porMetodo.values()]
+        .map((g) => ({ ...g, monto: r2(g.monto) }))
+        .sort((a, b) => b.monto - a.monto),
+      totales: {
+        cobros: detalle.length,
+        monto: r2(detalle.reduce((a, f) => a + f.monto, 0)),
       },
     };
   }

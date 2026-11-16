@@ -170,8 +170,13 @@ describe('API por HTTP (e2e)', () => {
       .get('/api/reportes/merma')
       .auth(vendedora, { type: 'bearer' })
       .expect(403);
+    // Envíos cuenta el día en que el pedido salió (hoy), no su fecha de
+    // entrega programada (2026-11-12).
+    const hoy = new Date().toLocaleDateString('en-CA', {
+      timeZone: 'America/Lima',
+    });
     const envios = await request(http)
-      .get('/api/reportes/envios?desde=2026-11-12&hasta=2026-11-12')
+      .get(`/api/reportes/envios?desde=${hoy}&hasta=${hoy}`)
       .auth(admin, { type: 'bearer' })
       .expect(200);
     expect(envios.body.totales).toMatchObject({
@@ -179,6 +184,18 @@ describe('API por HTTP (e2e)', () => {
       cobrado: 15,
       costo: 10,
     });
+    const cobros = await request(http)
+      .get(`/api/reportes/cobros?desde=${hoy}&hasta=${hoy}`)
+      .auth(admin, { type: 'bearer' })
+      .expect(200);
+    expect(cobros.body.totales.cobros).toBeGreaterThan(0);
+    if (hoy !== '2026-11-12') {
+      const programada = await request(http)
+        .get('/api/reportes/envios?desde=2026-11-12&hasta=2026-11-12')
+        .auth(admin, { type: 'bearer' })
+        .expect(200);
+      expect(programada.body.totales.viajes).toBe(0);
+    }
   });
 
   it('permisos de rol y validación de entrada', async () => {

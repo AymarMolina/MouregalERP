@@ -66,24 +66,38 @@ export function desglosarConsumo(cantidadReceta: number, cantidadUsada: number):
 
 /**
  * Reparte lo usado de un insumo entre los ítems del pedido que lo llevan,
- * proporcional a su receta. El último ítem absorbe el redondeo para que la
- * suma sea exactamente `totalUsado`.
+ * proporcional a su receta, por el método del mayor resto: la suma es
+ * exactamente `totalUsado` y ninguna parte queda negativa.
+ *
+ * Con `enteros` (tallos, hojas, unidades) reparte unidades completas; si no,
+ * reparte en milésimas.
  */
 export function repartirUsado(
   partes: { id: string; cantidadReceta: number }[],
   totalUsado: number,
+  opciones: { enteros?: boolean } = {},
 ): { id: string; usado: number }[] {
-  const totalReceta = partes.reduce((acc, p) => acc + p.cantidadReceta, 0);
   if (!partes.length) return [];
-  let asignado = 0;
-  return partes.map((p, idx) => {
-    if (idx === partes.length - 1) {
-      return { id: p.id, usado: round3(totalUsado - asignado) };
-    }
-    const usado = totalReceta > 0 ? round3((totalUsado * p.cantidadReceta) / totalReceta) : 0;
-    asignado = round3(asignado + usado);
-    return { id: p.id, usado };
-  });
+  const escala = opciones.enteros ? 1 : 1000;
+  const totalUnidades = Math.max(0, Math.round(totalUsado * escala));
+  const totalReceta = partes.reduce((acc, p) => acc + p.cantidadReceta, 0);
+
+  // Sin receta de referencia: todo al primero.
+  if (totalReceta <= 0) {
+    return partes.map((p, i) => ({ id: p.id, usado: i === 0 ? totalUnidades / escala : 0 }));
+  }
+
+  const exactos = partes.map((p) => (totalUnidades * p.cantidadReceta) / totalReceta);
+  const base = exactos.map((x) => Math.floor(x + 1e-9));
+  let resto = totalUnidades - base.reduce((a, b) => a + b, 0);
+  // Las unidades sobrantes van a los ítems con mayor parte decimal.
+  const orden = exactos.map((x, i) => ({ i, frac: x - base[i] })).sort((a, b) => b.frac - a.frac);
+  for (const { i } of orden) {
+    if (resto <= 0) break;
+    base[i] += 1;
+    resto -= 1;
+  }
+  return partes.map((p, i) => ({ id: p.id, usado: base[i] / escala }));
 }
 
 /** Suma recetas efectivas agrupando por insumo. */

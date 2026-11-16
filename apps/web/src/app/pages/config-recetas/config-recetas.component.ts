@@ -1,8 +1,11 @@
 import { Component, OnInit, computed, inject, signal } from "@angular/core";
 import { IconComponent } from "../../shared/icon/icon.component";
+import { RowMenuComponent } from "../../shared/tabla/row-menu.component";
+import { Tabla } from "../../shared/tabla/tabla";
+import { TABLA_CONTROLES } from "../../shared/tabla/tabla-controles.component";
 import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
 import type { RecetaLineaInput, RolRecetaLinea, Talla } from "@erp/shared";
-import { ROL_RECETA_LINEA, TALLA } from "@erp/shared";
+import { ROL_RECETA_LINEA, TALLA, esUnidadEntera } from "@erp/shared";
 import { AuthService } from "../../core/auth/auth.service";
 import type { Insumo, Producto, RecetaLinea } from "../../core/catalogo/catalogo.types";
 import { InsumosService } from "../../core/catalogo/insumos.service";
@@ -10,7 +13,7 @@ import { ProductosService } from "../../core/catalogo/productos.service";
 
 @Component({
   selector: "app-config-recetas",
-  imports: [ReactiveFormsModule, IconComponent],
+  imports: [ReactiveFormsModule, IconComponent, RowMenuComponent, ...TABLA_CONTROLES],
   templateUrl: "./config-recetas.component.html",
 })
 export class ConfigRecetasComponent implements OnInit {
@@ -24,7 +27,31 @@ export class ConfigRecetasComponent implements OnInit {
   readonly esAdmin = computed(() => this.auth.user()?.rol === "admin");
 
   readonly productos = signal<Producto[]>([]);
+  readonly tabla = new Tabla(() => this.productos(), {
+    id: (p) => p.id,
+    porPagina: 10,
+    nombreCsv: "productos",
+    csv: (p) => ({
+      producto: p.nombre,
+      precioS: this.tallaDe(p, "S")?.precioBase,
+      margenS: this.tallaDe(p, "S")?.margen,
+      precioM: this.tallaDe(p, "M")?.precioBase,
+      margenM: this.tallaDe(p, "M")?.margen,
+      precioL: this.tallaDe(p, "L")?.precioBase,
+      margenL: this.tallaDe(p, "L")?.margen,
+    }),
+  });
   readonly insumos = signal<Insumo[]>([]);
+
+  /** Unidad del insumo de una línea de receta (tallo, g, hoja, m, und). */
+  unidadDe(insumoId: string): string {
+    return this.insumos().find((i) => i.id === insumoId)?.unidadBase ?? "";
+  }
+
+  /** Tallos, hojas y unidades se cargan enteros; gramos y metros admiten decimales. */
+  pasoDe(insumoId: string): number {
+    return esUnidadEntera(this.unidadDe(insumoId)) ? 1 : 0.001;
+  }
   readonly loading = signal(true);
   readonly mostrarFormNuevo = signal(false);
 

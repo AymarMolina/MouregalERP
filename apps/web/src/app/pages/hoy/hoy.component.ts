@@ -12,6 +12,9 @@ import { AreaChartComponent } from "../../shared/charts/area-chart.component";
 import { BarChartComponent } from "../../shared/charts/bar-chart.component";
 import type { Punto } from "../../shared/charts/escala";
 import { IconComponent, type NombreIcono } from "../../shared/icon/icon.component";
+import { RowMenuComponent } from "../../shared/tabla/row-menu.component";
+import { Tabla } from "../../shared/tabla/tabla";
+import { TABLA_CONTROLES } from "../../shared/tabla/tabla-controles.component";
 
 /** Estados que se siguen en el día, en orden del flujo. */
 const ESTADOS_DIA: EstadoPedido[] = ["pendiente", "en_armado", "listo", "en_camino", "entregado"];
@@ -32,7 +35,7 @@ const deFecha = (f: string) => new Date(`${f}T12:00:00Z`);
 
 @Component({
   selector: "app-hoy",
-  imports: [RouterLink, FormsModule, IconComponent, AreaChartComponent, BarChartComponent],
+  imports: [RouterLink, FormsModule, IconComponent, AreaChartComponent, BarChartComponent, RowMenuComponent, ...TABLA_CONTROLES],
   templateUrl: "./hoy.component.html",
 })
 export class HoyComponent implements OnInit {
@@ -131,6 +134,28 @@ export class HoyComponent implements OnInit {
           p.distrito.toLowerCase().includes(q)),
     );
   });
+
+  readonly tabla = new Tabla(() => this.pedidosFiltrados(), {
+    id: (p) => p.id,
+    porPagina: 10,
+    nombreCsv: "pedidos-hoy",
+    csv: (p) => ({
+      pedido: p.numero,
+      hora: hora(p.horaEntrega),
+      cliente: p.cliente,
+      recibe: p.nombreReceptor,
+      distrito: p.distrito,
+      estado: ETIQUETA_ESTADO_PEDIDO[p.estado],
+      total: p.total,
+      saldo: this.saldo(p),
+    }),
+  });
+
+  /** Pedidos del día en un estado (para el contador de cada pestaña). */
+  conteo(estado: EstadoPedido | null): number {
+    const pedidos = this.data()?.pedidos ?? [];
+    return estado ? pedidos.filter((p) => p.estado === estado).length : pedidos.length;
+  }
 
   constructor() {
     // Spec sección 8: el tablero se refresca cada 15 s.

@@ -1,6 +1,16 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { and, asc, eq, inArray } from 'drizzle-orm';
-import type { ProductoInput, RecetaLineaInput, Talla } from '@erp/shared';
+import {
+  errorCantidadPorUnidad,
+  type ProductoInput,
+  type RecetaLineaInput,
+  type Talla,
+} from '@erp/shared';
 import { DB } from '../../../db/db.module';
 import type { Db } from '../../../db/client';
 import {
@@ -138,6 +148,36 @@ export class ProductosService {
     lineas: RecetaLineaInput[],
   ) {
     const productoTalla = await this.oneProductoTalla(productoId, talla);
+
+    // Tallos, hojas y unidades van en cantidades enteras.
+    if (lineas.length) {
+      const usados = await this.db
+        .select({
+          id: insumos.id,
+          nombre: insumos.nombre,
+          unidadBase: insumos.unidadBase,
+        })
+        .from(insumos)
+        .where(
+          inArray(
+            insumos.id,
+            lineas.map((l) => l.insumoId),
+          ),
+        );
+      const errores = lineas
+        .map((l) => {
+          const insumo = usados.find((u) => u.id === l.insumoId);
+          return insumo
+            ? errorCantidadPorUnidad(
+                insumo.nombre,
+                insumo.unidadBase,
+                l.cantidad,
+              )
+            : null;
+        })
+        .filter((e): e is string => e !== null);
+      if (errores.length) throw new BadRequestException(errores.join(' '));
+    }
 
     await this.db.transaction(async (tx) => {
       await tx
