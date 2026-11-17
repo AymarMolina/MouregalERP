@@ -13,6 +13,7 @@ import { ComprasModule } from './modules/compras/compras.module';
 import { NotificacionesModule } from './modules/notificaciones/notificaciones.service';
 import { PagosModule } from './modules/pagos/pagos.module';
 import { ReportesModule } from './modules/reportes/reportes.controller';
+import { SaludController } from './salud.controller';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { ReportesModule } from './modules/reportes/reportes.controller';
     ReportesModule,
     DashboardModule,
   ],
+  controllers: [SaludController],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },

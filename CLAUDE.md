@@ -25,6 +25,16 @@ pnpm --filter api lint           # eslint --fix (también formatea con prettier)
 cd apps/web && npx ng build      # verifica plantillas y tipos de la web
 ```
 
+**Producción (Railway + Neon):** guía en [`docs/DESPLIEGUE-RAILWAY.md`](docs/DESPLIEGUE-RAILWAY.md).
+- Un solo servicio: `railway.json` corre `pnpm run build:prod` y `pnpm run start:prod`.
+  - `start:prod` aplica las migraciones con `dist/db/migrar.js` (drizzle-orm, sin drizzle-kit) y levanta el API.
+  - Con `NODE_ENV=production`, el API sirve la web compilada (`apps/web/dist/web/browser`) y responde `index.html` a toda ruta que no sea `/api`.
+- Salud: `GET /api/salud` (pública).
+- Producción **no** usa `db:seed`.
+  - Los usuarios se crean con `pnpm --filter api usuario:crear --email … --nombre "…" --rol …`. Sin `--password`, genera una contraseña y la muestra una vez.
+  - El catálogo de ejemplo, opcional, se carga con `pnpm --filter api db:seed:produccion`.
+- La lista de dependencias con scripts de instalación permitidos (`onlyBuiltDependencies`) está en `pnpm-workspace.yaml`. pnpm 10 ya no la lee desde `package.json`.
+
 Usuarios dev (seed): `admin|vendedora|produccion|almacen|delivery@mouregal.pe`, contraseña `dev12345`.
 
 `apps/api/.env` **no está en git** (tiene la URL de Neon). Copia `apps/api/.env.example` y pide los valores. Variables nuevas además de las del spec: `CORS_ORIGIN`, `TRUST_PROXY`, `PAGOS_LINK_BASE` (stub de links de pago), `PERMITIR_ENTREGA_CON_SALDO`.

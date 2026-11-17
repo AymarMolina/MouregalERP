@@ -11,6 +11,8 @@
     "db:migrate": "pnpm --filter api db:migrate",
     "db:studio": "pnpm --filter api db:studio",
     "db:seed": "pnpm run build:shared && pnpm --filter api db:seed",
+    "build:prod": "pnpm run build:shared && pnpm --filter web build && pnpm --filter api build",
+    "start:prod": "pnpm --filter api start:railway",
     "lint": "pnpm -r lint",
     "test": "pnpm -r test"
   },
@@ -20,14 +22,5 @@
   "packageManager": "pnpm@10.27.0",
   "devDependencies": {
     "concurrently": "^9.1.0"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "@nestjs/core",
-      "@parcel/watcher",
-      "esbuild",
-      "lmdb",
-      "msgpackr-extract"
-    ]
   }
 }
