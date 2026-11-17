@@ -6,7 +6,7 @@
     </div>
   </div>
 
-  <nav class="tabs mb-5">
+  <nav class="tabs mb-5" data-tour="compras-tabs">
     @for (t of [{ id: "sugeridas", label: "Compras sugeridas" }, { id: "ordenes", label: "Órdenes de compra" }, { id: "proveedores", label: "Proveedores" }]; track t.id) {
       <button type="button" (click)="cambiarPestana($any(t.id))" class="tab" [class.tab-active]="pestana() === t.id">
         {{ t.label }}
@@ -23,14 +23,14 @@
 
   <!-- ===================== SUGERIDAS ===================== -->
   @if (pestana() === "sugeridas") {
-    <div class="card mb-4 flex flex-wrap items-end gap-4 p-4">
+    <div class="card mb-4 flex flex-wrap items-end gap-4 p-4" data-tour="compras-parametros">
       <div>
         <label class="field-label">Demanda de los próximos</label>
         <div class="flex items-center gap-2">
           <input type="number" min="0" max="60" class="input w-24" [ngModel]="dias()" (ngModelChange)="dias.set(+$event)" />
           <span class="text-muted">días</span>
           <button type="button" class="btn-secondary" (click)="cargarSugeridas()">Recalcular</button>
-          <button type="button" class="btn-secondary" (click)="exportarSugeridas()" [disabled]="!filasVisibles().length" title="Descargar la lista sugerida en Excel">
+          <button type="button" class="btn-secondary" data-tour="compras-excel" (click)="exportarSugeridas()" [disabled]="!filasVisibles().length" title="Descargar la lista sugerida en Excel">
             <app-icon name="excel" [size]="16" class="text-green-700" /> Excel
           </button>
         </div>
@@ -45,7 +45,7 @@
       </p>
     </div>
 
-    <div class="table-wrap mb-4 overflow-x-auto">
+    <div class="table-wrap mb-4 overflow-x-auto" data-tour="compras-sugeridas">
       @if (cargandoSugeridas()) {
         <div class="space-y-3 p-4">
           @for (i of [1, 2, 3, 4]; track i) {
@@ -101,7 +101,7 @@
       }
     </div>
 
-    <div class="card flex flex-wrap items-end gap-4 p-4">
+    <div class="card flex flex-wrap items-end gap-4 p-4" data-tour="compras-crear-orden">
       <div class="min-w-[14rem]">
         <label class="field-label">Proveedor</label>
         <select class="input" [ngModel]="proveedorParaOrden()" (ngModelChange)="proveedorParaOrden.set($event)">

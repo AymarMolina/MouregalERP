@@ -6,7 +6,7 @@
     </div>
   </div>
 
-  <div class="card mb-6">
+  <div class="card mb-6" data-tour="tarifario-costos">
     <h2 class="mb-3 font-medium">Costo por viaje</h2>
     <form [formGroup]="costosForm" (ngSubmit)="guardarCostos()" class="flex items-end gap-4">
       <div>
@@ -26,7 +26,7 @@
 
   <div class="page-header">
     <h2 class="font-medium">Distritos</h2>
-    <button type="button" (click)="mostrarForm.set(!mostrarForm())" class="btn-primary">
+    <button type="button" data-tour="tarifario-nuevo" (click)="mostrarForm.set(!mostrarForm())" class="btn-primary">
       {{ mostrarForm() ? "Cancelar" : "+ Nuevo distrito" }}
     </button>
   </div>
@@ -56,7 +56,7 @@
       }
     </div>
   } @else {
-    <div class="table-wrap">
+    <div class="table-wrap" data-tour="tarifario-distritos">
       <div class="table-head">
         <h2 class="table-title">Distritos</h2>
         <app-paginacion [tabla]="tabla" />

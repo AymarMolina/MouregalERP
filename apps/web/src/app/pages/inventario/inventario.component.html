@@ -4,7 +4,7 @@
       <h1 class="page-title">Inventario</h1>
       <p class="panel-subtitle">Insumos, stock mínimo, costo promedio y saldo de apertura.</p>
     </div>
-    <div class="flex items-center gap-2">
+    <div class="flex items-center gap-2" data-tour="inv-acciones">
       <label class="btn-secondary cursor-pointer">
         Cargar apertura (CSV)
         <input type="file" accept=".csv,text/csv" class="hidden" (change)="onArchivoApertura($event)" />
@@ -90,7 +90,7 @@
   } @else {
     <!-- Aviso de reposición -->
     @if (resumenStock().total > 0) {
-      <div class="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+      <div data-tour="inv-alerta" class="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
         <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-red-100 text-negativo">
           <app-icon name="alerta" [size]="18" />
         </span>
@@ -118,7 +118,7 @@
     }
 
     <!-- Leyenda -->
-    <div class="mb-2 flex flex-wrap items-center gap-x-5 gap-y-2 px-1 text-xs text-muted">
+    <div data-tour="inv-leyenda" class="mb-2 flex flex-wrap items-center gap-x-5 gap-y-2 px-1 text-xs text-muted">
       <span class="font-medium text-text">Leyenda del stock:</span>
       <span class="inline-flex items-center gap-1.5">
         <span class="h-3 w-3 rounded-sm bg-red-100 ring-1 ring-inset ring-red-300"></span>
@@ -135,9 +135,9 @@
       <span class="ml-auto hidden sm:inline">Pasa el mouse sobre una alerta para ver cuánto falta.</span>
     </div>
 
-    <div class="table-wrap">
+    <div class="table-wrap" data-tour="inv-tabla">
       <div class="px-4 pt-3">
-        <nav class="tabs" aria-label="Filtrar por stock">
+        <nav class="tabs" data-tour="inv-filtros" aria-label="Filtrar por stock">
           <button type="button" class="tab" [class.tab-active]="filtroStock() === 'todos'" (click)="filtroStock.set('todos')">
             Todos <span class="tab-count">{{ insumos().length }}</span>
           </button>
@@ -146,7 +146,7 @@
           </button>
         </nav>
       </div>
-      <div class="table-head">
+      <div class="table-head" data-tour="inv-paginacion">
         <h2 class="table-title">Insumos</h2>
         <app-paginacion [tabla]="tabla" />
       </div>

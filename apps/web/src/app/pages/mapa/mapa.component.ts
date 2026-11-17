@@ -69,9 +69,13 @@ const PASOS: Paso[] = [
         </div>
       </div>
 
-      <ol class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <ol class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" data-tour="mapa-pasos">
         @for (p of pasos(); track p.numero) {
-          <li class="card flex flex-col gap-3 p-4" [class.opacity-60]="!p.enlaces.length">
+          <li
+            class="card flex flex-col gap-3 p-4"
+            [class.opacity-60]="!p.enlaces.length"
+            [attr.data-tour]="p.numero === 1 ? 'mapa-paso' : null"
+          >
             <div class="flex items-center gap-3">
               <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent font-semibold text-white">
                 {{ p.numero }}
@@ -79,7 +83,7 @@ const PASOS: Paso[] = [
               <h2 class="font-semibold">{{ p.titulo }}</h2>
             </div>
             <p class="flex-1 text-muted">{{ p.descripcion }}</p>
-            <div class="flex flex-wrap gap-2">
+            <div class="flex flex-wrap gap-2" [attr.data-tour]="p.numero === 1 ? 'mapa-enlaces' : null">
               @for (e of p.enlaces; track e.path) {
                 <a [routerLink]="e.path" class="btn-secondary px-2.5 py-1">{{ e.label }} →</a>
               } @empty {

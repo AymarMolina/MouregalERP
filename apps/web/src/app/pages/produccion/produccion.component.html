@@ -4,7 +4,7 @@
       <h1 class="page-title">Producción</h1>
       <p class="panel-subtitle">Pedidos por armar, en armado y listos para despacho. Se actualiza cada 15 segundos.</p>
     </div>
-    <button type="button" class="btn-secondary" (click)="exportarExcel()" [disabled]="loading()" title="Hoja de producción: un renglón por producto">
+    <button type="button" class="btn-secondary" data-tour="prod-excel" (click)="exportarExcel()" [disabled]="loading()" title="Hoja de producción: un renglón por producto">
       <app-icon name="excel" [size]="16" class="text-green-700" /> Excel
     </button>
   </div>
@@ -21,9 +21,9 @@
     </div>
   } @else {
     <!-- Tablero Kanban -->
-    <div class="mb-6 grid items-start gap-4 lg:grid-cols-3">
+    <div class="mb-6 grid items-start gap-4 lg:grid-cols-3" data-tour="prod-tablero">
       @for (col of columnas(); track col.clave) {
-        <section class="flex min-h-[14rem] flex-col rounded-xl bg-gray-100/70 p-4" [attr.aria-label]="col.titulo">
+        <section class="flex min-h-[14rem] flex-col rounded-xl bg-gray-100/70 p-4" [attr.aria-label]="col.titulo" [attr.data-tour]="'prod-col-' + col.clave">
           <!-- Encabezado de columna -->
           <header class="mb-3 flex items-center justify-between">
             <div class="flex items-center gap-2">
@@ -109,7 +109,7 @@
     </div>
 
     @if (seleccionado(); as pedido) {
-      <div class="card space-y-5">
+      <div class="card space-y-5" data-tour="prod-detalle">
         <div class="flex items-center justify-between border-b border-line pb-3">
           <div>
             <h2 class="panel-title text-base">Pedido #{{ pedido.numero }}</h2>

@@ -7,7 +7,7 @@
     @let p = pedido()!;
     <div class="page-header">
       <div>
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-3" data-tour="detalle-estado">
           <h1 class="panel-title text-lg">Pedido #{{ p.numero }}</h1>
           <span [class]="'badge text-sm ' + claseEstado[p.estado]">{{ etiquetaEstado[p.estado] }}</span>
         </div>
@@ -18,7 +18,7 @@
           <a routerLink="/pagos" class="btn-secondary">Ir a pagos</a>
         }
         @if (puedeCancelar()) {
-          <button type="button" class="btn-secondary text-red-700" [disabled]="cancelando()" (click)="cancelar()">
+          <button type="button" class="btn-secondary text-red-700" data-tour="detalle-cancelar" [disabled]="cancelando()" (click)="cancelar()">
             {{ cancelando() ? "Cancelando..." : "Cancelar pedido" }}
           </button>
         }
@@ -31,7 +31,7 @@
 
     <div class="grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(16rem,1fr)]">
       <div class="space-y-6">
-        <section class="card">
+        <section class="card" data-tour="detalle-comanda">
           <h2 class="panel-title mb-3">Comanda</h2>
           <ul class="divide-y divide-line">
             @for (item of p.items; track item.id) {
@@ -60,7 +60,7 @@
           }
         </section>
 
-        <section class="card">
+        <section class="card" data-tour="detalle-entrega">
           <h2 class="panel-title mb-3">Entrega</h2>
           <dl class="grid gap-x-4 gap-y-2 sm:grid-cols-[8rem_1fr]">
             <dt class="text-muted">Recibe</dt>
@@ -72,7 +72,7 @@
           </dl>
         </section>
 
-        <section class="card">
+        <section class="card" data-tour="detalle-historial">
           <h2 class="panel-title mb-3">Historial</h2>
           <ol class="relative space-y-4 border-l border-line pl-5">
             @for (h of historial(); track h.id) {
@@ -92,7 +92,7 @@
       </div>
 
       <aside class="space-y-6 lg:sticky lg:top-6">
-        <section class="card space-y-2">
+        <section class="card space-y-2" data-tour="detalle-resumen">
           <h2 class="panel-title mb-1">Resumen</h2>
           <div class="flex justify-between">
             <span class="text-muted">Productos</span>
@@ -116,7 +116,7 @@
           </div>
         </section>
 
-        <section class="card">
+        <section class="card" data-tour="detalle-pagos">
           <h2 class="panel-title mb-3">Pagos</h2>
           <ul class="space-y-2">
             @for (pg of pagos(); track pg.id) {

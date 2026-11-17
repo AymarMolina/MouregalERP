@@ -12,7 +12,7 @@
       </p>
     </div>
     @if (puedeVender()) {
-      <a routerLink="/pedidos/nuevo" class="btn-primary">
+      <a routerLink="/pedidos/nuevo" class="btn-primary" data-tour="hoy-nuevo">
         <app-icon name="nuevo" [size]="16" />
         Nuevo pedido
       </a>
@@ -44,7 +44,7 @@
   } @else if (data()) {
     @let d = data()!;
     <!-- KPIs -->
-    <div class="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div class="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4" data-tour="hoy-kpis">
       @for (k of kpis(); track k.etiqueta) {
         <div class="kpi">
           <span class="kpi-icon"><app-icon [name]="k.icono" [size]="18" /></span>
@@ -70,7 +70,7 @@
 
     <!-- Ventas + estados -->
     <div class="mb-6 grid gap-4 lg:grid-cols-3">
-      <section class="card lg:col-span-2">
+      <section class="card lg:col-span-2" data-tour="hoy-ventas">
         <div class="mb-4 flex items-start justify-between gap-3">
           <div>
             <h2 class="panel-title">Ventas · últimos 14 días</h2>
@@ -84,7 +84,7 @@
         <app-area-chart [datos]="serieVentas()" [formato]="formatoSoles" titulo="Ventas de los últimos 14 días" [alto]="230" />
       </section>
 
-      <section class="card">
+      <section class="card" data-tour="hoy-estados">
         <h2 class="panel-title">Pedidos de hoy por estado</h2>
         <p class="panel-subtitle mb-4">{{ estados().total }} {{ estados().total === 1 ? "pedido" : "pedidos" }} activos</p>
         <ul class="space-y-3.5">
@@ -105,10 +105,10 @@
 
     <!-- Tabla + lateral -->
     <div class="grid items-start gap-4 lg:grid-cols-3">
-      <section class="table-wrap lg:col-span-2">
+      <section class="table-wrap lg:col-span-2" data-tour="hoy-pedidos">
         <div class="px-4 pt-4">
           <h2 class="panel-title">Pedidos del día</h2>
-          <nav class="tabs mt-3" aria-label="Filtrar por estado">
+          <nav class="tabs mt-3" aria-label="Filtrar por estado" data-tour="hoy-filtros">
             <button type="button" class="tab" [class.tab-active]="filtroEstado() === null" (click)="filtroEstado.set(null)">
               Todos <span class="tab-count">{{ conteo(null) }}</span>
             </button>
@@ -188,13 +188,13 @@
       </section>
 
       <div class="space-y-4">
-        <section class="card">
+        <section class="card" data-tour="hoy-horas">
           <h2 class="panel-title">Entregas por hora</h2>
           <p class="panel-subtitle mb-3">Pedidos activos de hoy según hora de entrega</p>
           <app-bar-chart [datos]="porHora()" [formato]="formatoPedidos" titulo="Entregas de hoy por hora" [alto]="180" />
         </section>
 
-        <section class="card">
+        <section class="card" data-tour="hoy-atencion">
           <h2 class="panel-title mb-3">Requiere atención</h2>
           <ul class="divide-y divide-gray-100">
             @for (c of d.consultasAbiertas; track c.id) {

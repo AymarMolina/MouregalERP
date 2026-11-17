@@ -8,6 +8,7 @@ import {
   ChartColumn,
   ChevronLeft,
   ChevronRight,
+  CircleQuestionMark,
   Download,
   Ellipsis,
   FileSpreadsheet,
@@ -73,6 +74,7 @@ const ICONOS = {
   reportes: ChartColumn,
   buscar: Search,
   salir: LogOut,
+  ayuda: CircleQuestionMark,
   // KPIs y estados
   ventas: DollarSign,
   ticket: Ticket,

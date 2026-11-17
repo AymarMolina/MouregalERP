@@ -6,7 +6,7 @@
         <img src="logo-mouregal.png" alt="Mouregal · Flores y Detalles Deluxe" width="160" height="120" class="h-auto w-32" />
       </a>
 
-      <nav class="flex-1 overflow-y-auto px-3 pb-4 pt-2">
+      <nav class="flex-1 overflow-y-auto px-3 pb-4 pt-2" data-tour="nav">
         @for (group of groups(); track group.label) {
           <div class="mb-4">
             <div class="px-2.5 pb-1 pt-1 text-[11px] font-medium text-gray-400">
@@ -27,7 +27,7 @@
       </nav>
 
       <div class="border-t border-gray-100 p-3">
-        <div class="flex items-center gap-2.5 rounded-lg px-1.5 py-1.5">
+        <div class="flex items-center gap-2.5 rounded-lg px-1.5 py-1.5" data-tour="usuario">
           <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-soft text-xs font-semibold text-brand-dark">
             {{ iniciales() }}
           </span>
@@ -54,7 +54,12 @@
         <span class="truncate font-medium text-gray-900">{{ paginaActual() }}</span>
       </div>
 
-      <form class="search ml-auto hidden md:flex md:w-72 md:max-w-none md:flex-none" role="search" (submit)="irA($event)">
+      <form
+        class="search ml-auto hidden md:flex md:w-72 md:max-w-none md:flex-none"
+        role="search"
+        data-tour="buscador"
+        (submit)="irA($event)"
+      >
         <app-icon name="buscar" />
         <input
           #buscador
@@ -74,6 +79,19 @@
           }
         </datalist>
       </form>
+
+      @if (tour.disponible()) {
+        <button
+          type="button"
+          class="btn-icon ml-auto md:ml-0"
+          data-tour="ayuda"
+          (click)="tour.verTutorial()"
+          title="Ver el tutorial de esta pantalla"
+          aria-label="Ver el tutorial de esta pantalla"
+        >
+          <app-icon name="ayuda" [size]="18" />
+        </button>
+      }
     </header>
 
     <main class="min-w-0 flex-1">

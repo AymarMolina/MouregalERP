@@ -5,19 +5,20 @@
       <p class="panel-subtitle">Despacho y entrega. Se actualiza solo cada 15 segundos.</p>
     </div>
     <div class="flex flex-wrap items-center gap-3">
-      <label class="flex items-center gap-2 text-text">
+      <label class="flex items-center gap-2 text-text" data-tour="deliv-solo-mios">
         <input type="checkbox" class="checkbox" [ngModel]="soloMios()" (ngModelChange)="soloMios.set($event)" />
         Solo mis pedidos y sin asignar
       </label>
       <input
         type="date"
+        data-tour="deliv-fecha"
         class="input w-auto"
         [ngModel]="fecha()"
         (ngModelChange)="fecha.set($event); cargar(true)"
         title="Fecha de los entregados que se muestran"
       />
       <button type="button" class="btn-secondary" (click)="cargar(true)">Actualizar</button>
-      <button type="button" class="btn-secondary" (click)="exportarExcel()" [disabled]="!tablero()?.pedidos?.length" title="Descargar los pedidos del tablero en Excel">
+      <button type="button" class="btn-secondary" data-tour="deliv-excel" (click)="exportarExcel()" [disabled]="!tablero()?.pedidos?.length" title="Descargar los pedidos del tablero en Excel">
         <app-icon name="excel" [size]="16" class="text-green-700" /> Excel
       </button>
     </div>
@@ -38,9 +39,9 @@
       <p class="mb-4 text-muted">Los pedidos con saldo pendiente no se pueden marcar entregados hasta cobrarlo.</p>
     }
 
-    <div class="grid gap-6 lg:grid-cols-3">
+    <div class="grid gap-6 lg:grid-cols-3" data-tour="deliv-tablero">
       @for (col of columnas(); track col.titulo) {
-        <section>
+        <section [attr.data-tour]="'deliv-col-' + $index">
           <h2 class="mb-3 flex items-center gap-2 font-medium">
             {{ col.titulo }}
             <span class="badge badge-neutral">{{ col.pedidos.length }}</span>
