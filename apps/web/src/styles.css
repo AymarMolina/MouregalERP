@@ -222,3 +222,67 @@ input[type="number"] {
   background: currentColor;
   opacity: 0.7;
 }
+
+/* ---------- Tutorial interactivo (driver.js) ----------
+   Tarjeta blanca, borde fino, acento de marca solo en el progreso y el foco. */
+.driver-popover.tour-pop {
+  @apply max-w-[380px] rounded-xl border border-gray-200/80 bg-white p-4 text-text shadow-pop;
+  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+.driver-popover.tour-pop .driver-popover-title {
+  @apply pr-6 text-[15px] font-semibold leading-snug tracking-[-0.01em] text-gray-900;
+  font-family: inherit;
+}
+.driver-popover.tour-pop .driver-popover-description {
+  @apply mt-1.5 text-[13px] leading-relaxed text-gray-600;
+  font-family: inherit;
+}
+.driver-popover.tour-pop .driver-popover-footer {
+  @apply mt-4 flex items-center gap-2;
+}
+.driver-popover.tour-pop .driver-popover-progress-text {
+  @apply text-xs font-medium text-brand;
+  font-variant-numeric: tabular-nums;
+}
+.driver-popover.tour-pop .driver-popover-navigation-btns {
+  @apply ml-auto flex gap-1.5;
+}
+.driver-popover.tour-pop .driver-popover-navigation-btns button {
+  @apply m-0 rounded-lg px-3 py-1.5 text-[13px] font-medium;
+  font-family: inherit;
+  text-shadow: none;
+  line-height: 1.4;
+}
+.driver-popover.tour-pop .driver-popover-prev-btn {
+  @apply border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900;
+}
+.driver-popover.tour-pop .driver-popover-next-btn {
+  @apply border border-gray-900 bg-gray-900 font-semibold text-white hover:bg-gray-800;
+}
+.driver-popover.tour-pop .driver-popover-navigation-btns button:focus-visible,
+.driver-popover.tour-pop .driver-popover-close-btn:focus-visible {
+  @apply outline-none ring-2 ring-accent/40;
+}
+.driver-popover.tour-pop .driver-popover-close-btn {
+  @apply right-2 top-2 h-7 w-7 rounded-md text-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700;
+}
+/* Textos del tutorial con estructura: párrafos, listas numeradas y énfasis. */
+.driver-popover.tour-pop .driver-popover-description p + p {
+  @apply mt-2;
+}
+.driver-popover.tour-pop .driver-popover-description ol,
+.driver-popover.tour-pop .driver-popover-description ul {
+  @apply mt-2 space-y-1 pl-4;
+}
+.driver-popover.tour-pop .driver-popover-description ol {
+  @apply list-decimal;
+}
+.driver-popover.tour-pop .driver-popover-description ul {
+  @apply list-disc;
+}
+.driver-popover.tour-pop .driver-popover-description li::marker {
+  @apply font-medium text-brand;
+}
+.driver-popover.tour-pop .driver-popover-description strong {
+  @apply font-semibold text-gray-900;
+}

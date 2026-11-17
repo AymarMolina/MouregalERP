@@ -6,7 +6,7 @@
     </div>
   </div>
 
-  <div class="card mb-5 flex flex-wrap items-end gap-4 p-4">
+  <div data-tour="rep-periodo" class="card mb-5 flex flex-wrap items-end gap-4 p-4">
     <div>
       <label class="field-label">Desde</label>
       <input type="date" class="input" [ngModel]="desde()" (ngModelChange)="desde.set($event); atajo.set(null)" />
@@ -16,7 +16,7 @@
       <input type="date" class="input" [ngModel]="hasta()" (ngModelChange)="hasta.set($event); atajo.set(null)" />
     </div>
     <button type="button" class="btn-primary" [disabled]="loading()" (click)="cargar()">Aplicar</button>
-    <nav class="tabs border-b-0 pb-0.5" aria-label="Período">
+    <nav class="tabs border-b-0 pb-0.5" data-tour="rep-atajos" aria-label="Período">
       @for (a of atajos; track a.dias) {
         <button type="button" class="tab" [class.tab-active]="atajo() === a.dias" (click)="usarAtajo(a.dias)">{{ a.label }}</button>
       }
@@ -25,7 +25,7 @@
     <p class="ml-auto max-w-sm pb-2 text-right text-xs text-muted">Cada reporte usa la fecha real: cobros por fecha de pago, margen por fecha de armado, envíos por fecha de salida y más vendidos por fecha de venta.</p>
   </div>
 
-  <nav class="tabs mb-5" aria-label="Reporte">
+  <nav class="tabs mb-5" data-tour="rep-pestanas" aria-label="Reporte">
     @for (t of pestanas; track t.id) {
       <button type="button" class="tab" [class.tab-active]="pestana() === t.id" (click)="pestana.set(t.id)">
         {{ t.label }}
@@ -47,7 +47,7 @@
   } @else {
     <!-- COBROS -->
     @if (pestana() === "cobros" && cobros(); as c) {
-      <div class="mb-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div data-tour="rep-cobros-kpis" class="mb-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <div class="kpi">
           <div class="min-w-0">
             <div class="kpi-label">Total cobrado</div>
@@ -65,10 +65,10 @@
           </div>
         }
       </div>
-      <div class="table-wrap">
+      <div class="table-wrap" data-tour="rep-cobros-tabla">
         <div class="table-head">
           <h2 class="table-title">Cobros confirmados</h2>
-          <app-paginacion [tabla]="tablaCobros" />
+          <app-paginacion [tabla]="tablaCobros" data-tour="rep-excel" />
         </div>
         <app-seleccion-bar [tabla]="tablaCobros" />
         <div class="overflow-x-auto">

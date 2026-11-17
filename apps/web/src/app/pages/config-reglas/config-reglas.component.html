@@ -4,13 +4,13 @@
       <h1 class="panel-title">Reglas de cambio</h1>
       <p class="panel-subtitle">Ajustes de precio cuando se cambia flor, papel, color, tamaño o extra.</p>
     </div>
-    <button type="button" (click)="mostrarForm.set(!mostrarForm())" class="btn-primary">
+    <button type="button" data-tour="reglas-nueva" (click)="mostrarForm.set(!mostrarForm())" class="btn-primary">
       {{ mostrarForm() ? "Cancelar" : "+ Nueva regla" }}
     </button>
   </div>
 
   @if (mostrarForm()) {
-    <form [formGroup]="form" (ngSubmit)="crear()" class="card mb-6 grid grid-cols-4 gap-4 items-end">
+    <form [formGroup]="form" data-tour="reglas-form" (ngSubmit)="crear()" class="card mb-6 grid grid-cols-4 gap-4 items-end">
       <div>
         <label class="field-label">Tipo</label>
         <select formControlName="tipo" class="input">
@@ -71,7 +71,7 @@
       }
     </div>
   } @else {
-    <div class="table-wrap">
+    <div class="table-wrap" data-tour="reglas-tabla">
       <div class="table-head">
         <h2 class="table-title">Reglas de cambio</h2>
         <app-paginacion [tabla]="tabla" />

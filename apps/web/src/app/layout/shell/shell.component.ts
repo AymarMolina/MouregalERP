@@ -2,6 +2,7 @@ import { Component, computed, inject, signal } from "@angular/core";
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from "@angular/router";
 import { filter } from "rxjs";
 import { AuthService } from "../../core/auth/auth.service";
+import { TourService } from "../../core/tour/tour.service";
 import { IconComponent } from "../../shared/icon/icon.component";
 import { NAV_GROUPS } from "../nav-items";
 
@@ -13,6 +14,7 @@ import { NAV_GROUPS } from "../nav-items";
 export class ShellComponent {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  readonly tour = inject(TourService);
 
   readonly user = this.auth.user;
   readonly menuAbierto = signal(false);

@@ -112,6 +112,13 @@ Estética **SaaS claro y corporativo**: blancos y grises muy sutiles, bordes fin
 - **Fechas y horas:** usar `cuando()`, `hora()`, `soles()` y `hoyLima()` de `core/util/formato.ts`. Zona horaria `America/Lima`.
 - **Tableros en vivo** (`/hoy`, `/produccion`, `/delivery`): `usarPolling()` cada 15 s, que se pausa con la pestaña oculta.
 - Todas las páginas cargan en diferido (`loadComponent` en `app.routes.ts`).
+- **Tutorial interactivo** (driver.js, `core/tour/`):
+  - Ilumina secciones marcadas con `data-tour="<clave>"` y las explica.
+  - Se abre solo la primera vez que cada usuario entra a una pantalla. La primera de todas agrega antes el recorrido general del menú.
+  - El botón "?" de la barra superior lo repite.
+  - Lo visto se guarda en `localStorage` (`erp_tours_vistos:<userId>`).
+  - Los pasos de cada pantalla están en `core/tour/tours/<pantalla>.ts` y se pueden filtrar por `roles`. Un paso cuya sección no existe en ese momento se omite.
+  - Si cambias o quitas una sección marcada, actualiza su tour.
 
 ## Trampas conocidas
 

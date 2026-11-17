@@ -8,7 +8,7 @@
   </div>
 
   <!-- Timeline de pasos -->
-  <nav class="card mb-6 px-4 py-5 sm:px-8" aria-label="Pasos del pedido">
+  <nav class="card mb-6 px-4 py-5 sm:px-8" aria-label="Pasos del pedido" data-tour="nuevo-pasos">
     <ol class="flex items-start">
       @for (s of pasos; track s.n; let ultimo = $last) {
         <li class="relative flex flex-1 flex-col items-center">
@@ -70,7 +70,7 @@
       <div class="min-w-0 space-y-6">
         <!-- ================= PASO 1: destino ================= -->
         @if (paso() === 1) {
-          <section class="card">
+          <section class="card" data-tour="nuevo-canal">
             <h2 class="panel-title">¿Por dónde llegó el pedido?</h2>
             <div class="mt-4 grid grid-cols-3 gap-3">
               @for (c of canales; track c) {
@@ -97,7 +97,7 @@
             </div>
           </section>
 
-          <section class="card">
+          <section class="card" data-tour="nuevo-distrito">
             <h2 class="panel-title">¿A qué distrito va?</h2>
             <p class="panel-subtitle">El envío y el stock disponible dependen del distrito.</p>
             <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
@@ -132,7 +132,7 @@
 
         <!-- ================= PASO 2: productos ================= -->
         @if (paso() === 2) {
-          <section>
+          <section data-tour="nuevo-productos">
             <div class="mb-4 flex flex-wrap items-end justify-between gap-2">
               <div>
                 <h2 class="panel-title">Elige el arreglo</h2>
@@ -214,7 +214,7 @@
               </div>
             </section>
 
-            <section class="card">
+            <section class="card" data-tour="nuevo-fecha">
               <h2 class="panel-title flex items-center gap-2"><app-icon name="calendario" class="text-accent" /> ¿Cuándo se entrega?</h2>
               <div class="mt-4 space-y-4">
                 <div class="flex flex-wrap items-center gap-2">
@@ -234,7 +234,7 @@
               </div>
             </section>
 
-            <section class="card">
+            <section class="card" data-tour="nuevo-entrega">
               <h2 class="panel-title flex items-center gap-2"><app-icon name="delivery" class="text-accent" /> ¿Quién recibe y dónde?</h2>
               <div class="mt-4 grid gap-4 sm:grid-cols-2">
                 <div class="sm:col-span-2 flex items-center justify-between rounded-lg bg-accent-soft px-3 py-2.5">
@@ -264,7 +264,7 @@
               </div>
             </section>
 
-            <section class="card">
+            <section class="card" data-tour="nuevo-adelanto">
               <h2 class="panel-title flex items-center gap-2"><app-icon name="pagos" class="text-accent" /> Adelanto</h2>
               <div class="mt-4 flex flex-wrap items-center gap-2">
                 @for (pct of adelantosRapidos; track pct) {
@@ -288,7 +288,7 @@
 
       <!-- ================= Carrito ================= -->
       <aside class="lg:sticky lg:top-6">
-        <div class="card space-y-4">
+        <div class="card space-y-4" data-tour="nuevo-carrito">
           <div class="flex items-center justify-between">
             <h2 class="panel-title flex items-center gap-2"><app-icon name="bolsa" class="text-accent" /> Tu pedido</h2>
             @if (cantidadEnCarrito()) {
@@ -376,6 +376,7 @@
             <button
               type="button"
               class="btn-primary w-full py-3.5 text-base"
+              data-tour="nuevo-confirmar"
               [disabled]="enviando() || cotizandoResumen() || !resumen() || !resumen()!.disponible"
               (click)="confirmarPedido()"
             >

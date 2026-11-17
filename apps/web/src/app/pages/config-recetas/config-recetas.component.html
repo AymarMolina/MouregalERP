@@ -5,7 +5,7 @@
       <p class="panel-subtitle">Productos, tallas, receta por insumo, flores permitidas y margen.</p>
     </div>
     @if (esAdmin()) {
-      <button type="button" (click)="mostrarFormNuevo.set(!mostrarFormNuevo())" class="btn-primary">
+      <button type="button" data-tour="recetas-nuevo" (click)="mostrarFormNuevo.set(!mostrarFormNuevo())" class="btn-primary">
         {{ mostrarFormNuevo() ? "Cancelar" : "+ Nuevo producto" }}
       </button>
     }
@@ -69,7 +69,7 @@
       }
     </div>
   } @else {
-    <div class="table-wrap mb-6">
+    <div class="table-wrap mb-6" data-tour="recetas-productos">
       <div class="table-head">
         <h2 class="table-title">Productos</h2>
         <app-paginacion [tabla]="tabla" />
@@ -128,7 +128,7 @@
         <button type="button" class="btn-action" (click)="cerrarDetalle()" title="Cerrar" aria-label="Cerrar"><app-icon name="cerrar" [size]="18" /></button>
       </div>
 
-      <form [formGroup]="detalleForm" (ngSubmit)="guardarDetalle()" class="grid grid-cols-4 gap-4 items-end">
+      <form [formGroup]="detalleForm" (ngSubmit)="guardarDetalle()" data-tour="recetas-datos" class="grid grid-cols-4 gap-4 items-end">
         <div>
           <label class="field-label">Nombre</label>
           <input formControlName="nombre" class="input" />
@@ -175,7 +175,7 @@
         }
       </form>
 
-      <div class="border-t border-line pt-5">
+      <div class="border-t border-line pt-5" data-tour="recetas-flores">
         <h3 class="mb-2 font-medium">Flores permitidas (cambio)</h3>
         <div class="mb-3 flex flex-wrap gap-x-5 gap-y-2">
           @for (i of insumosFlor(); track i.id) {
@@ -203,7 +203,7 @@
       <div class="border-t border-line pt-5">
         <div class="mb-3 flex items-center justify-between">
           <h3 class="font-medium">Receta</h3>
-          <div class="flex items-center gap-1 rounded-md bg-sidebar p-1">
+          <div class="flex items-center gap-1 rounded-md bg-sidebar p-1" data-tour="recetas-tallas">
             @for (t of tallas; track t) {
               <button
                 type="button"
@@ -219,7 +219,7 @@
           </div>
         </div>
 
-        <div class="table-wrap mb-4" [formGroup]="recetaForm">
+        <div class="table-wrap mb-4" [formGroup]="recetaForm" data-tour="recetas-lineas">
           <table class="table">
             <thead>
               <tr>
@@ -258,7 +258,7 @@
         </div>
 
         @if (esAdmin()) {
-          <div class="flex flex-wrap items-center gap-3">
+          <div class="flex flex-wrap items-center gap-3" data-tour="recetas-guardar">
             <button type="button" (click)="agregarLinea()" class="btn-secondary">+ Agregar línea</button>
             <button
               type="button"
