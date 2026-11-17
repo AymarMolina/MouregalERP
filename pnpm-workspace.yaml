@@ -1,3 +1,11 @@
 packages:
   - "apps/*"
   - "packages/*"
+
+# Dependencias a las que pnpm permite correr scripts de instalación (binarios nativos).
+onlyBuiltDependencies:
+  - "@nestjs/core"
+  - "@parcel/watcher"
+  - esbuild
+  - lmdb
+  - msgpackr-extract
