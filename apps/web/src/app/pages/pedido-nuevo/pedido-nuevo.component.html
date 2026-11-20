@@ -1,62 +1,65 @@
-<div class="p-4 sm:p-6">
-  <!-- Encabezado + pasos -->
-  <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
-    <div>
-      <h1 class="page-title">Nuevo pedido</h1>
-      <p class="panel-subtitle">Toca las opciones. El precio y el stock los calcula el sistema.</p>
-    </div>
-  </div>
+<div class="mx-auto max-w-[1400px] p-4 text-[15px] sm:p-6">
+  <!-- Encabezado -->
+  <header class="mb-5">
+    <h1 class="page-title">Nuevo pedido</h1>
+    <p class="panel-subtitle">
+      Toca las opciones. El precio y el stock los calcula el sistema.
+    </p>
+  </header>
 
-  <!-- Timeline de pasos -->
-  <nav class="card mb-6 px-4 py-5 sm:px-8" aria-label="Pasos del pedido" data-tour="nuevo-pasos">
-    <ol class="flex items-start">
-      @for (s of pasos; track s.n; let ultimo = $last) {
-        <li class="relative flex flex-1 flex-col items-center">
-          @if (!ultimo) {
-            <!-- Conector hacia el siguiente paso -->
-            <span class="absolute left-1/2 top-5 h-1 w-full -translate-y-1/2 rounded-full bg-line" aria-hidden="true">
-              <span
-                class="block h-full rounded-full bg-accent transition-all duration-500"
-                [style.width.%]="pasoListo(s.n) ? 100 : 0"
-              ></span>
-            </span>
-          }
+  <!-- Pasos -->
+  <nav
+    class="card mb-6 p-1.5"
+    aria-label="Pasos del pedido"
+    data-tour="nuevo-pasos"
+  >
+    <ol class="grid grid-cols-3 gap-1.5">
+      @for (s of pasos; track s.n) {
+        <li class="min-w-0">
           <button
             type="button"
             (click)="irAPaso(s.n)"
-            class="group relative z-10 flex flex-col items-center gap-2 text-center"
+            class="paso"
+            [class.paso-activo]="paso() === s.n"
             [attr.aria-current]="paso() === s.n ? 'step' : null"
           >
             <span
-              class="flex h-10 w-10 items-center justify-center rounded-full border-2 ring-accent/20 transition-all duration-300"
-              [class.bg-accent]="paso() === s.n || pasoListo(s.n)"
-              [class.border-accent]="paso() === s.n || pasoListo(s.n)"
-              [class.text-white]="paso() === s.n || pasoListo(s.n)"
-              [class.ring-4]="paso() === s.n"
-              [class.scale-110]="paso() === s.n"
-              [class.bg-surface]="paso() !== s.n && !pasoListo(s.n)"
-              [class.border-line]="paso() !== s.n && !pasoListo(s.n)"
-              [class.text-muted]="paso() !== s.n && !pasoListo(s.n)"
+              class="paso-num"
+              [class.paso-num-listo]="paso() === s.n || pasoListo(s.n)"
             >
               @if (pasoListo(s.n) && paso() !== s.n) {
-                <app-icon name="check" [size]="18" />
+                <app-icon name="check" [size]="16" />
               } @else {
-                <app-icon [name]="s.icono" [size]="18" />
+                <app-icon [name]="s.icono" [size]="16" />
               }
             </span>
-            <span>
-              <span class="block text-[11px] font-medium uppercase tracking-wider text-muted">Paso {{ s.n }}</span>
+            <span class="min-w-0">
               <span
-                class="block text-sm font-semibold transition-colors"
-                [class.text-accent-2]="paso() === s.n"
-                [class.text-text]="paso() !== s.n"
-              >{{ s.titulo }}</span>
-              <span class="hidden text-xs text-muted sm:block">{{ s.detalle }}</span>
+                class="block text-[12.5px] font-medium uppercase tracking-wider text-muted"
+                >Paso {{ s.n }}</span
+              >
+              <span
+                class="block truncate font-semibold"
+                [class.text-brand-dark]="paso() === s.n"
+                >{{ s.titulo }}</span
+              >
+              <span class="hidden truncate text-[13px] text-muted md:block">{{
+                s.detalle
+              }}</span>
             </span>
           </button>
         </li>
       }
     </ol>
+    <div
+      class="mx-1.5 mb-0.5 mt-1.5 h-0.5 overflow-hidden rounded-full bg-gray-100"
+      aria-hidden="true"
+    >
+      <div
+        class="h-full rounded-full bg-accent transition-all duration-500"
+        [style.width.%]="(paso() / pasos.length) * 100"
+      ></div>
+    </div>
   </nav>
 
   @if (loading()) {
@@ -66,122 +69,205 @@
       <div class="skeleton h-28"></div>
     </div>
   } @else {
-    <div class="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
-      <div class="min-w-0 space-y-6">
+    <div class="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_26rem]">
+      <div class="min-w-0 space-y-5">
         <!-- ================= PASO 1: destino ================= -->
         @if (paso() === 1) {
           <section class="card" data-tour="nuevo-canal">
-            <h2 class="panel-title">¿Por dónde llegó el pedido?</h2>
-            <div class="mt-4 grid grid-cols-3 gap-3">
+            <div class="flex items-start gap-3">
+              <span class="seccion-icono"
+                ><app-icon name="tienda" [size]="20"
+              /></span>
+              <div>
+                <h2 class="panel-title text-[19px]">
+                  ¿Por dónde llegó el pedido?
+                </h2>
+                <p class="panel-subtitle">Canal de venta.</p>
+              </div>
+            </div>
+            <div class="mt-5 grid gap-3 sm:grid-cols-3">
               @for (c of canales; track c) {
                 <button
                   type="button"
                   (click)="elegirCanal(c)"
-                  class="flex flex-col items-center gap-2 rounded-xl border-2 px-3 py-5 text-center transition hover:border-accent/60"
-                  [class.border-accent]="form.value.canal === c"
-                  [class.bg-brand-soft]="form.value.canal === c"
-                  [class.border-line]="form.value.canal !== c"
+                  class="opcion flex items-center gap-3.5 px-5 py-4"
+                  [class.opcion-sel]="form.value.canal === c"
                 >
                   <span
-                    class="flex h-12 w-12 items-center justify-center rounded-full"
+                    class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border transition-colors"
+                    [class.border-accent]="form.value.canal === c"
                     [class.bg-accent]="form.value.canal === c"
                     [class.text-white]="form.value.canal === c"
-                    [class.bg-accent-soft]="form.value.canal !== c"
-                    [class.text-accent-2]="form.value.canal !== c"
+                    [class.border-gray-200]="form.value.canal !== c"
+                    [class.text-brand-dark]="form.value.canal !== c"
                   >
-                    <app-icon [name]="canalInfo[c].icono" [size]="24" />
+                    <app-icon [name]="canalInfo[c].icono" [size]="20" />
                   </span>
-                  <span class="text-sm font-semibold">{{ canalInfo[c].etiqueta }}</span>
+                  <span class="font-semibold">{{ canalInfo[c].etiqueta }}</span>
+                  <span class="marca"
+                    ><app-icon name="check" [size]="11"
+                  /></span>
                 </button>
               }
             </div>
           </section>
 
           <section class="card" data-tour="nuevo-distrito">
-            <h2 class="panel-title">¿A qué distrito va?</h2>
-            <p class="panel-subtitle">El envío y el stock disponible dependen del distrito.</p>
-            <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
+            <div class="flex items-start gap-3">
+              <span class="seccion-icono"
+                ><app-icon name="tarifario" [size]="20"
+              /></span>
+              <div>
+                <h2 class="panel-title text-[19px]">¿A qué distrito va?</h2>
+                <p class="panel-subtitle">
+                  El envío y el stock disponible dependen del distrito.
+                </p>
+              </div>
+            </div>
+            <div
+              class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4"
+            >
               @for (d of distritos(); track d.id) {
                 <button
                   type="button"
                   (click)="elegirDistrito(d.id)"
-                  class="relative flex flex-col items-start gap-1 rounded-xl border-2 px-4 py-4 text-left transition hover:border-accent/60"
-                  [class.border-accent]="distritoSel() === d.id"
-                  [class.bg-brand-soft]="distritoSel() === d.id"
-                  [class.border-line]="distritoSel() !== d.id"
+                  class="opcion flex flex-col items-start px-5 py-4"
+                  [class.opcion-sel]="distritoSel() === d.id"
                 >
-                  <app-icon name="tarifario" [size]="22" class="text-accent" />
-                  <span class="mt-1 font-semibold">{{ d.nombre }}</span>
-                  <span class="text-xs text-muted">Envío desde {{ soles(d.tarifaMoto) }}</span>
-                  @if (distritoSel() === d.id) {
-                    <span class="absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full bg-accent text-white">
-                      <app-icon name="check" [size]="14" />
-                    </span>
-                  }
+                  <span class="pr-6 font-semibold">{{ d.nombre }}</span>
+                  <span class="mt-0.5 text-[13px] text-muted"
+                    >Envío desde
+                    <span class="font-medium text-text tabular">{{
+                      soles(d.tarifaMoto)
+                    }}</span></span
+                  >
+                  <span class="marca"
+                    ><app-icon name="check" [size]="11"
+                  /></span>
                 </button>
               }
             </div>
           </section>
 
           <div class="flex justify-end">
-            <button type="button" class="btn-primary px-6 py-3 text-sm" [disabled]="!distritoSel()" (click)="irAPaso(2)">
-              Siguiente: elegir productos <app-icon name="flecha" [size]="18" />
+            <button
+              type="button"
+              class="btn-primary px-6 py-3 text-[15px]"
+              [disabled]="!distritoSel()"
+              (click)="irAPaso(2)"
+            >
+              Siguiente: elegir productos <app-icon name="flecha" [size]="16" />
             </button>
           </div>
         }
 
         <!-- ================= PASO 2: productos ================= -->
         @if (paso() === 2) {
-          <section data-tour="nuevo-productos">
-            <div class="mb-4 flex flex-wrap items-end justify-between gap-2">
-              <div>
-                <h2 class="panel-title">Elige el arreglo</h2>
-                <p class="panel-subtitle">Toca un producto para elegir tamaño, flor y extras.</p>
+          <section class="card" data-tour="nuevo-productos">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div class="flex items-start gap-3">
+                <span class="seccion-icono"
+                  ><app-icon name="flor" [size]="20"
+                /></span>
+                <div>
+                  <h2 class="panel-title text-[19px]">Elige el arreglo</h2>
+                  <p class="panel-subtitle">
+                    Toca un producto para elegir tamaño, flor y extras.
+                  </p>
+                </div>
               </div>
               @if (distritoNombre()) {
-                <button type="button" class="pill" (click)="irAPaso(1)">
-                  <app-icon name="tarifario" [size]="14" /> {{ distritoNombre() }} · cambiar
+                <button
+                  type="button"
+                  class="pill px-3.5 py-1.5 text-[13.5px]"
+                  (click)="irAPaso(1)"
+                >
+                  <app-icon name="tarifario" [size]="14" />
+                  {{ distritoNombre() }}
+                  <span class="text-muted">· cambiar</span>
                 </button>
               }
             </div>
 
             @if (!productos().length) {
-              <p class="card text-muted">No hay productos activos en el catálogo.</p>
+              <p
+                class="mt-5 rounded-xl border border-dashed border-gray-200 px-4 py-10 text-center text-muted"
+              >
+                No hay productos activos en el catálogo.
+              </p>
             }
 
-            <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
+            <div
+              class="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3 2xl:grid-cols-4"
+            >
               @for (p of productos(); track p.id) {
                 @let precio = precioDesde(p);
                 <button
                   type="button"
                   (click)="abrirProducto(p.id)"
                   [disabled]="precio === null"
-                  [title]="precio === null ? 'Aún no tiene precio ni receta: complétalo en Configuración → Recetas' : ''"
-                  class="group flex flex-col overflow-hidden rounded-2xl bg-surface text-left shadow-card ring-1 ring-transparent transition enabled:hover:-translate-y-0.5 enabled:hover:shadow-pop enabled:hover:ring-accent/40 disabled:cursor-not-allowed"
+                  [title]="
+                    precio === null
+                      ? 'Aún no tiene precio ni receta: complétalo en Configuración → Recetas'
+                      : ''
+                  "
+                  class="group flex flex-col overflow-hidden rounded-xl border border-gray-200/80 bg-white text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30 enabled:hover:border-gray-300 enabled:hover:shadow-pop disabled:cursor-not-allowed"
                 >
-                  <div class="relative aspect-[4/5] w-full bg-accent-soft">
+                  <div
+                    class="relative aspect-[4/5] w-full overflow-hidden bg-gray-50"
+                  >
                     @if (p.imagenUrl) {
-                      <img [src]="p.imagenUrl" [alt]="p.nombre" class="h-full w-full object-cover" loading="lazy" />
+                      <img
+                        [src]="p.imagenUrl"
+                        [alt]="p.nombre"
+                        class="h-full w-full object-cover transition duration-500 group-enabled:group-hover:scale-[1.03] group-disabled:opacity-60 group-disabled:grayscale"
+                        loading="lazy"
+                      />
                     } @else {
-                      <div class="flex h-full w-full items-center justify-center text-accent">
-                        <app-icon name="flor" [size]="48" />
+                      <div
+                        class="flex h-full w-full items-center justify-center text-brand-line"
+                      >
+                        <app-icon name="flor" [size]="44" />
                       </div>
                     }
                     @if (precio === null) {
-                      <span class="absolute left-3 top-3 rounded-full bg-surface/90 px-2.5 py-1 text-xs font-medium text-accent-2 shadow-card backdrop-blur">Falta precio y receta</span>
-                    }
-                    @if (precio !== null) {
-                      <span class="absolute bottom-3 right-3 flex h-10 w-10 items-center justify-center rounded-full bg-accent text-white shadow-pop transition group-hover:scale-110">
-                        <app-icon name="nuevo" [size]="20" />
-                      </span>
+                      <span
+                        class="absolute left-2.5 top-2.5 rounded-full border border-gray-200 bg-white/95 px-2.5 py-0.5 text-[13px] font-medium text-gray-700 backdrop-blur"
+                        >Falta precio y receta</span
+                      >
                     }
                   </div>
-                  <div class="p-3.5">
-                    <div class="font-semibold leading-snug">{{ p.nombre }}</div>
+                  <div
+                    class="flex items-end justify-between gap-2 border-t border-gray-100 p-3"
+                  >
+                    <div class="min-w-0">
+                      <div
+                        class="truncate font-semibold leading-snug"
+                        [title]="p.nombre"
+                      >
+                        {{ p.nombre }}
+                      </div>
+                      @if (precio !== null) {
+                        <div class="mt-0.5 text-[13px] text-muted">
+                          desde
+                          <span
+                            class="font-display text-[14.5px] font-semibold text-text tabular"
+                            >{{ soles(precio) }}</span
+                          >
+                        </div>
+                      } @else {
+                        <div class="mt-0.5 text-[13px] text-muted">
+                          Próximamente
+                        </div>
+                      }
+                    </div>
                     @if (precio !== null) {
-                      <div class="mt-0.5 text-sm text-muted">desde <span class="font-semibold text-accent-2">{{ soles(precio) }}</span></div>
-                    } @else {
-                      <div class="mt-0.5 text-sm text-muted">Próximamente</div>
+                      <span
+                        class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-gray-200 text-brand-dark transition-colors group-hover:border-brand-dark group-hover:bg-brand-dark group-hover:text-white"
+                        aria-hidden="true"
+                      >
+                        <app-icon name="nuevo" [size]="16" />
+                      </span>
                     }
                   </div>
                 </button>
@@ -190,97 +276,277 @@
           </section>
 
           <div class="flex justify-between gap-3">
-            <button type="button" class="btn-secondary px-5 py-3" (click)="irAPaso(1)">Atrás</button>
-            <button type="button" class="btn-primary px-6 py-3 text-sm" [disabled]="!carrito().length" (click)="irAPaso(3)">
-              Siguiente: entrega y pago <app-icon name="flecha" [size]="18" />
+            <button
+              type="button"
+              class="btn-secondary px-5 py-3 text-[15px]"
+              (click)="irAPaso(1)"
+            >
+              Atrás
+            </button>
+            <button
+              type="button"
+              class="btn-primary px-6 py-3 text-[15px]"
+              [disabled]="!carrito().length"
+              (click)="irAPaso(3)"
+            >
+              Siguiente: entrega y pago <app-icon name="flecha" [size]="16" />
             </button>
           </div>
         }
 
         <!-- ================= PASO 3: entrega y pago ================= -->
         @if (paso() === 3) {
-          <form [formGroup]="form" class="space-y-6">
+          <form [formGroup]="form" class="space-y-5">
             <section class="card">
-              <h2 class="panel-title flex items-center gap-2"><app-icon name="usuario" class="text-accent" /> Cliente</h2>
-              <div class="mt-4 grid gap-4 sm:grid-cols-2">
+              <div class="flex items-start gap-3">
+                <span class="seccion-icono"
+                  ><app-icon name="usuario" [size]="20"
+                /></span>
                 <div>
-                  <label class="field-label">Nombre del cliente *</label>
-                  <input formControlName="clienteNombre" class="input py-2.5" [class.border-accent-2]="invalido('clienteNombre')" />
+                  <h2 class="panel-title text-[19px]">Cliente</h2>
+                  <p class="panel-subtitle">Quien hace el pedido.</p>
+                </div>
+              </div>
+              <div class="mt-5 grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label class="field-label text-[13.5px]" for="clienteNombre"
+                    >Nombre del cliente *</label
+                  >
+                  <input
+                    id="clienteNombre"
+                    formControlName="clienteNombre"
+                    class="input py-3"
+                    [class.border-red-300]="invalido('clienteNombre')"
+                  />
                 </div>
                 <div>
-                  <label class="field-label">Teléfono del cliente</label>
-                  <input formControlName="clienteTelefono" class="input py-2.5" inputmode="tel" placeholder="Para avisos y link de pago" />
+                  <label class="field-label text-[13.5px]" for="clienteTelefono"
+                    >Teléfono del cliente</label
+                  >
+                  <input
+                    id="clienteTelefono"
+                    formControlName="clienteTelefono"
+                    class="input py-3"
+                    inputmode="tel"
+                    placeholder="Para avisos y link de pago"
+                  />
                 </div>
               </div>
             </section>
 
             <section class="card" data-tour="nuevo-fecha">
-              <h2 class="panel-title flex items-center gap-2"><app-icon name="calendario" class="text-accent" /> ¿Cuándo se entrega?</h2>
-              <div class="mt-4 space-y-4">
-                <div class="flex flex-wrap items-center gap-2">
-                  <button type="button" class="pill px-4 py-2 text-sm" [class.pill-active]="form.value.fechaEntrega === hoy" (click)="elegirFecha(hoy)">Hoy</button>
-                  <button type="button" class="pill px-4 py-2 text-sm" [class.pill-active]="form.value.fechaEntrega === manana" (click)="elegirFecha(manana)">Mañana</button>
-                  <input type="date" formControlName="fechaEntrega" [min]="hoy" class="input w-auto py-2" [class.border-accent-2]="invalido('fechaEntrega')" />
+              <div class="flex items-start gap-3">
+                <span class="seccion-icono"
+                  ><app-icon name="calendario" [size]="20"
+                /></span>
+                <div>
+                  <h2 class="panel-title text-[19px]">¿Cuándo se entrega?</h2>
+                  <p class="panel-subtitle">
+                    Elige un atajo o escribe la fecha y hora.
+                  </p>
+                </div>
+              </div>
+              <div class="mt-5 grid gap-5 md:grid-cols-2">
+                <div>
+                  <div class="etiqueta">
+                    <app-icon name="calendario" [size]="13" /> Fecha *
+                  </div>
+                  <div class="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      class="chip"
+                      [class.chip-sel]="form.value.fechaEntrega === hoy"
+                      (click)="elegirFecha(hoy)"
+                    >
+                      Hoy
+                    </button>
+                    <button
+                      type="button"
+                      class="chip"
+                      [class.chip-sel]="form.value.fechaEntrega === manana"
+                      (click)="elegirFecha(manana)"
+                    >
+                      Mañana
+                    </button>
+                    <input
+                      type="date"
+                      formControlName="fechaEntrega"
+                      [min]="hoy"
+                      class="input w-auto py-2.5"
+                      aria-label="Fecha de entrega"
+                      [class.border-red-300]="invalido('fechaEntrega')"
+                    />
+                  </div>
                 </div>
                 <div>
-                  <div class="field-label flex items-center gap-1"><app-icon name="reloj" [size]="14" /> Hora *</div>
+                  <div class="etiqueta">
+                    <app-icon name="reloj" [size]="13" /> Hora *
+                  </div>
                   <div class="flex flex-wrap items-center gap-2">
                     @for (h of horasRapidas; track h) {
-                      <button type="button" class="pill px-4 py-2 text-sm tabular" [class.pill-active]="form.value.horaEntrega === h" (click)="elegirHora(h)">{{ h }}</button>
+                      <button
+                        type="button"
+                        class="chip tabular"
+                        [class.chip-sel]="form.value.horaEntrega === h"
+                        (click)="elegirHora(h)"
+                      >
+                        {{ h }}
+                      </button>
                     }
-                    <input type="time" formControlName="horaEntrega" class="input w-auto py-2" [class.border-accent-2]="invalido('horaEntrega')" />
+                    <input
+                      type="time"
+                      formControlName="horaEntrega"
+                      class="input w-auto py-2.5"
+                      aria-label="Hora de entrega"
+                      [class.border-red-300]="invalido('horaEntrega')"
+                    />
                   </div>
                 </div>
               </div>
             </section>
 
             <section class="card" data-tour="nuevo-entrega">
-              <h2 class="panel-title flex items-center gap-2"><app-icon name="delivery" class="text-accent" /> ¿Quién recibe y dónde?</h2>
-              <div class="mt-4 grid gap-4 sm:grid-cols-2">
-                <div class="sm:col-span-2 flex items-center justify-between rounded-lg bg-accent-soft px-3 py-2.5">
-                  <span class="flex items-center gap-2"><app-icon name="tarifario" [size]="16" class="text-accent" /> Distrito: <strong>{{ distritoNombre() }}</strong></span>
-                  <button type="button" class="btn-text" (click)="irAPaso(1)">Cambiar</button>
+              <div class="flex flex-wrap items-start justify-between gap-3">
+                <div class="flex items-start gap-3">
+                  <span class="seccion-icono"
+                    ><app-icon name="delivery" [size]="20"
+                  /></span>
+                  <div>
+                    <h2 class="panel-title text-[19px]">
+                      ¿Quién recibe y dónde?
+                    </h2>
+                    <p class="panel-subtitle">Datos para el repartidor.</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  class="pill px-3.5 py-1.5 text-[13.5px]"
+                  (click)="irAPaso(1)"
+                >
+                  <app-icon name="tarifario" [size]="14" />
+                  {{ distritoNombre() }}
+                  <span class="text-muted">· cambiar</span>
+                </button>
+              </div>
+              <div class="mt-5 grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label class="field-label text-[13.5px]" for="nombreReceptor"
+                    >Nombre de quien recibe *</label
+                  >
+                  <input
+                    id="nombreReceptor"
+                    formControlName="nombreReceptor"
+                    class="input py-3"
+                    [class.border-red-300]="invalido('nombreReceptor')"
+                  />
                 </div>
                 <div>
-                  <label class="field-label">Nombre de quien recibe *</label>
-                  <input formControlName="nombreReceptor" class="input py-2.5" [class.border-accent-2]="invalido('nombreReceptor')" />
-                </div>
-                <div>
-                  <label class="field-label">Teléfono de quien recibe *</label>
-                  <input formControlName="telefonoReceptor" class="input py-2.5" inputmode="tel" [class.border-accent-2]="invalido('telefonoReceptor')" />
-                </div>
-                <div class="sm:col-span-2">
-                  <label class="field-label">Dirección *</label>
-                  <input formControlName="direccion" class="input py-2.5" [class.border-accent-2]="invalido('direccion')" />
-                </div>
-                <div class="sm:col-span-2">
-                  <label class="field-label">Referencia</label>
-                  <input formControlName="referencia" class="input py-2.5" placeholder="Ej. puerta verde, frente al parque" />
+                  <label
+                    class="field-label text-[13.5px]"
+                    for="telefonoReceptor"
+                    >Teléfono de quien recibe *</label
+                  >
+                  <input
+                    id="telefonoReceptor"
+                    formControlName="telefonoReceptor"
+                    class="input py-3"
+                    inputmode="tel"
+                    [class.border-red-300]="invalido('telefonoReceptor')"
+                  />
                 </div>
                 <div class="sm:col-span-2">
-                  <label class="field-label flex items-center gap-1"><app-icon name="regalo" [size]="14" /> Dedicatoria</label>
-                  <textarea formControlName="dedicatoria" rows="3" class="input" placeholder="Mensaje para la tarjeta"></textarea>
+                  <label class="field-label text-[13.5px]" for="direccion"
+                    >Dirección *</label
+                  >
+                  <input
+                    id="direccion"
+                    formControlName="direccion"
+                    class="input py-3"
+                    [class.border-red-300]="invalido('direccion')"
+                  />
+                </div>
+                <div class="sm:col-span-2">
+                  <label class="field-label text-[13.5px]" for="referencia"
+                    >Referencia</label
+                  >
+                  <input
+                    id="referencia"
+                    formControlName="referencia"
+                    class="input py-3"
+                    placeholder="Ej. puerta verde, frente al parque"
+                  />
+                </div>
+                <div class="sm:col-span-2">
+                  <label
+                    class="field-label text-[13.5px] flex items-center gap-1"
+                    for="dedicatoria"
+                    ><app-icon name="regalo" [size]="13" /> Dedicatoria</label
+                  >
+                  <textarea
+                    id="dedicatoria"
+                    formControlName="dedicatoria"
+                    rows="3"
+                    class="input bg-sidebar"
+                    placeholder="Mensaje para la tarjeta"
+                  ></textarea>
                 </div>
               </div>
             </section>
 
             <section class="card" data-tour="nuevo-adelanto">
-              <h2 class="panel-title flex items-center gap-2"><app-icon name="pagos" class="text-accent" /> Adelanto</h2>
-              <div class="mt-4 flex flex-wrap items-center gap-2">
+              <div class="flex items-start gap-3">
+                <span class="seccion-icono"
+                  ><app-icon name="pagos" [size]="20"
+                /></span>
+                <div>
+                  <h2 class="panel-title text-[19px]">Adelanto</h2>
+                  <p class="panel-subtitle">
+                    Lo que paga ahora; el resto queda como saldo.
+                  </p>
+                </div>
+              </div>
+              <div class="mt-5 flex flex-wrap items-center gap-2">
                 @for (pct of adelantosRapidos; track pct) {
-                  <button type="button" class="pill px-5 py-2 text-sm" [class.pill-active]="form.value.porcentajeAdelanto == pct" (click)="elegirAdelanto(pct)">
-                    {{ pct === 0 ? "Sin adelanto" : pct === 100 ? "Paga todo" : pct + "%" }}
+                  <button
+                    type="button"
+                    class="chip"
+                    [class.chip-sel]="form.value.porcentajeAdelanto == pct"
+                    (click)="elegirAdelanto(pct)"
+                  >
+                    {{
+                      pct === 0
+                        ? "Sin adelanto"
+                        : pct === 100
+                          ? "Paga todo"
+                          : pct + "%"
+                    }}
                   </button>
                 }
-                <div class="flex items-center gap-1">
-                  <input type="number" formControlName="porcentajeAdelanto" min="0" max="100" class="input w-20 py-2 text-center" />
-                  <span class="text-muted">%</span>
+                <div class="relative">
+                  <input
+                    type="number"
+                    formControlName="porcentajeAdelanto"
+                    min="0"
+                    max="100"
+                    class="input w-28 py-2.5 pr-7 text-right tabular"
+                    aria-label="Porcentaje de adelanto"
+                  />
+                  <span
+                    class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted"
+                    >%</span
+                  >
                 </div>
               </div>
             </section>
 
             <div class="flex justify-start">
-              <button type="button" class="btn-secondary px-5 py-3" (click)="irAPaso(2)">Atrás</button>
+              <button
+                type="button"
+                class="btn-secondary px-5 py-3 text-[15px]"
+                (click)="irAPaso(2)"
+              >
+                Atrás
+              </button>
             </div>
           </form>
         }
@@ -288,112 +554,210 @@
 
       <!-- ================= Carrito ================= -->
       <aside class="lg:sticky lg:top-6">
-        <div class="card space-y-4" data-tour="nuevo-carrito">
-          <div class="flex items-center justify-between">
-            <h2 class="panel-title flex items-center gap-2"><app-icon name="bolsa" class="text-accent" /> Tu pedido</h2>
+        <div class="card overflow-hidden p-0" data-tour="nuevo-carrito">
+          <div
+            class="flex items-center justify-between border-b border-gray-100 px-5 py-4"
+          >
+            <h2 class="panel-title text-[19px] flex items-center gap-2">
+              <app-icon name="bolsa" [size]="18" /> Tu pedido
+            </h2>
             @if (cantidadEnCarrito()) {
-              <span class="flex h-6 min-w-[1.5rem] items-center justify-center rounded-full bg-accent px-2 text-xs font-semibold text-white">{{ cantidadEnCarrito() }}</span>
+              <span class="tab-count"
+                >{{ cantidadEnCarrito() }}
+                {{ cantidadEnCarrito() === 1 ? "arreglo" : "arreglos" }}</span
+              >
             }
           </div>
 
-          @if (!carrito().length) {
-            <div class="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-line px-4 py-8 text-center text-muted">
-              <app-icon name="bolsa" [size]="32" />
-              <span>Aún no hay productos.</span>
-              @if (paso() !== 2 && distritoSel()) {
-                <button type="button" class="btn-text" (click)="irAPaso(2)">Elegir productos</button>
-              }
-            </div>
-          } @else {
-            <ul class="space-y-2">
-              @for (item of carrito(); track $index; let i = $index) {
-                @let linea = resumen()?.items?.[i];
-                <li class="flex items-start gap-3 rounded-xl bg-accent-soft/60 p-3">
-                  <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface font-semibold text-accent-2">{{ item.input.cantidad }}×</span>
-                  <div class="min-w-0 flex-1">
-                    <div class="font-semibold">{{ item.producto }} <span class="text-muted">· {{ item.input.talla }}</span></div>
-                    <div class="truncate text-xs text-muted" [title]="item.detalle">{{ item.detalle }}</div>
-                    @if (linea?.consultas?.length) {
-                      <span class="badge badge-warn mt-1">consulta</span>
-                    }
-                  </div>
-                  <div class="flex flex-col items-end gap-1">
-                    <span class="whitespace-nowrap font-semibold">{{ linea ? soles(linea.subtotal) : "…" }}</span>
-                    <button type="button" class="btn-action btn-action-danger h-7 w-7" (click)="quitarDelPedido(i)" title="Quitar del pedido" aria-label="Quitar del pedido"><app-icon name="eliminar" [size]="15" /></button>
-                  </div>
-                </li>
-              }
-            </ul>
+          <div class="space-y-4 p-5">
+            @if (!carrito().length) {
+              <div
+                class="flex flex-col items-center gap-2 rounded-xl border border-dashed border-gray-200 px-4 py-10 text-center text-muted"
+              >
+                <span class="seccion-icono h-11 w-11"
+                  ><app-icon name="bolsa" [size]="20"
+                /></span>
+                <span class="mt-1">Aún no hay productos.</span>
+                @if (paso() !== 2 && distritoSel()) {
+                  <button type="button" class="btn-text" (click)="irAPaso(2)">
+                    Elegir productos
+                  </button>
+                }
+              </div>
+            } @else {
+              <ul class="-my-1 divide-y divide-gray-100">
+                @for (item of carrito(); track $index; let i = $index) {
+                  @let linea = resumen()?.items?.[i];
+                  <li class="group flex items-start gap-3 py-3">
+                    <span
+                      class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-brand-line bg-brand-soft text-[13px] font-semibold text-brand-dark tabular"
+                      >{{ item.input.cantidad }}×</span
+                    >
+                    <div class="min-w-0 flex-1">
+                      <div class="font-semibold leading-snug">
+                        {{ item.producto }}
+                        <span class="font-normal text-muted"
+                          >· {{ item.input.talla }}</span
+                        >
+                      </div>
+                      <div
+                        class="truncate text-[13px] text-muted"
+                        [title]="item.detalle"
+                      >
+                        {{ item.detalle }}
+                      </div>
+                      @if (linea?.consultas?.length) {
+                        <span class="badge badge-warn mt-1.5">consulta</span>
+                      }
+                    </div>
+                    <div class="flex flex-col items-end gap-1">
+                      <span class="whitespace-nowrap font-semibold tabular">{{
+                        linea ? soles(linea.subtotal) : "…"
+                      }}</span>
+                      <button
+                        type="button"
+                        class="btn-action btn-action-danger h-7 w-7"
+                        (click)="quitarDelPedido(i)"
+                        title="Quitar del pedido"
+                        aria-label="Quitar del pedido"
+                      >
+                        <app-icon name="eliminar" [size]="14" />
+                      </button>
+                    </div>
+                  </li>
+                }
+              </ul>
 
-            @if (resumen(); as r) {
-              <dl class="space-y-1.5 border-t border-line pt-3" [class.opacity-60]="cotizandoResumen()">
-                <div class="flex justify-between">
-                  <dt class="text-muted">Productos</dt>
-                  <dd class="tabular">{{ soles(r.subtotalProductos) }}</dd>
-                </div>
-                <div class="flex justify-between">
-                  <dt class="text-muted">Envío ({{ r.vehiculo }})</dt>
-                  <dd class="tabular">{{ soles(r.costoEnvio) }}</dd>
-                </div>
-                <div class="flex items-baseline justify-between border-t border-line pt-2">
-                  <dt class="font-semibold">Total</dt>
-                  <dd class="text-2xl font-bold tracking-tight text-accent-2 tabular">{{ soles(r.total) }}</dd>
-                </div>
-                <div class="flex justify-between text-muted">
-                  <dt>Adelanto ({{ form.value.porcentajeAdelanto }}%)</dt>
-                  <dd class="tabular">{{ soles(adelanto()) }}</dd>
-                </div>
-                <div class="flex justify-between text-muted">
-                  <dt>Saldo</dt>
-                  <dd class="tabular">{{ soles(saldo()) }}</dd>
-                </div>
-              </dl>
+              @if (resumen(); as r) {
+                <dl
+                  class="space-y-2 rounded-xl bg-sidebar p-4 transition-opacity"
+                  [class.opacity-60]="cotizandoResumen()"
+                >
+                  <div class="flex justify-between">
+                    <dt class="text-muted">Productos</dt>
+                    <dd class="tabular">{{ soles(r.subtotalProductos) }}</dd>
+                  </div>
+                  <div class="flex justify-between">
+                    <dt class="text-muted">Envío ({{ r.vehiculo }})</dt>
+                    <dd class="tabular">{{ soles(r.costoEnvio) }}</dd>
+                  </div>
+                  <div
+                    class="flex items-baseline justify-between border-t border-gray-200 pt-3"
+                  >
+                    <dt class="font-semibold">Total</dt>
+                    <dd
+                      class="font-display text-[30px] font-semibold leading-none tracking-[-0.02em] text-brand-dark tabular"
+                    >
+                      {{ soles(r.total) }}
+                    </dd>
+                  </div>
+                  <div class="grid grid-cols-2 gap-2 pt-1">
+                    <div
+                      class="rounded-lg border border-gray-200 bg-white px-3 py-2"
+                    >
+                      <dt
+                        class="text-[12.5px] uppercase tracking-wider text-muted"
+                      >
+                        Adelanto {{ form.value.porcentajeAdelanto }}%
+                      </dt>
+                      <dd class="font-semibold tabular">
+                        {{ soles(adelanto()) }}
+                      </dd>
+                    </div>
+                    <div
+                      class="rounded-lg border border-gray-200 bg-white px-3 py-2"
+                    >
+                      <dt
+                        class="text-[12.5px] uppercase tracking-wider text-muted"
+                      >
+                        Saldo
+                      </dt>
+                      <dd class="font-semibold tabular">
+                        {{ soles(saldo()) }}
+                      </dd>
+                    </div>
+                  </div>
+                </dl>
 
-              @if (!r.disponible) {
-                <div class="rounded-lg bg-accent-soft px-3 py-2 text-accent-2">
-                  <div class="flex items-center gap-1.5 font-medium"><app-icon name="alerta" [size]="16" /> El pedido completo no cabe en el stock</div>
-                  <ul class="mt-1 list-disc pl-5">
-                    @for (f of r.faltantes; track f.insumoId) {
-                      <li>{{ f.nombre }}: necesita {{ cantidad(f.necesario) }}, hay {{ cantidad(f.disponible > 0 ? f.disponible : 0) }}</li>
-                    }
-                  </ul>
-                </div>
+                @if (!r.disponible) {
+                  <div
+                    class="rounded-xl border border-red-200 bg-red-50 px-3.5 py-3 text-red-800"
+                  >
+                    <div class="flex items-center gap-1.5 font-medium">
+                      <app-icon name="alerta" [size]="16" /> El pedido completo
+                      no cabe en el stock
+                    </div>
+                    <ul class="mt-1 list-disc pl-5">
+                      @for (f of r.faltantes; track f.insumoId) {
+                        <li>
+                          {{ f.nombre }}: necesita {{ cantidad(f.necesario) }},
+                          hay
+                          {{ cantidad(f.disponible > 0 ? f.disponible : 0) }}
+                        </li>
+                      }
+                    </ul>
+                  </div>
+                }
+                @if (r.requiereConsulta) {
+                  <p
+                    class="flex gap-2 rounded-xl border border-brand-line bg-brand-soft px-3.5 py-3 text-brand-dark"
+                  >
+                    <app-icon
+                      name="consulta"
+                      [size]="16"
+                      class="mt-0.5 shrink-0"
+                    />
+                    Se abrirá una consulta a Producción; el pedido no se arma
+                    hasta que la respondan.
+                  </p>
+                }
               }
-              @if (r.requiereConsulta) {
-                <p class="flex gap-2 rounded-lg border border-line px-3 py-2 text-muted">
-                  <app-icon name="consulta" [size]="16" class="mt-0.5 text-accent" />
-                  Se abrirá una consulta a Producción; el pedido no se arma hasta que la respondan.
+            }
+
+            @if (error()) {
+              <p
+                class="flex gap-2 rounded-xl border border-red-200 bg-red-50 px-3.5 py-3 text-red-800"
+              >
+                <app-icon name="alerta" [size]="16" class="mt-0.5 shrink-0" />
+                {{ error() }}
+              </p>
+            }
+
+            @if (paso() === 3) {
+              <button
+                type="button"
+                class="btn-primary w-full py-3.5 text-[16px]"
+                data-tour="nuevo-confirmar"
+                [disabled]="
+                  enviando() ||
+                  cotizandoResumen() ||
+                  !resumen() ||
+                  !resumen()!.disponible
+                "
+                (click)="confirmarPedido()"
+              >
+                @if (enviando()) {
+                  <span class="spinner border-white/40 border-t-white"></span>
+                  Creando…
+                } @else {
+                  <app-icon name="confirmar" [size]="18" /> Confirmar pedido
+                }
+              </button>
+              @if (form.invalid && carrito().length) {
+                <p class="text-center text-[13px] text-muted">
+                  Completa los campos marcados con *.
                 </p>
               }
+            } @else if (carrito().length) {
+              <button
+                type="button"
+                class="btn-primary w-full py-3.5 text-[16px]"
+                (click)="irAPaso(3)"
+              >
+                Continuar con la entrega <app-icon name="flecha" [size]="16" />
+              </button>
             }
-          }
-
-          @if (error()) {
-            <p class="flex gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-red-800"><app-icon name="alerta" [size]="16" class="mt-0.5" /> {{ error() }}</p>
-          }
-
-          @if (paso() === 3) {
-            <button
-              type="button"
-              class="btn-primary w-full py-3.5 text-base"
-              data-tour="nuevo-confirmar"
-              [disabled]="enviando() || cotizandoResumen() || !resumen() || !resumen()!.disponible"
-              (click)="confirmarPedido()"
-            >
-              @if (enviando()) {
-                <span class="spinner border-white/40 border-t-white"></span> Creando…
-              } @else {
-                <app-icon name="confirmar" [size]="20" /> Confirmar pedido
-              }
-            </button>
-            @if (form.invalid && carrito().length) {
-              <p class="text-center text-xs text-muted">Completa los campos marcados con *.</p>
-            }
-          } @else if (carrito().length) {
-            <button type="button" class="btn-primary w-full py-3.5 text-base" (click)="irAPaso(3)">
-              Continuar con la entrega <app-icon name="flecha" [size]="18" />
-            </button>
-          }
+          </div>
         </div>
       </aside>
     </div>
@@ -402,78 +766,139 @@
 
 <!-- ================= Configurador del producto (ventana) ================= -->
 @if (productoAbierto(); as p) {
-  <div class="fixed inset-0 z-50 flex items-end justify-center bg-[#161616]/50 backdrop-blur-[2px] sm:items-center sm:p-6" (click)="cerrarProducto()">
+  <div
+    class="fixed inset-0 z-50 flex items-end justify-center bg-gray-900/40 backdrop-blur-[2px] sm:items-center sm:p-6"
+    (click)="cerrarProducto()"
+  >
     <div
-      class="flex max-h-[94vh] w-full max-w-2xl flex-col overflow-hidden rounded-t-2xl bg-surface shadow-pop sm:rounded-2xl"
+      class="flex max-h-[94vh] w-full max-w-3xl text-[15px] flex-col overflow-hidden rounded-t-2xl border border-gray-200 bg-surface shadow-pop sm:rounded-2xl"
       (click)="$event.stopPropagation()"
       role="dialog"
       aria-modal="true"
       [attr.aria-label]="p.nombre"
     >
       <!-- Cabecera -->
-      <div class="flex items-center gap-4 border-b border-line p-4 sm:p-5">
-        <div class="h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-accent-soft">
+      <div class="flex items-center gap-4 border-b border-gray-100 p-4 sm:p-5">
+        <div
+          class="h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-gray-200/80 bg-gray-50"
+        >
           @if (p.imagenUrl) {
-            <img [src]="p.imagenUrl" [alt]="p.nombre" class="h-full w-full object-cover" />
+            <img
+              [src]="p.imagenUrl"
+              [alt]="p.nombre"
+              class="h-full w-full object-cover"
+            />
           } @else {
-            <div class="flex h-full w-full items-center justify-center text-accent"><app-icon name="flor" [size]="32" /></div>
+            <div
+              class="flex h-full w-full items-center justify-center text-brand-line"
+            >
+              <app-icon name="flor" [size]="28" />
+            </div>
           }
         </div>
         <div class="min-w-0 flex-1">
-          <h2 class="text-lg font-semibold">{{ p.nombre }}</h2>
+          <h2 class="panel-title text-[21px]">{{ p.nombre }}</h2>
           @if (p.descripcion) {
             <p class="truncate text-muted">{{ p.descripcion }}</p>
           }
         </div>
-        <button type="button" class="btn-icon h-10 w-10" (click)="cerrarProducto()" title="Cerrar" aria-label="Cerrar"><app-icon name="cerrar" [size]="22" /></button>
+        <button
+          type="button"
+          class="btn-icon h-11 w-11"
+          (click)="cerrarProducto()"
+          title="Cerrar"
+          aria-label="Cerrar"
+        >
+          <app-icon name="cerrar" [size]="20" />
+        </button>
       </div>
 
       <!-- Opciones -->
-      <div class="flex-1 space-y-6 overflow-y-auto p-4 sm:p-5" [class.opacity-60]="cotizando()">
+      <div
+        class="flex-1 space-y-6 overflow-y-auto p-4 transition-opacity sm:p-5"
+        [class.opacity-60]="cotizando()"
+      >
         @if (!cotizacion()) {
-          <div class="flex items-center justify-center gap-2 py-12 text-muted"><span class="spinner"></span> Calculando opciones…</div>
+          <div class="flex items-center justify-center gap-2 py-12 text-muted">
+            <span class="spinner"></span> Calculando opciones…
+          </div>
         }
 
         @if (cotizacion(); as c) {
-          <!-- Tamaño -->
-          <div>
-            <div class="mb-2 text-sm font-semibold">Tamaño</div>
-            <div class="grid grid-cols-3 gap-3">
-              @for (t of tallas; track t) {
-                @let op = opcionTalla(t);
+          <!-- Tamaño + cantidad -->
+          <div
+            class="grid gap-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end"
+          >
+            <div>
+              <div class="etiqueta">Tamaño</div>
+              <div class="grid grid-cols-3 gap-1 rounded-xl bg-gray-100 p-1">
+                @for (t of tallas; track t) {
+                  @let op = opcionTalla(t);
+                  <button
+                    type="button"
+                    (click)="elegirTalla(t)"
+                    [disabled]="!op || (!op.disponible && c.talla !== t)"
+                    [title]="op?.motivo ?? ''"
+                    class="flex flex-col items-center rounded-lg px-2 py-3 transition enabled:hover:bg-white/70 disabled:cursor-not-allowed disabled:opacity-40"
+                    [class.bg-white]="c.talla === t"
+                    [class.shadow-card]="c.talla === t"
+                    [class.ring-1]="c.talla === t"
+                    [class.ring-gray-200]="c.talla === t"
+                  >
+                    <span
+                      class="font-display text-[22px] font-semibold leading-tight"
+                      [class.text-brand-dark]="c.talla === t"
+                      [class.text-gray-500]="c.talla !== t"
+                      >{{ t }}</span
+                    >
+                    <span class="text-[13px] text-muted tabular">{{
+                      op ? soles(op.precioBase) : "—"
+                    }}</span>
+                    @if (op && !op.disponible) {
+                      <span class="text-[12.5px] text-muted">sin stock</span>
+                    }
+                  </button>
+                }
+              </div>
+            </div>
+
+            <div>
+              <div class="etiqueta">Cantidad</div>
+              <div
+                class="flex items-center rounded-xl border border-gray-200 p-1"
+              >
                 <button
                   type="button"
-                  (click)="elegirTalla(t)"
-                  [disabled]="!op || (!op.disponible && c.talla !== t)"
-                  [title]="op?.motivo ?? ''"
-                  class="flex flex-col items-center rounded-xl border-2 px-2 py-3 transition hover:border-accent/60 disabled:cursor-not-allowed disabled:opacity-40"
-                  [class.border-accent]="c.talla === t"
-                  [class.bg-brand-soft]="c.talla === t"
-                  [class.border-line]="c.talla !== t"
+                  class="btn-icon h-11 w-11 disabled:opacity-40"
+                  [disabled]="(itemForm.value.cantidad ?? 1) <= 1"
+                  (click)="cambiarCantidad(-1)"
+                  aria-label="Menos"
+                  title="Menos"
                 >
-                  <span class="text-2xl font-bold" [class.text-accent-2]="c.talla === t">{{ t }}</span>
-                  <span class="text-sm text-muted">{{ op ? soles(op.precioBase) : "—" }}</span>
-                  @if (op && !op.disponible) {
-                    <span class="text-[11px] text-muted">sin stock</span>
-                  }
+                  <app-icon name="menos" [size]="16" />
                 </button>
-              }
-            </div>
-          </div>
-
-          <!-- Cantidad -->
-          <div class="flex items-center justify-between">
-            <div class="text-sm font-semibold">Cantidad</div>
-            <div class="flex items-center gap-1 rounded-full bg-accent-soft p-1">
-              <button type="button" class="flex h-10 w-10 items-center justify-center rounded-full bg-surface text-accent-2 shadow-card transition hover:bg-accent hover:text-white disabled:opacity-40" [disabled]="(itemForm.value.cantidad ?? 1) <= 1" (click)="cambiarCantidad(-1)" aria-label="Menos"><app-icon name="menos" [size]="18" /></button>
-              <span class="w-10 text-center text-lg font-bold tabular">{{ itemForm.value.cantidad }}</span>
-              <button type="button" class="flex h-10 w-10 items-center justify-center rounded-full bg-surface text-accent-2 shadow-card transition hover:bg-accent hover:text-white" (click)="cambiarCantidad(1)" aria-label="Más"><app-icon name="nuevo" [size]="18" /></button>
+                <span
+                  class="w-10 text-center font-display text-[17px] font-semibold tabular"
+                  >{{ itemForm.value.cantidad }}</span
+                >
+                <button
+                  type="button"
+                  class="btn-icon h-11 w-11"
+                  (click)="cambiarCantidad(1)"
+                  aria-label="Más"
+                  title="Más"
+                >
+                  <app-icon name="nuevo" [size]="16" />
+                </button>
+              </div>
             </div>
           </div>
 
           <!-- Flor -->
           <div>
-            <div class="mb-2 flex items-center gap-1.5 text-sm font-semibold"><app-icon name="flor" [size]="16" class="text-accent" /> Flor</div>
+            <div class="etiqueta">
+              <app-icon name="flor" [size]="13" /> Flor
+            </div>
             <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
               @for (o of c.opciones.flores; track o.insumoId) {
                 <button
@@ -481,15 +906,18 @@
                   (click)="elegirFlor(o.insumoId)"
                   [disabled]="!o.disponible && c.florId !== o.insumoId"
                   [title]="o.motivo ?? ''"
-                  class="relative rounded-xl border-2 px-3 py-2.5 text-left transition hover:border-accent/60 disabled:cursor-not-allowed disabled:opacity-40"
-                  [class.border-accent]="c.florId === o.insumoId"
-                  [class.bg-brand-soft]="c.florId === o.insumoId"
-                  [class.border-line]="c.florId !== o.insumoId"
+                  class="opcion px-4 py-3.5"
+                  [class.opcion-sel]="c.florId === o.insumoId"
                 >
-                  <div class="pr-5 font-medium">{{ o.nombre }}</div>
-                  <div class="flex flex-wrap items-center gap-1 text-xs text-muted">
+                  <div class="pr-6 font-medium">{{ o.nombre }}</div>
+                  <div
+                    class="mt-0.5 flex flex-wrap items-center gap-1 text-[13px] text-muted"
+                  >
                     @if (o.ajuste !== 0) {
-                      <span>{{ o.ajuste > 0 ? "+" : "" }}{{ soles(o.ajuste) }}</span>
+                      <span class="tabular"
+                        >{{ o.ajuste > 0 ? "+" : ""
+                        }}{{ soles(o.ajuste) }}</span
+                      >
                     } @else {
                       <span>incluida</span>
                     }
@@ -500,9 +928,9 @@
                       <span class="badge badge-neutral">sin stock</span>
                     }
                   </div>
-                  @if (c.florId === o.insumoId) {
-                    <span class="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-white"><app-icon name="check" [size]="12" /></span>
-                  }
+                  <span class="marca"
+                    ><app-icon name="check" [size]="11"
+                  /></span>
                 </button>
               }
             </div>
@@ -511,7 +939,9 @@
           <!-- Papel -->
           @if (c.opciones.papeles.length) {
             <div>
-              <div class="mb-2 flex items-center gap-1.5 text-sm font-semibold"><app-icon name="papel" [size]="16" class="text-accent" /> Papel</div>
+              <div class="etiqueta">
+                <app-icon name="papel" [size]="13" /> Papel
+              </div>
               <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 @for (o of c.opciones.papeles; track o.insumoId) {
                   <button
@@ -519,15 +949,18 @@
                     (click)="elegirPapel(o.insumoId)"
                     [disabled]="!o.disponible && c.papelId !== o.insumoId"
                     [title]="o.motivo ?? ''"
-                    class="relative rounded-xl border-2 px-3 py-2.5 text-left transition hover:border-accent/60 disabled:cursor-not-allowed disabled:opacity-40"
-                    [class.border-accent]="c.papelId === o.insumoId"
-                    [class.bg-brand-soft]="c.papelId === o.insumoId"
-                    [class.border-line]="c.papelId !== o.insumoId"
+                    class="opcion px-4 py-3.5"
+                    [class.opcion-sel]="c.papelId === o.insumoId"
                   >
-                    <div class="pr-5 font-medium">{{ o.nombre }}</div>
-                    <div class="flex flex-wrap items-center gap-1 text-xs text-muted">
+                    <div class="pr-6 font-medium">{{ o.nombre }}</div>
+                    <div
+                      class="mt-0.5 flex flex-wrap items-center gap-1 text-[13px] text-muted"
+                    >
                       @if (o.ajuste !== 0) {
-                        <span>{{ o.ajuste > 0 ? "+" : "" }}{{ soles(o.ajuste) }}</span>
+                        <span class="tabular"
+                          >{{ o.ajuste > 0 ? "+" : ""
+                          }}{{ soles(o.ajuste) }}</span
+                        >
                       } @else {
                         <span>incluido</span>
                       }
@@ -535,9 +968,9 @@
                         <span class="badge badge-neutral">sin stock</span>
                       }
                     </div>
-                    @if (c.papelId === o.insumoId) {
-                      <span class="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-white"><app-icon name="check" [size]="12" /></span>
-                    }
+                    <span class="marca"
+                      ><app-icon name="check" [size]="11"
+                    /></span>
                   </button>
                 }
               </div>
@@ -547,7 +980,9 @@
           <!-- Extras -->
           @if (c.opciones.extras.length) {
             <div>
-              <div class="mb-2 flex items-center gap-1.5 text-sm font-semibold"><app-icon name="regalo" [size]="16" class="text-accent" /> Agrega un extra</div>
+              <div class="etiqueta">
+                <app-icon name="regalo" [size]="13" /> Agrega un extra
+              </div>
               <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 @for (o of c.opciones.extras; track o.id) {
                   <button
@@ -555,29 +990,22 @@
                     (click)="toggleExtra(o.id)"
                     [disabled]="!o.disponible && !extraIds().has(o.id)"
                     [title]="o.motivo ?? ''"
-                    class="relative rounded-xl border-2 px-3 py-2.5 text-left transition hover:border-accent/60 disabled:cursor-not-allowed disabled:opacity-40"
-                    [class.border-accent]="extraIds().has(o.id)"
-                    [class.bg-brand-soft]="extraIds().has(o.id)"
-                    [class.border-line]="!extraIds().has(o.id)"
+                    class="opcion px-4 py-3.5"
+                    [class.opcion-sel]="extraIds().has(o.id)"
+                    [attr.aria-pressed]="extraIds().has(o.id)"
                   >
-                    <div class="pr-5 font-medium">{{ o.nombre }}</div>
-                    <div class="flex items-center gap-1 text-xs text-muted">
-                      +{{ soles(o.precio) }}
+                    <div class="pr-6 font-medium">{{ o.nombre }}</div>
+                    <div
+                      class="mt-0.5 flex items-center gap-1 text-[13px] text-muted"
+                    >
+                      <span class="tabular">+{{ soles(o.precio) }}</span>
                       @if (!o.disponible) {
                         <span class="badge badge-neutral">sin stock</span>
                       }
                     </div>
-                    <span
-                      class="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full border-2"
-                      [class.border-accent]="extraIds().has(o.id)"
-                      [class.bg-accent]="extraIds().has(o.id)"
-                      [class.text-white]="extraIds().has(o.id)"
-                      [class.border-line]="!extraIds().has(o.id)"
-                    >
-                      @if (extraIds().has(o.id)) {
-                        <app-icon name="check" [size]="12" />
-                      }
-                    </span>
+                    <span class="marca rounded-md"
+                      ><app-icon name="check" [size]="11"
+                    /></span>
                   </button>
                 }
               </div>
@@ -586,8 +1014,14 @@
 
           <!-- Pedido especial -->
           <form [formGroup]="itemForm">
-            <label class="mb-2 flex items-center gap-1.5 text-sm font-semibold"><app-icon name="consulta" [size]="16" class="text-accent" /> ¿Algo especial? <span class="font-normal text-muted">(opcional, lo revisa Producción)</span></label>
+            <label class="etiqueta" for="cambioNoListado">
+              <app-icon name="consulta" [size]="13" /> ¿Algo especial?
+              <span class="normal-case tracking-normal"
+                >(opcional, lo revisa Producción)</span
+              >
+            </label>
             <textarea
+              id="cambioNoListado"
               formControlName="cambioNoListado"
               rows="2"
               class="input"
@@ -597,31 +1031,59 @@
           </form>
 
           @if (tallaNoDisponible(); as t) {
-            <p class="flex gap-2 rounded-lg bg-accent-soft px-3 py-2 text-accent-2"><app-icon name="alerta" [size]="16" class="mt-0.5" /> Talla {{ t.talla }}: {{ t.motivo }}</p>
+            <p
+              class="flex gap-2 rounded-xl border border-brand-line bg-brand-soft px-3.5 py-3 text-brand-dark"
+            >
+              <app-icon name="alerta" [size]="16" class="mt-0.5 shrink-0" />
+              Talla {{ t.talla }}: {{ t.motivo }}
+            </p>
           }
           @if (!c.disponible) {
-            <div class="rounded-lg bg-accent-soft px-3 py-2 text-accent-2">
-              <div class="flex items-center gap-1.5 font-medium"><app-icon name="alerta" [size]="16" /> No hay stock para esta selección</div>
+            <div
+              class="rounded-xl border border-red-200 bg-red-50 px-3.5 py-3 text-red-800"
+            >
+              <div class="flex items-center gap-1.5 font-medium">
+                <app-icon name="alerta" [size]="16" /> No hay stock para esta
+                selección
+              </div>
               <ul class="mt-1 list-disc pl-5">
                 @for (f of c.faltantes; track f.insumoId) {
-                  <li>{{ f.nombre }}: necesita {{ cantidad(f.necesario) }}, disponible {{ cantidad(f.disponible > 0 ? f.disponible : 0) }}</li>
+                  <li>
+                    {{ f.nombre }}: necesita {{ cantidad(f.necesario) }},
+                    disponible
+                    {{ cantidad(f.disponible > 0 ? f.disponible : 0) }}
+                  </li>
                 }
               </ul>
             </div>
           }
           @if (error()) {
-            <p class="flex gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-red-800"><app-icon name="alerta" [size]="16" class="mt-0.5" /> {{ error() }}</p>
+            <p
+              class="flex gap-2 rounded-xl border border-red-200 bg-red-50 px-3.5 py-3 text-red-800"
+            >
+              <app-icon name="alerta" [size]="16" class="mt-0.5 shrink-0" />
+              {{ error() }}
+            </p>
           }
         }
       </div>
 
       <!-- Pie: total y agregar -->
       @if (cotizacion(); as c) {
-        <div class="border-t border-line bg-surface p-4 sm:p-5">
-          <div class="mb-3 flex flex-wrap items-center gap-1.5 text-xs text-muted">
-            <span>{{ c.cantidad }} × {{ soles(c.precioUnitario) }}</span>
+        <div class="border-t border-gray-100 bg-sidebar p-4 sm:p-5">
+          <div
+            class="mb-3 flex flex-wrap items-center gap-1.5 text-[13px] text-muted"
+          >
+            <span class="tabular"
+              >{{ c.cantidad }} × {{ soles(c.precioUnitario) }}</span
+            >
             @for (a of c.ajustes; track a.descripcion) {
-              <span>· {{ a.descripcion }} {{ a.ajuste >= 0 ? "+" : "" }}{{ soles(a.ajuste) }}</span>
+              <span
+                >· {{ a.descripcion }}
+                <span class="tabular"
+                  >{{ a.ajuste >= 0 ? "+" : "" }}{{ soles(a.ajuste) }}</span
+                ></span
+              >
             }
             @if (c.vehiculo === "carro") {
               <span class="badge badge-info">requiere carro</span>
@@ -632,12 +1094,16 @@
           </div>
           <button
             type="button"
-            class="btn-primary w-full justify-between px-5 py-3.5 text-base"
+            class="btn-primary w-full justify-between px-6 py-4 text-[16px]"
             [disabled]="!c.disponible || cotizando() || itemForm.invalid"
             (click)="agregarAlPedido()"
           >
-            <span class="flex items-center gap-2"><app-icon name="bolsa" [size]="20" /> Agregar al pedido</span>
-            <span class="font-bold tabular">{{ soles(c.subtotal) }}</span>
+            <span class="flex items-center gap-2"
+              ><app-icon name="bolsa" [size]="18" /> Agregar al pedido</span
+            >
+            <span class="font-display text-[17px] font-semibold tabular">{{
+              soles(c.subtotal)
+            }}</span>
           </button>
         </div>
       }

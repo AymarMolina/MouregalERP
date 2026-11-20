@@ -220,6 +220,52 @@ input[type="number"] {
     background-position: right 0.6rem center;
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='m6 9 6 6 6-6'/%3e%3c/svg%3e");
   }
+
+  /* ---- Nuevo pedido: tarjetas seleccionables, chips y stepper ---- */
+  /* Tarjeta seleccionable (canal, distrito, flor, papel, extra): borde fino y anillo de acento al elegir. */
+  .opcion {
+    @apply relative rounded-xl border border-gray-200 bg-white text-left transition-colors hover:border-gray-300 hover:bg-gray-50/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-gray-200 disabled:hover:bg-white;
+  }
+  .opcion-sel {
+    @apply border-accent bg-brand-soft ring-1 ring-accent hover:border-accent hover:bg-brand-soft;
+  }
+  /* Marca redonda arriba a la derecha; el check solo se ve al elegir. */
+  .marca {
+    @apply absolute right-2.5 top-2.5 flex h-5 w-5 items-center justify-center rounded-full border border-gray-300 bg-white text-transparent transition-colors;
+  }
+  .opcion-sel .marca {
+    @apply border-accent bg-accent text-white;
+  }
+
+  /* Chip de elección rápida (fecha, hora, adelanto). */
+  .chip {
+    @apply inline-flex items-center rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-[14.5px] font-medium text-gray-700 transition-colors hover:border-gray-300 hover:bg-gray-50;
+  }
+  .chip-sel {
+    @apply border-accent bg-brand-soft text-brand-dark ring-1 ring-accent hover:border-accent hover:bg-brand-soft;
+  }
+
+  /* Paso del stepper. */
+  .paso {
+    @apply flex w-full items-center gap-3.5 rounded-xl px-4 py-3.5 text-left transition-colors hover:bg-gray-50;
+  }
+  .paso-activo {
+    @apply bg-brand-soft hover:bg-brand-soft;
+  }
+  .paso-num {
+    @apply flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-white text-muted transition-colors;
+  }
+  .paso-num-listo {
+    @apply border-accent bg-accent text-white;
+  }
+
+  /* Encabezado de sección: ícono en recuadro + título. */
+  .seccion-icono {
+    @apply flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-brand-line bg-brand-soft text-brand-dark;
+  }
+  .etiqueta {
+    @apply mb-3 flex items-center gap-1.5 text-[12.5px] font-medium uppercase tracking-wider text-muted;
+  }
 }
 
 /* Badge con punto de estado */
