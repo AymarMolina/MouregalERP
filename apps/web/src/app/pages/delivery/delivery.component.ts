@@ -51,6 +51,8 @@ export class DeliveryComponent implements OnInit {
         distrito: p.distrito,
         direccion: p.direccion,
         referencia: p.referencia,
+        cliente: p.clienteNombre,
+        telefonoCliente: p.clienteTelefono,
         recibe: p.nombreReceptor,
         telefono: p.telefonoReceptor,
         vehiculo: p.vehiculo,

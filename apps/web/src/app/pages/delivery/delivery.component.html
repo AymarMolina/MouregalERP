@@ -63,10 +63,16 @@
 
                 <div>
                   <div class="font-medium">{{ p.distrito }}</div>
-                  <div>{{ p.direccion }}</div>
+                  <div><span class="text-muted">Dirección:</span> {{ p.direccion }}</div>
                   @if (p.referencia) {
-                    <div class="text-muted">Ref.: {{ p.referencia }}</div>
+                    <div><span class="text-muted">Referencia:</span> {{ p.referencia }}</div>
                   }
+                  <div class="mt-1 text-muted">
+                    Cliente: <span class="text-text">{{ p.clienteNombre }}</span>
+                    @if (p.clienteTelefono) {
+                      · <a [href]="'tel:' + p.clienteTelefono" class="tabular hover:underline" title="Llamar al cliente" aria-label="Llamar al cliente">{{ p.clienteTelefono }}</a>
+                    }
+                  </div>
                   @if (p.ubicacionLat !== null && p.ubicacionLng !== null) {
                     <a [href]="abrirMaps(p.ubicacionLat, p.ubicacionLng)" target="_blank" rel="noopener" class="btn-secondary mt-2 px-3 py-1.5">
                       <app-icon name="mapa" [size]="15" /> Abrir en Google Maps

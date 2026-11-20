@@ -47,6 +47,8 @@ export interface PedidoDelivery {
   ubicacionLng: number | null;
   nombreReceptor: string;
   telefonoReceptor: string;
+  clienteNombre: string;
+  clienteTelefono: string | null;
   vehiculo: Vehiculo;
   total: string;
   totalPagado: string;

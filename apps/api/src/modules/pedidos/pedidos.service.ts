@@ -501,10 +501,13 @@ export class PedidosService {
         totalPagado: pedidos.totalPagado,
         repartidorId: pedidos.repartidorId,
         distrito: distritos.nombre,
+        clienteNombre: clientes.nombre,
+        clienteTelefono: clientes.telefono,
         fotos: sql<number>`(select count(*)::int from pedido_fotos f where f.pedido_id = ${pedidos.id})`,
       })
       .from(pedidos)
       .innerJoin(distritos, eq(pedidos.distritoId, distritos.id))
+      .innerJoin(clientes, eq(pedidos.clienteId, clientes.id))
       .where(
         or(
           inArray(pedidos.estado, ['listo', 'en_camino']),
