@@ -7,59 +7,45 @@
     </p>
   </header>
 
-  <!-- Pasos -->
-  <nav
-    class="card mb-6 p-1.5"
-    aria-label="Pasos del pedido"
-    data-tour="nuevo-pasos"
-  >
-    <ol class="grid grid-cols-3 gap-1.5">
+  <!-- Pasos: barra de progreso segmentada arriba de cada paso -->
+  <nav class="card mb-6 px-4 pb-3 pt-4 sm:px-5" aria-label="Pasos del pedido" data-tour="nuevo-pasos">
+    <ol class="grid grid-cols-3 gap-3 sm:gap-4">
       @for (s of pasos; track s.n) {
+        @let activo = paso() === s.n;
+        @let listo = pasoListo(s.n) && !activo;
         <li class="min-w-0">
+          <div class="h-1.5 overflow-hidden rounded-full bg-gray-200" aria-hidden="true">
+            <div class="h-full rounded-full bg-accent transition-all duration-500" [style.width.%]="listo ? 100 : activo ? 50 : 0"></div>
+          </div>
           <button
             type="button"
             (click)="irAPaso(s.n)"
-            class="paso"
-            [class.paso-activo]="paso() === s.n"
-            [attr.aria-current]="paso() === s.n ? 'step' : null"
+            class="paso mt-2.5"
+            [class.paso-activo]="activo"
+            [attr.aria-current]="activo ? 'step' : null"
           >
-            <span
-              class="paso-num"
-              [class.paso-num-listo]="paso() === s.n || pasoListo(s.n)"
-            >
-              @if (pasoListo(s.n) && paso() !== s.n) {
-                <app-icon name="check" [size]="16" />
+            <span class="paso-num" [class.paso-num-actual]="activo" [class.paso-num-listo]="listo">
+              @if (listo) {
+                <app-icon name="check" [size]="18" />
               } @else {
-                <app-icon [name]="s.icono" [size]="16" />
+                <app-icon [name]="s.icono" [size]="18" />
               }
             </span>
             <span class="min-w-0">
               <span
-                class="block text-[12.5px] font-medium uppercase tracking-wider text-muted"
-                >Paso {{ s.n }}</span
+                class="block text-[12.5px] font-medium uppercase tracking-wider"
+                [class.text-accent]="activo || listo"
+                [class.text-muted]="!activo && !listo"
               >
-              <span
-                class="block truncate font-semibold"
-                [class.text-brand-dark]="paso() === s.n"
-                >{{ s.titulo }}</span
-              >
-              <span class="hidden truncate text-[13px] text-muted md:block">{{
-                s.detalle
-              }}</span>
+                Paso {{ s.n }}{{ listo ? " · listo" : "" }}
+              </span>
+              <span class="block truncate font-semibold" [class.text-brand-dark]="activo" [class.text-gray-600]="!activo">{{ s.titulo }}</span>
+              <span class="hidden truncate text-[13px] text-muted md:block">{{ s.detalle }}</span>
             </span>
           </button>
         </li>
       }
     </ol>
-    <div
-      class="mx-1.5 mb-0.5 mt-1.5 h-0.5 overflow-hidden rounded-full bg-gray-100"
-      aria-hidden="true"
-    >
-      <div
-        class="h-full rounded-full bg-accent transition-all duration-500"
-        [style.width.%]="(paso() / pasos.length) * 100"
-      ></div>
-    </div>
   </nav>
 
   @if (loading()) {
