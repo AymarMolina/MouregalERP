@@ -1,4 +1,5 @@
 import { readFileSync, readdirSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { PGlite } from '@electric-sql/pglite';
 import { Logger } from '@nestjs/common';
@@ -15,9 +16,19 @@ import { PagosService } from '../modules/pagos/pagos.service';
 import { ConsultasService } from '../modules/pedidos/consultas.service';
 import { CotizacionesService } from '../modules/pedidos/cotizaciones.service';
 import { DisponibilidadService } from '../modules/pedidos/disponibilidad.service';
+import { UbicacionService } from '../modules/pedidos/ubicacion.service';
+import { FotosService } from '../modules/pedidos/fotos.service';
 import { ItemResolverService } from '../modules/pedidos/item-resolver.service';
 import { PedidosService } from '../modules/pedidos/pedidos.service';
 import { ReportesService } from '../modules/reportes/reportes.service';
+
+/** Carpeta de fotos de los tests (también la usa el API de los e2e vía process.env). */
+export const FOTOS_DIR_TEST = join(tmpdir(), `erp-fotos-test-${process.pid}`);
+process.env.FOTOS_DIR = FOTOS_DIR_TEST;
+/** Bytes mínimos que el API reconoce como JPEG. */
+export const JPEG_PRUEBA = Buffer.from([
+  0xff, 0xd8, 0xff, 0xe0, 0, 0x10, 0x4a, 0x46, 0x49, 0x46,
+]);
 
 /**
  * Base de datos Postgres en memoria (PGlite) con las migraciones reales de
@@ -60,12 +71,14 @@ export async function crearEntornoDePrueba(env: Record<string, string> = {}) {
   }
   await seedCatalogo(db, usuarios.admin);
 
-  const config = { get: (k: string) => env[k] } as unknown as ConfigService;
+  const vars: Record<string, string> = { FOTOS_DIR: FOTOS_DIR_TEST, ...env };
+  const config = { get: (k: string) => vars[k] } as unknown as ConfigService;
   const notificaciones = new NotificacionesService();
   const kardex = new KardexService(db);
   const disponibilidad = new DisponibilidadService(db);
   const resolver = new ItemResolverService();
   const pagos = new PagosService(db, config, notificaciones);
+  const fotos = new FotosService(db, config);
   const pedidos = new PedidosService(
     db,
     kardex,
@@ -74,6 +87,8 @@ export async function crearEntornoDePrueba(env: Record<string, string> = {}) {
     pagos,
     config,
     notificaciones,
+    new UbicacionService(),
+    fotos,
   );
 
   const insumoId = async (codigo: string) => {
@@ -107,6 +122,10 @@ export async function crearEntornoDePrueba(env: Record<string, string> = {}) {
     disponibilidad,
     pagos,
     pedidos,
+    fotos,
+    /** Sube una foto de prueba (requisito para pasar a en_camino). */
+    subirFoto: (pedidoId: string) =>
+      fotos.subir(pedidoId, JPEG_PRUEBA, usuarios.produccion),
     cotizaciones: new CotizacionesService(db, disponibilidad, resolver),
     consultas: new ConsultasService(db),
     compras: new ComprasService(db, kardex, disponibilidad),

@@ -135,7 +135,7 @@ export class HoyComponent implements OnInit {
       (p) =>
         (!estado || p.estado === estado) &&
         (!q ||
-          String(p.numero).includes(q) ||
+          p.codigo.toLowerCase().includes(q) ||
           p.nombreReceptor.toLowerCase().includes(q) ||
           p.cliente.toLowerCase().includes(q) ||
           p.distrito.toLowerCase().includes(q)),
@@ -147,7 +147,7 @@ export class HoyComponent implements OnInit {
     porPagina: 10,
     nombreCsv: "pedidos-hoy",
     csv: (p) => ({
-      pedido: p.numero,
+      pedido: p.codigo,
       hora: hora(p.horaEntrega),
       cliente: p.cliente,
       recibe: p.nombreReceptor,

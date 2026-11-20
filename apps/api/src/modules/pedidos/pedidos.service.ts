@@ -18,6 +18,7 @@ import {
   validarDespacho,
   validarEntrega,
   validarTransicion,
+  FOTOS_PEDIDO,
   type ConsumoInput,
   type DespacharInput,
   type EstadoPedido,
@@ -49,6 +50,8 @@ import {
   usuarios,
 } from '../../db/schema';
 import { DisponibilidadService } from './disponibilidad.service';
+import { UbicacionService } from './ubicacion.service';
+import { FotosService } from './fotos.service';
 import {
   ItemResolverService,
   type ItemResuelto,
@@ -69,6 +72,20 @@ const MENSAJE_ESTADO: Record<EstadoPedido, string> = {
 };
 
 /** Serializa la reserva de stock entre creaciones de pedido concurrentes (5.3). */
+const MESES_CODIGO = [
+  'EN',
+  'FE',
+  'MR',
+  'AB',
+  'MY',
+  'JN',
+  'JL',
+  'AG',
+  'SE',
+  'OC',
+  'NO',
+  'DI',
+];
 const LOCK_RESERVA_STOCK = sql`select pg_advisory_xact_lock(hashtext('erp:reserva_stock'))`;
 
 @Injectable()
@@ -81,6 +98,8 @@ export class PedidosService {
     private readonly pagos: PagosService,
     private readonly config: ConfigService,
     private readonly notificaciones: NotificacionesService,
+    private readonly ubicacion: UbicacionService,
+    private readonly fotos: FotosService,
   ) {}
 
   async list(filtros: {
@@ -101,6 +120,7 @@ export class PedidosService {
         ilike(pedidos.nombreReceptor, patron),
         ilike(pedidos.telefonoReceptor, patron),
         ilike(pedidos.direccion, patron),
+        ilike(pedidos.codigo, patron),
       );
       const numero = Number(q.replace(/^#/, ''));
       condiciones.push(
@@ -368,6 +388,11 @@ export class PedidosService {
       Number(pedido.totalPagado),
     );
     if (destino === 'en_camino') {
+      if ((await this.fotos.contar(tx, id)) < FOTOS_PEDIDO.min) {
+        throw new BadRequestException(
+          'Producción debe subir al menos una foto del arreglo antes de despachar',
+        );
+      }
       const r = validarDespacho({
         saldo,
         linkSaldoGenerado: await this.pagos.tieneLinkSaldo(tx, id),
@@ -430,11 +455,29 @@ export class PedidosService {
       .limit(1);
     this.notificaciones.notificarCliente({
       pedidoId: pedido.id,
-      numero: pedido.numero,
+      codigo: pedido.codigo,
       telefono: cliente?.telefono ?? null,
       evento: 'estado_cambiado',
       mensaje: MENSAJE_ESTADO[estado],
     });
+  }
+
+  /**
+   * Siguiente código del mes en hora de Lima (NO-0001, NO-0002…). Se llama bajo
+   * LOCK_RESERVA_STOCK, así dos pedidos simultáneos no sacan el mismo correlativo.
+   */
+  private async siguienteCodigo(tx: Tx): Promise<string> {
+    const mesLima = sql`date_trunc('month', now() at time zone 'America/Lima')`;
+    const [r] = await tx
+      .select({
+        mes: sql<number>`extract(month from now() at time zone 'America/Lima')::int`,
+        ultimo: sql<number>`coalesce(max(split_part(${pedidos.codigo}, '-', 2)::int), 0)::int`,
+      })
+      .from(pedidos)
+      .where(
+        sql`date_trunc('month', ${pedidos.createdAt} at time zone 'America/Lima') = ${mesLima}`,
+      );
+    return `${MESES_CODIGO[r.mes - 1]}-${String(r.ultimo + 1).padStart(4, '0')}`;
   }
 
   /** Tablero de despacho: listos y en camino (todas las fechas) + entregados del día. */
@@ -443,11 +486,14 @@ export class PedidosService {
       .select({
         id: pedidos.id,
         numero: pedidos.numero,
+        codigo: pedidos.codigo,
         estado: pedidos.estado,
         fechaEntrega: pedidos.fechaEntrega,
         horaEntrega: pedidos.horaEntrega,
         direccion: pedidos.direccion,
         referencia: pedidos.referencia,
+        ubicacionLat: pedidos.ubicacionLat,
+        ubicacionLng: pedidos.ubicacionLng,
         nombreReceptor: pedidos.nombreReceptor,
         telefonoReceptor: pedidos.telefonoReceptor,
         vehiculo: pedidos.vehiculo,
@@ -455,6 +501,7 @@ export class PedidosService {
         totalPagado: pedidos.totalPagado,
         repartidorId: pedidos.repartidorId,
         distrito: distritos.nombre,
+        fotos: sql<number>`(select count(*)::int from pedido_fotos f where f.pedido_id = ${pedidos.id})`,
       })
       .from(pedidos)
       .innerJoin(distritos, eq(pedidos.distritoId, distritos.id))
@@ -508,9 +555,15 @@ export class PedidosService {
   }
 
   /** Receta efectiva del pedido agregada por insumo, para la pantalla de confirmar consumo. */
-  async recetaEfectivaDelPedido(
-    id: string,
-  ): Promise<{ insumoId: string; nombre: string; cantidad: number }[]> {
+  async recetaEfectivaDelPedido(id: string): Promise<
+    {
+      insumoId: string;
+      nombre: string;
+      unidadBase: string;
+      cantidad: number;
+      stock: number;
+    }[]
+  > {
     const pedido = await this.findOne(id);
     if (pedido.estado !== 'en_armado') {
       throw new BadRequestException('Solo aplica a pedidos en_armado');
@@ -528,6 +581,7 @@ export class PedidosService {
         id: insumos.id,
         nombre: insumos.nombre,
         unidadBase: insumos.unidadBase,
+        stockActual: insumos.stockActual,
       })
       .from(insumos)
       .where(
@@ -543,6 +597,7 @@ export class PedidosService {
       nombre: infoPorInsumo.get(l.insumoId)?.nombre ?? '—',
       unidadBase: infoPorInsumo.get(l.insumoId)?.unidadBase ?? 'und',
       cantidad: l.cantidad,
+      stock: Number(infoPorInsumo.get(l.insumoId)?.stockActual ?? 0),
     }));
   }
 
@@ -669,6 +724,10 @@ export class PedidosService {
    * simultáneas no pueden reservar el mismo stock.
    */
   async crear(input: PedidoInput, creadoPor: string) {
+    // Fuera de la transacción: puede tardar (abre el link corto) y no toca la base.
+    const ubicacion = input.ubicacionUrl
+      ? await this.ubicacion.resolver(input.ubicacionUrl)
+      : null;
     const pedidoId = await this.db.transaction(async (tx) => {
       const [distrito] = await tx
         .select()
@@ -716,10 +775,12 @@ export class PedidosService {
       const total = round2(subtotalProductos + costoEnvio);
 
       const cliente = await this.resolverCliente(tx, input.cliente);
+      const codigo = await this.siguienteCodigo(tx);
 
       const [creado] = await tx
         .insert(pedidos)
         .values({
+          codigo,
           canal: input.canal,
           clienteId: cliente.id,
           estado: 'pendiente',
@@ -728,6 +789,9 @@ export class PedidosService {
           distritoId: input.distritoId,
           direccion: input.direccion,
           referencia: input.referencia,
+          ubicacionUrl: ubicacion ? input.ubicacionUrl : null,
+          ubicacionLat: ubicacion?.lat ?? null,
+          ubicacionLng: ubicacion?.lng ?? null,
           telefonoReceptor: input.telefonoReceptor,
           nombreReceptor: input.nombreReceptor,
           dedicatoria: input.dedicatoria,
@@ -806,7 +870,7 @@ export class PedidosService {
       }
       this.notificaciones.notificarCliente({
         pedidoId: creado.id,
-        numero: creado.numero,
+        codigo: creado.codigo,
         telefono: cliente.telefono,
         evento: 'pedido_creado',
         mensaje: `Recibimos tu pedido por S/ ${total.toFixed(2)}.${montoAdelanto > 0 ? ` Adelanto: S/ ${montoAdelanto.toFixed(2)}.` : ''}`,

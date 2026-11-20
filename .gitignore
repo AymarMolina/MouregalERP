@@ -14,3 +14,6 @@ docs/manual/img/[0-9]*.png
 # Fotos y videos originales del catálogo (~1 GB, hay archivos > 100 MB que GitHub rechaza).
 # La web usa las versiones optimizadas de apps/web/public/productos/.
 FOTOS/
+
+# Fotos de pedidos guardadas en local (en producción van al volumen FOTOS_DIR)
+apps/api/uploads/

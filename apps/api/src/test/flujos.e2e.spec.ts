@@ -6,7 +6,11 @@ import { AppModule } from '../app.module';
 import { HttpExceptionFilter } from '../common/filters/http-exception.filter';
 import { DB } from '../db/db.module';
 import * as schema from '../db/schema';
-import { crearEntornoDePrueba, type EntornoDePrueba } from './db-test';
+import {
+  JPEG_PRUEBA,
+  crearEntornoDePrueba,
+  type EntornoDePrueba,
+} from './db-test';
 
 jest.setTimeout(90_000);
 
@@ -81,6 +85,11 @@ describe('Flujos de negocio por HTTP (e2e)', () => {
         request(http).post(url).auth(tokens[rol], auth).send(body),
       patch: (url: string, body: object) =>
         request(http).patch(url).auth(tokens[rol], auth).send(body),
+      foto: (id: string) =>
+        request(http)
+          .post(`/api/pedidos/${id}/fotos`)
+          .auth(tokens[rol], auth)
+          .attach('foto', JPEG_PRUEBA, 'arreglo.jpg'),
     };
   };
 
@@ -131,11 +140,14 @@ describe('Flujos de negocio por HTTP (e2e)', () => {
     await como('produccion')
       .post(`/api/pedidos/${id}/transicion`, { a: 'en_armado' })
       .expect(201);
+    // En armado todavía no se suben fotos: solo con el pedido listo.
+    await como('produccion').foto(id).expect(400);
     await como('produccion')
       .post(`/api/pedidos/${id}/consumo`, {
         lineas: [{ insumoId: rosaRoja.id, cantidadUsada: 12 }],
       })
       .expect(201);
+    await como('produccion').foto(id).expect(201);
   }
 
   const pagosDe = async (id: string) =>
@@ -151,6 +163,9 @@ describe('Flujos de negocio por HTTP (e2e)', () => {
     const total = Number(creado.body.total);
     expect(total).toBe(104); // 89 (talla S) + 15 de envío en moto
     expect(creado.body.estado).toBe('pendiente');
+    expect(creado.body.codigo).toMatch(
+      /^(EN|FE|MR|AB|MY|JN|JL|AG|SE|OC|NO|DI)-0001$/,
+    );
 
     // La vendedora confirma el adelanto (50 %).
     const [adelanto] = (await pagosDe(id)).filter(
@@ -196,6 +211,23 @@ describe('Flujos de negocio por HTTP (e2e)', () => {
     await como('produccion')
       .post(`/api/pedidos/${id}/transicion`, { a: 'en_camino' })
       .expect(400);
+    // Sin foto del arreglo no se despacha; solo Producción sube fotos (máx. 3).
+    const sinFoto = await como('vendedora')
+      .post(`/api/pedidos/${id}/despachar`)
+      .expect(400);
+    expect(sinFoto.body.message).toMatch(/foto/);
+    await como('delivery').foto(id).expect(403);
+    for (let i = 0; i < 3; i++) await como('produccion').foto(id).expect(201);
+    await como('produccion').foto(id).expect(400);
+    const fotos = await como('delivery')
+      .get(`/api/pedidos/${id}/fotos`)
+      .expect(200);
+    expect(fotos.body).toHaveLength(3);
+    await como('delivery')
+      .get(`/api/pedidos/${id}/fotos/${fotos.body[0].id}`)
+      .expect(200)
+      .expect('Content-Type', /image\/jpeg/);
+
     // Con saldo y sin link tampoco se puede pasar a en_camino directamente.
     const sinLink = await como('vendedora')
       .post(`/api/pedidos/${id}/transicion`, { a: 'en_camino' })
@@ -433,7 +465,11 @@ describe('Flujos de negocio por HTTP (e2e)', () => {
     await como('vendedora').get('/api/ordenes-compra').expect(403);
 
     const proveedor = await como('almacen')
-      .post('/api/proveedores', { nombre: 'Papelera Lima', ruc: '20123456789' })
+      .post('/api/proveedores', {
+        nombre: 'Papelera Lima',
+        tipoIdentidad: 'ruc',
+        numIdentidad: '20123456789',
+      })
       .expect(201);
     const orden = await como('almacen')
       .post('/api/ordenes-compra', {

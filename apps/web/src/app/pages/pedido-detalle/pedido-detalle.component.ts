@@ -1,4 +1,5 @@
 import { DatePipe } from "@angular/common";
+import { MapaComponent } from "../../shared/mapa/mapa.component";
 import { Component, Input, OnInit, computed, inject, signal } from "@angular/core";
 import { RouterLink } from "@angular/router";
 import { calcularSaldo, validarTransicion } from "@erp/shared";
@@ -12,7 +13,7 @@ import { CLASE_ESTADO_PAGO, CLASE_ESTADO_PEDIDO, ETIQUETA_ESTADO_PEDIDO, hora, s
 
 @Component({
   selector: "app-pedido-detalle",
-  imports: [DatePipe, RouterLink],
+  imports: [DatePipe, RouterLink, MapaComponent],
   templateUrl: "./pedido-detalle.component.html",
 })
 export class PedidoDetalleComponent implements OnInit {
@@ -75,7 +76,7 @@ export class PedidoDetalleComponent implements OnInit {
   async cancelar(): Promise<void> {
     const p = this.pedido();
     if (!p) return;
-    const motivo = prompt(`¿Cancelar el pedido #${p.numero}? Escribe el motivo:`);
+    const motivo = prompt(`¿Cancelar el pedido ${p.codigo}? Escribe el motivo:`);
     if (motivo === null) return;
     this.cancelando.set(true);
     this.errorAccion.set(null);

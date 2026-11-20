@@ -60,6 +60,7 @@ export class PagosService {
       .select({
         id: pedidos.id,
         numero: pedidos.numero,
+        codigo: pedidos.codigo,
         estado: pedidos.estado,
         canal: pedidos.canal,
         fechaEntrega: pedidos.fechaEntrega,
@@ -226,7 +227,7 @@ export class PagosService {
 
     this.notificaciones.notificarCliente({
       pedidoId: pedido.id,
-      numero: pedido.numero,
+      codigo: pedido.codigo,
       telefono: await this.telefonoCliente(tx, pedido.clienteId),
       evento: 'link_pago',
       mensaje: `Saldo de S/ ${saldo.toFixed(2)}. Paga aquí: ${linkUrl}`,
@@ -290,7 +291,7 @@ export class PagosService {
   private async avisarPago(tx: Tx, pedido: Pedido, monto: number) {
     this.notificaciones.notificarCliente({
       pedidoId: pedido.id,
-      numero: pedido.numero,
+      codigo: pedido.codigo,
       telefono: await this.telefonoCliente(tx, pedido.clienteId),
       evento: 'pago_recibido',
       mensaje: `Recibimos tu pago de S/ ${monto.toFixed(2)}. ¡Gracias!`,

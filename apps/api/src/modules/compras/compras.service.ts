@@ -64,7 +64,8 @@ export class ComprasService {
       .insert(proveedores)
       .values({
         nombre: input.nombre,
-        ruc: input.ruc,
+        tipoIdentidad: input.tipoIdentidad,
+        numIdentidad: input.numIdentidad,
         telefono: input.telefono,
       })
       .returning();
@@ -76,7 +77,12 @@ export class ComprasService {
       .update(proveedores)
       .set({
         ...(input.nombre !== undefined && { nombre: input.nombre }),
-        ...(input.ruc !== undefined && { ruc: input.ruc }),
+        ...(input.tipoIdentidad !== undefined && {
+          tipoIdentidad: input.tipoIdentidad,
+        }),
+        ...(input.numIdentidad !== undefined && {
+          numIdentidad: input.numIdentidad,
+        }),
         ...(input.telefono !== undefined && { telefono: input.telefono }),
         ...(input.activo !== undefined && { activo: input.activo }),
         updatedAt: new Date(),

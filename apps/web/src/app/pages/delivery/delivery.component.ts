@@ -1,5 +1,7 @@
+import { linkAbrirMaps } from "@erp/shared";
 import { Component, OnInit, computed, inject, signal } from "@angular/core";
 import { descargarExcel } from "../../shared/tabla/excel";
+import { FotosPedidoComponent } from "../../shared/fotos/fotos-pedido.component";
 import { IconComponent } from "../../shared/icon/icon.component";
 import { FormsModule } from "@angular/forms";
 import { RouterLink } from "@angular/router";
@@ -14,7 +16,7 @@ type Columna = { titulo: string; vacio: string; pedidos: PedidoDelivery[] };
 
 @Component({
   selector: "app-delivery",
-  imports: [FormsModule, RouterLink, IconComponent],
+  imports: [FormsModule, RouterLink, IconComponent, FotosPedidoComponent],
   templateUrl: "./delivery.component.html",
 })
 export class DeliveryComponent implements OnInit {
@@ -42,7 +44,7 @@ export class DeliveryComponent implements OnInit {
     descargarExcel(
       "delivery",
       pedidos.map((p) => ({
-        pedido: p.numero,
+        pedido: p.codigo,
         estado: ETIQUETA_ESTADO_PEDIDO[p.estado],
         fechaEntrega: p.fechaEntrega,
         hora: hora(p.horaEntrega),
@@ -118,8 +120,8 @@ export class DeliveryComponent implements OnInit {
       await this.api.despachar(p.id, repartidorId);
       this.aviso.set(
         p.saldo > 0 && !p.linkSaldo
-          ? `#${p.numero} despachado. Se envió al cliente el link del saldo (${soles(p.saldo)}).`
-          : `#${p.numero} despachado.`,
+          ? `${p.codigo} despachado. Se envió al cliente el link del saldo (${soles(p.saldo)}).`
+          : `${p.codigo} despachado.`,
       );
       await this.cargar(false);
     } catch (err) {
@@ -130,13 +132,13 @@ export class DeliveryComponent implements OnInit {
   }
 
   async entregar(p: PedidoDelivery): Promise<void> {
-    if (p.saldo > 0 && !confirm(`El pedido #${p.numero} aún debe ${soles(p.saldo)}. ¿Marcar entregado igual?`)) return;
+    if (p.saldo > 0 && !confirm(`El pedido ${p.codigo} aún debe ${soles(p.saldo)}. ¿Marcar entregado igual?`)) return;
     this.trabajando.set(p.id);
     this.error.set(null);
     this.aviso.set(null);
     try {
       await this.api.entregar(p.id);
-      this.aviso.set(`#${p.numero} entregado.`);
+      this.aviso.set(`${p.codigo} entregado.`);
       await this.cargar(false);
     } catch (err) {
       this.error.set(mensajeError(err, "No se pudo marcar como entregado."));
@@ -153,6 +155,11 @@ export class DeliveryComponent implements OnInit {
     } catch {
       this.aviso.set(url);
     }
+  }
+
+  /** Abre la ubicación en la app de Google Maps del celular. */
+  abrirMaps(lat: number, lng: number): string {
+    return linkAbrirMaps({ lat, lng });
   }
 
   telefonoWhatsapp(tel: string): string {

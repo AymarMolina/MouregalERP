@@ -88,9 +88,9 @@
             <tbody>
               @for (f of tablaCobros.filas(); track f.pagoId) {
                 <tr [class.fila-sel]="tablaCobros.marcado(f)">
-                  <td class="col-check"><app-check-fila [tabla]="tablaCobros" [fila]="f" [etiqueta]="'Seleccionar cobro del pedido #' + f.numero" /></td>
+                  <td class="col-check"><app-check-fila [tabla]="tablaCobros" [fila]="f" [etiqueta]="'Seleccionar cobro del pedido ' + f.codigo" /></td>
                   <td class="tabular">{{ fechaHora(f.pagadoAt) }}</td>
-                  <td><a [routerLink]="['/pedidos', f.pedidoId]" class="font-semibold text-gray-900 hover:underline">#{{ f.numero }}</a></td>
+                  <td><a [routerLink]="['/pedidos', f.pedidoId]" class="font-semibold text-gray-900 hover:underline">{{ f.codigo }}</a></td>
                   <td>{{ f.cliente }}</td>
                   <td class="capitalize">{{ f.tipo }}</td>
                   <td class="capitalize">{{ f.metodo }}</td>

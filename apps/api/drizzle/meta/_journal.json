@@ -15,6 +15,34 @@
       "when": 1794192715710,
       "tag": "0001_insumo_caja_token_version",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795197318429,
+      "tag": "0002_pedido_ubicacion_maps",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1795202606204,
+      "tag": "0003_pedido_codigo",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1795204374336,
+      "tag": "0004_proveedor_identidad",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1795208560133,
+      "tag": "0005_pedido_fotos",
+      "breakpoints": true
     }
   ]
 }

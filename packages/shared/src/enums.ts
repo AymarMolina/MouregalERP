@@ -94,3 +94,20 @@ export const ESTADO_OC = [
   "anulada",
 ] as const;
 export type EstadoOc = (typeof ESTADO_OC)[number];
+
+export const TIPO_IDENTIDAD = ["ruc", "dni", "ce"] as const;
+export type TipoIdentidad = (typeof TIPO_IDENTIDAD)[number];
+export const TIPO_IDENTIDAD_ETIQUETA: Record<TipoIdentidad, string> = {
+  ruc: "RUC",
+  dni: "DNI",
+  ce: "Carnet de extranjería",
+};
+/** Formato de cada documento: RUC 11 dígitos, DNI 8 dígitos, CE 9 a 12 letras o dígitos. */
+export const FORMATO_IDENTIDAD: Record<TipoIdentidad, { regex: RegExp; mensaje: string }> = {
+  ruc: { regex: /^\d{11}$/, mensaje: "El RUC tiene 11 dígitos" },
+  dni: { regex: /^\d{8}$/, mensaje: "El DNI tiene 8 dígitos" },
+  ce: { regex: /^[A-Za-z0-9]{9,12}$/, mensaje: "El carnet de extranjería tiene de 9 a 12 letras o dígitos" },
+};
+
+/** Fotos del arreglo terminado: mínimo para pasar a en_camino y máximo por pedido. */
+export const FOTOS_PEDIDO = { min: 1, max: 3 } as const;

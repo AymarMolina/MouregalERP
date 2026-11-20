@@ -442,6 +442,7 @@ export class ReportesService {
         monto: pagos.monto,
         pedidoId: pedidos.id,
         numero: pedidos.numero,
+        codigo: pedidos.codigo,
         estadoPedido: pedidos.estado,
         cliente: clientes.nombre,
       })

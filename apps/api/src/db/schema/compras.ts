@@ -9,13 +9,14 @@ import {
   timestamp,
   uuid,
 } from 'drizzle-orm/pg-core';
-import { estadoOcEnum } from './enums';
+import { estadoOcEnum, tipoIdentidadEnum } from './enums';
 import { insumos } from './insumos';
 
 export const proveedores = pgTable('proveedores', {
   id: uuid('id').defaultRandom().primaryKey(),
   nombre: text('nombre').notNull(),
-  ruc: text('ruc'),
+  tipoIdentidad: tipoIdentidadEnum('tipo_identidad').notNull().default('ruc'),
+  numIdentidad: text('num_identidad'),
   telefono: text('telefono'),
   activo: boolean('activo').notNull().default(true),
   createdAt: timestamp('created_at', { withTimezone: true })

@@ -8,7 +8,7 @@
     <div class="page-header">
       <div>
         <div class="flex items-center gap-3" data-tour="detalle-estado">
-          <h1 class="panel-title text-lg">Pedido #{{ p.numero }}</h1>
+          <h1 class="panel-title text-lg">Pedido {{ p.codigo }}</h1>
           <span [class]="'badge text-sm ' + claseEstado[p.estado]">{{ etiquetaEstado[p.estado] }}</span>
         </div>
         <p class="panel-subtitle">Entrega {{ p.fechaEntrega }} · {{ hora(p.horaEntrega) }} · canal {{ p.canal }}</p>
@@ -70,6 +70,9 @@
             <dt class="text-muted">Vehículo</dt>
             <dd><span class="badge badge-neutral uppercase">{{ p.vehiculo }}</span></dd>
           </dl>
+          @if (p.ubicacionLat !== null && p.ubicacionLng !== null) {
+            <div class="mt-4"><app-mapa [lat]="p.ubicacionLat" [lng]="p.ubicacionLng" alto="h-56" /></div>
+          }
         </section>
 
         <section class="card" data-tour="detalle-historial">

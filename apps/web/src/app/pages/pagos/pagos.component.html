@@ -65,9 +65,9 @@
           <tbody>
             @for (f of tabla.filas(); track f.id) {
               <tr class="cursor-pointer" [class.fila-sel]="tabla.marcado(f)" [class.bg-brand-soft]="seleccionadoId() === f.id" (click)="seleccionar(f)">
-                <td class="col-check"><app-check-fila [tabla]="tabla" [fila]="f" [etiqueta]="'Seleccionar pedido #' + f.numero" /></td>
+                <td class="col-check"><app-check-fila [tabla]="tabla" [fila]="f" [etiqueta]="'Seleccionar pedido ' + f.codigo" /></td>
                 <td class="font-semibold text-gray-900">
-                  <a [routerLink]="['/pedidos', f.id]" (click)="$event.stopPropagation()" class="hover:underline">#{{ f.numero }}</a>
+                  <a [routerLink]="['/pedidos', f.id]" (click)="$event.stopPropagation()" class="hover:underline">{{ f.codigo }}</a>
                 </td>
                 <td>
                   <div class="text-gray-900">{{ f.clienteNombre }}</div>
@@ -91,7 +91,7 @@
                   }
                 </td>
                 <td (click)="$event.stopPropagation()">
-                  <app-row-menu [etiqueta]="'Acciones del pedido #' + f.numero">
+                  <app-row-menu [etiqueta]="'Acciones del pedido ' + f.codigo">
                     <button type="button" class="btn-action" (click)="seleccionar(f)" aria-label="Gestionar cobro"><app-icon name="pagos" [size]="15" /></button>
                     <a [routerLink]="['/pedidos', f.id]" class="btn-action" aria-label="Ver pedido"><app-icon name="pedido" [size]="15" /></a>
                   </app-row-menu>
@@ -112,7 +112,7 @@
       <aside class="card sticky top-6 space-y-5" data-tour="pagos-cobro">
         <div class="flex items-start justify-between border-b border-line pb-3">
           <div>
-            <h2 class="panel-title">Pedido #{{ f.numero }}</h2>
+            <h2 class="panel-title">Pedido {{ f.codigo }}</h2>
             <p class="panel-subtitle">{{ f.clienteNombre }} · total {{ soles(f.total) }}</p>
           </div>
           <button type="button" class="btn-action" (click)="seleccionadoId.set(null)" title="Cerrar" aria-label="Cerrar"><app-icon name="cerrar" [size]="18" /></button>

@@ -7,7 +7,11 @@ import { AppModule } from '../app.module';
 import { HttpExceptionFilter } from '../common/filters/http-exception.filter';
 import { DB } from '../db/db.module';
 import * as schema from '../db/schema';
-import { crearEntornoDePrueba, type EntornoDePrueba } from './db-test';
+import {
+  JPEG_PRUEBA,
+  crearEntornoDePrueba,
+  type EntornoDePrueba,
+} from './db-test';
 
 jest.setTimeout(60_000);
 
@@ -133,6 +137,11 @@ describe('API por HTTP (e2e)', () => {
       tablero.body.pedidos.find((p: { id: string }) => p.id === id),
     ).toMatchObject({ estado: 'listo', saldo: 164 });
     await request(http)
+      .post(`/api/pedidos/${id}/fotos`)
+      .auth(produccion, { type: 'bearer' })
+      .attach('foto', JPEG_PRUEBA, 'arreglo.jpg')
+      .expect(201);
+    await request(http)
       .post(`/api/pedidos/${id}/despachar`)
       .auth(delivery, { type: 'bearer' })
       .send({})
@@ -218,9 +227,33 @@ describe('API por HTTP (e2e)', () => {
     const malo = await request(http)
       .post('/api/proveedores')
       .auth(almacen, { type: 'bearer' })
-      .send({ nombre: 'X', ruc: '123' })
+      .send({ nombre: 'X', tipoIdentidad: 'ruc', numIdentidad: '123' })
       .expect(400);
     expect(malo.body.code).toBe('VALIDATION_ERROR');
+    // Tipo y número de documento son obligatorios; un DNI de 8 dígitos sí vale.
+    await request(http)
+      .post('/api/proveedores')
+      .auth(almacen, { type: 'bearer' })
+      .send({
+        nombre: 'DNI con 11',
+        tipoIdentidad: 'dni',
+        numIdentidad: '20123456789',
+      })
+      .expect(400);
+    await request(http)
+      .post('/api/proveedores')
+      .auth(almacen, { type: 'bearer' })
+      .send({ nombre: 'Sin documento' })
+      .expect(400);
+    await request(http)
+      .post('/api/proveedores')
+      .auth(almacen, { type: 'bearer' })
+      .send({
+        nombre: 'Persona natural',
+        tipoIdentidad: 'dni',
+        numIdentidad: '12345678',
+      })
+      .expect(201);
   });
 
   it('logout revoca el refresh token', async () => {

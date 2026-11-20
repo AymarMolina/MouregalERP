@@ -1,4 +1,4 @@
-import type { EstadoOc, EstadoPago, EstadoPedido, MetodoPago, TipoPago, Talla, Vehiculo } from "@erp/shared";
+import type { EstadoOc, EstadoPago, EstadoPedido, MetodoPago, TipoIdentidad, TipoPago, Talla, Vehiculo } from "@erp/shared";
 
 // ---------- Pagos ----------
 
@@ -18,6 +18,7 @@ export interface Pago {
 export interface PedidoConSaldo {
   id: string;
   numero: number;
+  codigo: string;
   estado: EstadoPedido;
   canal: string;
   fechaEntrega: string;
@@ -36,11 +37,14 @@ export interface PedidoConSaldo {
 export interface PedidoDelivery {
   id: string;
   numero: number;
+  codigo: string;
   estado: EstadoPedido;
   fechaEntrega: string;
   horaEntrega: string;
   direccion: string;
   referencia: string | null;
+  ubicacionLat: number | null;
+  ubicacionLng: number | null;
   nombreReceptor: string;
   telefonoReceptor: string;
   vehiculo: Vehiculo;
@@ -51,6 +55,8 @@ export interface PedidoDelivery {
   repartidorId: string | null;
   repartidor: string | null;
   linkSaldo: { url: string | null; estado: EstadoPago } | null;
+  /** Fotos del arreglo subidas por Producción (mínimo 1 para despachar). */
+  fotos: number;
 }
 
 export interface TableroDelivery {
@@ -65,7 +71,8 @@ export interface TableroDelivery {
 export interface Proveedor {
   id: string;
   nombre: string;
-  ruc: string | null;
+  tipoIdentidad: TipoIdentidad;
+  numIdentidad: string | null;
   telefono: string | null;
   activo: boolean;
 }
@@ -173,6 +180,7 @@ export interface ReporteCobros {
     monto: number;
     pedidoId: string;
     numero: number;
+    codigo: string;
     estadoPedido: EstadoPedido;
     cliente: string;
   }[];

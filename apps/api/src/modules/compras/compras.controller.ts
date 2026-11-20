@@ -15,6 +15,7 @@ import {
   ordenCompraInputSchema,
   ordenCompraUpdateSchema,
   proveedorInputSchema,
+  proveedorUpdateSchema,
   recepcionInputSchema,
   type EstadoOc,
 } from '@erp/shared';
@@ -44,7 +45,7 @@ export class ComprasController {
   ) {
     return this.compras.actualizarProveedor(
       id,
-      proveedorInputSchema.partial().parse(body),
+      proveedorUpdateSchema.parse(body),
     );
   }
 

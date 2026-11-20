@@ -97,7 +97,7 @@ export class ReportesComponent implements OnInit {
     nombreCsv: "reporte-cobros",
     csv: (f) => ({
       fecha: this.fechaHora(f.pagadoAt),
-      pedido: f.numero,
+      pedido: f.codigo,
       cliente: f.cliente,
       tipo: f.tipo,
       metodo: f.metodo,

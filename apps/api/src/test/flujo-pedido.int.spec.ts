@@ -214,6 +214,11 @@ describe('Flujo de pedido (integración, Postgres en memoria)', () => {
     );
 
     await expect(
+      e.pedidos.despachar(pedido.id, {}, actor('delivery')),
+    ).rejects.toThrow(/foto/);
+    await e.subirFoto(pedido.id);
+
+    await expect(
       e.pedidos.transicion(
         pedido.id,
         'en_camino',
@@ -413,6 +418,8 @@ describe('Compras (integración)', () => {
     const papelNegro = await e.insumo('PAP-NEG'); // apertura 60 hojas a 1.10
     const proveedor = await e.compras.crearProveedor({
       nombre: 'Papelera Lima',
+      tipoIdentidad: 'ruc',
+      numIdentidad: '20123456789',
     });
     const orden = await e.compras.crearOrden({
       proveedorId: proveedor.id,
@@ -491,7 +498,11 @@ describe('Compras (integración)', () => {
     // mínimo 150, stock 30, sin reservas ni consumo → 120
     expect(rosaBlanca.sugerido).toBe(120);
 
-    const proveedor = await e.compras.crearProveedor({ nombre: 'Vivero' });
+    const proveedor = await e.compras.crearProveedor({
+      nombre: 'Vivero',
+      tipoIdentidad: 'dni',
+      numIdentidad: '12345678',
+    });
     await e.compras.crearOrden({
       proveedorId: proveedor.id,
       lineas: [

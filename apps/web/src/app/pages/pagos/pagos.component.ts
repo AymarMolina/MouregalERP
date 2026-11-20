@@ -59,7 +59,7 @@ export class PagosComponent implements OnInit {
     if (!q) return this.filas();
     return this.filas().filter(
       (f) =>
-        String(f.numero).includes(q.replace("#", "")) ||
+        f.codigo.toLowerCase().includes(q) ||
         f.clienteNombre.toLowerCase().includes(q) ||
         (f.clienteTelefono ?? "").includes(q),
     );
@@ -70,7 +70,7 @@ export class PagosComponent implements OnInit {
     porPagina: 12,
     nombreCsv: "pagos-saldos",
     csv: (f) => ({
-      pedido: f.numero,
+      pedido: f.codigo,
       cliente: f.clienteNombre,
       telefono: f.clienteTelefono ?? "",
       fecha_entrega: f.fechaEntrega,
@@ -142,7 +142,7 @@ export class PagosComponent implements OnInit {
   generarLink(f: PedidoConSaldo): Promise<void> {
     return this.ejecutar(
       () => this.api.linkSaldo(f.id),
-      `Link del saldo de #${f.numero} generado y enviado al cliente.`,
+      `Link del saldo de ${f.codigo} generado y enviado al cliente.`,
       "No se pudo generar el link.",
     );
   }
@@ -158,7 +158,7 @@ export class PagosComponent implements OnInit {
           monto: Number(v.monto),
           referenciaExterna: v.referenciaExterna || undefined,
         }),
-      `Pago de ${soles(v.monto)} registrado en #${f.numero}.`,
+      `Pago de ${soles(v.monto)} registrado en ${f.codigo}.`,
       "No se pudo registrar el pago.",
     );
   }

@@ -452,6 +452,32 @@
                   />
                 </div>
                 <div class="sm:col-span-2">
+                  <label class="field-label text-[13.5px] flex items-center gap-1" for="ubicacionUrl"><app-icon name="mapa" [size]="13" /> Link de Google Maps</label>
+                  <div class="relative">
+                    <input
+                      id="ubicacionUrl"
+                      formControlName="ubicacionUrl"
+                      class="input py-3 pr-10"
+                      inputmode="url"
+                      placeholder="Pega el link de Google Maps o la ubicación que mandó por WhatsApp"
+                      [class.border-red-300]="ubicacionError()"
+                      (change)="previsualizarUbicacion()"
+                      (paste)="previsualizarUbicacionLuego()"
+                    />
+                    @if (resolviendoUbicacion()) {
+                      <span class="spinner absolute right-3 top-1/2 -translate-y-1/2"></span>
+                    }
+                  </div>
+                  @if (ubicacionError(); as e) {
+                    <p class="mt-1.5 text-[13px] text-red-700">{{ e }}</p>
+                  } @else if (!ubicacion()) {
+                    <p class="mt-1.5 text-[13px] text-muted">Opcional. El repartidor lo abre en su celular.</p>
+                  }
+                  @if (ubicacion(); as u) {
+                    <div class="mt-3"><app-mapa [lat]="u.lat" [lng]="u.lng" /></div>
+                  }
+                </div>
+                <div class="sm:col-span-2">
                   <label class="field-label text-[13.5px]" for="referencia"
                     >Referencia</label
                   >

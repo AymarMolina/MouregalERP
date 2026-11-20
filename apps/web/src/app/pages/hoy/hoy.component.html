@@ -131,7 +131,7 @@
               <li class="flex items-start gap-3 rounded-xl bg-brand-band px-3 py-2.5">
                 <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-brand"><app-icon name="consulta" [size]="16" /></span>
                 <div class="min-w-0 flex-1">
-                  <a [routerLink]="['/pedidos', c.pedidoId]" class="font-medium text-gray-900 hover:underline">Consulta · #{{ c.numero }}</a>
+                  <a [routerLink]="['/pedidos', c.pedidoId]" class="font-medium text-gray-900 hover:underline">Consulta · {{ c.codigo }}</a>
                   <div class="truncate text-xs text-muted" [title]="c.descripcion">{{ c.descripcion }}</div>
                 </div>
               </li>
@@ -185,7 +185,7 @@
               [class.border-transparent]="!primero"
             >
               <div class="mb-2 flex items-center justify-between text-xs text-muted">
-                <span>Pedido <span class="font-semibold text-gray-700">#{{ p.numero }}</span></span>
+                <span>Pedido <span class="font-semibold text-gray-700">{{ p.codigo }}</span></span>
                 <span class="tabular-nums">Hoy, {{ hora(p.horaEntrega) }}</span>
               </div>
               <div class="mb-1 flex items-center justify-between gap-2">
@@ -257,9 +257,9 @@
             <tbody>
               @for (p of tabla.filas(); track p.id) {
                 <tr [class.fila-sel]="tabla.marcado(p)">
-                  <td class="col-check"><app-check-fila [tabla]="tabla" [fila]="p" [etiqueta]="'Seleccionar pedido #' + p.numero" /></td>
+                  <td class="col-check"><app-check-fila [tabla]="tabla" [fila]="p" [etiqueta]="'Seleccionar pedido ' + p.codigo" /></td>
                   <td>
-                    <a [routerLink]="['/pedidos', p.id]" class="font-semibold text-gray-900 hover:underline">#{{ p.numero }}</a>
+                    <a [routerLink]="['/pedidos', p.id]" class="font-semibold text-gray-900 hover:underline">{{ p.codigo }}</a>
                     <div class="text-xs capitalize text-muted">{{ p.canal }}</div>
                   </td>
                   <td class="tabular-nums">{{ hora(p.horaEntrega) }}</td>
@@ -277,7 +277,7 @@
                     {{ saldo(p) > 0 ? soles(saldo(p)) : "—" }}
                   </td>
                   <td>
-                    <app-row-menu [etiqueta]="'Acciones del pedido #' + p.numero">
+                    <app-row-menu [etiqueta]="'Acciones del pedido ' + p.codigo">
                       <a [routerLink]="['/pedidos', p.id]" class="btn-action" aria-label="Ver detalle"><app-icon name="pedido" [size]="15" /></a>
                     </app-row-menu>
                   </td>

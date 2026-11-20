@@ -5,7 +5,7 @@ export type EventoCliente =
 
 export interface NotificacionCliente {
   pedidoId: string;
-  numero: number;
+  codigo: string;
   telefono: string | null;
   evento: EventoCliente;
   mensaje: string;
@@ -26,7 +26,7 @@ export class NotificacionesService {
     this.enviadas.push(n);
     if (this.enviadas.length > 200) this.enviadas.shift();
     this.logger.log(
-      `[stub] Pedido #${n.numero} → ${n.telefono ?? 'sin teléfono'} (${n.evento}): ${n.mensaje}`,
+      `[stub] Pedido ${n.codigo} → ${n.telefono ?? 'sin teléfono'} (${n.evento}): ${n.mensaje}`,
     );
   }
 }

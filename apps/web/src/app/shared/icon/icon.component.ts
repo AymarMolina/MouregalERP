@@ -5,6 +5,7 @@ import {
   ArrowUpDown,
   Ban,
   Calendar,
+  Camera,
   ChartColumn,
   ChevronLeft,
   ChevronRight,
@@ -111,6 +112,7 @@ const ICONOS = {
   derecha: ChevronRight,
   descargar: Download,
   excel: FileSpreadsheet,
+  foto: Camera,
 } as const;
 
 export type NombreIcono = keyof typeof ICONOS;

@@ -43,6 +43,7 @@ export class DashboardService {
       .select({
         id: pedidos.id,
         numero: pedidos.numero,
+        codigo: pedidos.codigo,
         estado: pedidos.estado,
         canal: pedidos.canal,
         horaEntrega: pedidos.horaEntrega,
@@ -142,6 +143,7 @@ export class DashboardService {
         descripcion: consultasProduccion.descripcion,
         createdAt: consultasProduccion.createdAt,
         numero: pedidos.numero,
+        codigo: pedidos.codigo,
       })
       .from(consultasProduccion)
       .innerJoin(pedidos, eq(consultasProduccion.pedidoId, pedidos.id))

@@ -86,6 +86,7 @@ export interface OpcionTalla {
 export interface Pedido {
   id: string;
   numero: number;
+  codigo: string;
   canal: Canal;
   clienteId: string;
   estado: EstadoPedido;
@@ -94,6 +95,9 @@ export interface Pedido {
   distritoId: string;
   direccion: string;
   referencia: string | null;
+  ubicacionUrl: string | null;
+  ubicacionLat: number | null;
+  ubicacionLng: number | null;
   telefonoReceptor: string;
   nombreReceptor: string;
   dedicatoria: string | null;
@@ -159,6 +163,7 @@ export interface StockBajoItem {
 export interface PedidoDelDia {
   id: string;
   numero: number;
+  codigo: string;
   estado: EstadoPedido;
   canal: Canal;
   fechaEntrega: string;
@@ -191,6 +196,6 @@ export interface DashboardHoy {
   serieVentas: { fecha: string; ventas: number; pedidos: number }[];
   pedidosPorHora: { hora: number; pedidos: number }[];
   pedidos: PedidoDelDia[];
-  consultasAbiertas: { id: string; pedidoId: string; numero: number; descripcion: string; createdAt: string }[];
+  consultasAbiertas: { id: string; pedidoId: string; numero: number; codigo: string; descripcion: string; createdAt: string }[];
   stockBajo: StockBajoItem[];
 }

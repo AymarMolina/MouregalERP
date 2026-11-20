@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ESTADO_OC, METODO_PAGO, TIPO_PAGO } from "../enums";
+import { ESTADO_OC, FORMATO_IDENTIDAD, METODO_PAGO, TIPO_IDENTIDAD, TIPO_PAGO, type TipoIdentidad } from "../enums";
 
 const fecha = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha en formato AAAA-MM-DD");
 const positivo = z.coerce.number().finite().positive();
@@ -24,17 +24,35 @@ export type ConfirmarPagoInput = z.infer<typeof confirmarPagoInputSchema>;
 
 // ---------- Compras (5.9, 5.10) ----------
 
-export const proveedorInputSchema = z.object({
+const proveedorBase = z.object({
   nombre: z.string().trim().min(1),
-  ruc: z
-    .string()
-    .trim()
-    .regex(/^\d{11}$/, "El RUC tiene 11 dígitos")
-    .optional()
-    .or(z.literal("").transform(() => undefined)),
+  tipoIdentidad: z.enum(TIPO_IDENTIDAD),
+  numIdentidad: z.string().trim().min(1),
   telefono: z.string().trim().optional(),
   activo: z.boolean().optional(),
 });
+
+/** El número se valida contra el formato del tipo (si llegan los dos). */
+const validarIdentidad = (
+  p: { tipoIdentidad?: TipoIdentidad; numIdentidad?: string },
+  ctx: z.RefinementCtx,
+) => {
+  if (!p.tipoIdentidad || p.numIdentidad === undefined) return;
+  const f = FORMATO_IDENTIDAD[p.tipoIdentidad];
+  if (!f.regex.test(p.numIdentidad)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["numIdentidad"], message: f.mensaje });
+  }
+};
+
+export const proveedorInputSchema = proveedorBase.superRefine(validarIdentidad);
+/** Edición parcial: si cambia el número o el tipo, deben venir los dos. */
+export const proveedorUpdateSchema = proveedorBase
+  .partial()
+  .refine((p) => (p.tipoIdentidad === undefined) === (p.numIdentidad === undefined), {
+    message: "Envía el tipo y el número de identidad juntos",
+    path: ["numIdentidad"],
+  })
+  .superRefine(validarIdentidad);
 export type ProveedorInput = z.infer<typeof proveedorInputSchema>;
 
 export const ordenCompraLineaInputSchema = z.object({

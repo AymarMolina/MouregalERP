@@ -1,5 +1,6 @@
 import {
   date,
+  doublePrecision,
   index,
   integer,
   numeric,
@@ -27,6 +28,8 @@ export const pedidos = pgTable(
   {
     id: uuid('id').defaultRandom().primaryKey(),
     numero: serial('numero').notNull().unique(),
+    /** Código visible: mes de creación (hora de Lima) + correlativo del mes, p. ej. NO-0001. */
+    codigo: text('codigo').notNull(),
     canal: canalEnum('canal').notNull(),
     clienteId: uuid('cliente_id')
       .notNull()
@@ -39,6 +42,10 @@ export const pedidos = pgTable(
       .references(() => distritos.id),
     direccion: text('direccion').notNull(),
     referencia: text('referencia'),
+    /** Link de Google Maps tal como lo pegó la vendedora, y sus coordenadas resueltas. */
+    ubicacionUrl: text('ubicacion_url'),
+    ubicacionLat: doublePrecision('ubicacion_lat'),
+    ubicacionLng: doublePrecision('ubicacion_lng'),
     telefonoReceptor: text('telefono_receptor').notNull(),
     nombreReceptor: text('nombre_receptor').notNull(),
     dedicatoria: text('dedicatoria'),
@@ -169,3 +176,22 @@ export const pedidoHistorialEstado = pgTable('pedido_historial_estado', {
     .notNull()
     .defaultNow(),
 });
+
+/** Fotos del arreglo terminado (1 a 3, obligatorias para pasar a en_camino). El archivo vive en FOTOS_DIR. */
+export const pedidoFotos = pgTable(
+  'pedido_fotos',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    pedidoId: uuid('pedido_id')
+      .notNull()
+      .references(() => pedidos.id),
+    /** Nombre del archivo dentro de FOTOS_DIR, p. ej. `<id>.jpg`. */
+    archivo: text('archivo').notNull(),
+    tipoMime: text('tipo_mime').notNull(),
+    subidaPor: uuid('subida_por').references(() => usuarios.id),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index('pedido_fotos_pedido_idx').on(t.pedidoId)],
+);

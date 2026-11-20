@@ -1,4 +1,5 @@
 import { Component, OnInit, computed, inject, signal } from "@angular/core";
+import { FotosPedidoComponent } from "../../shared/fotos/fotos-pedido.component";
 import { IconComponent } from "../../shared/icon/icon.component";
 import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
 import {
@@ -8,7 +9,7 @@ import {
   type Usuario,
 } from "../../core/pedidos/pedidos.service";
 import type { Consulta, PedidoDetalle } from "../../core/pedidos/pedidos.types";
-import { validarTransicion } from "@erp/shared";
+import { FOTOS_PEDIDO, validarTransicion } from "@erp/shared";
 import { AuthService } from "../../core/auth/auth.service";
 import { mensajeError } from "../../core/http/errores";
 import { esUnidadEntera } from "@erp/shared";
@@ -26,7 +27,7 @@ interface LineaConsumo {
 
 @Component({
   selector: "app-produccion",
-  imports: [ReactiveFormsModule, IconComponent],
+  imports: [ReactiveFormsModule, IconComponent, FotosPedidoComponent],
   templateUrl: "./produccion.component.html",
 })
 export class ProduccionComponent implements OnInit {
@@ -45,7 +46,7 @@ export class ProduccionComponent implements OnInit {
       "produccion",
       pedidos.flatMap((p) =>
         p.items.map((i) => ({
-          pedido: p.numero,
+          pedido: p.codigo,
           estado: ETIQUETA_ESTADO_PEDIDO[p.estado],
           fechaEntrega: p.fechaEntrega,
           hora: p.horaEntrega.slice(0, 5),
@@ -133,6 +134,10 @@ export class ProduccionComponent implements OnInit {
     return !!rol && validarTransicion(rol, "listo", "en_camino").ok;
   });
 
+  /** Fotos del pedido abierto; sin al menos una no se despacha (lo valida también el API). */
+  readonly cantidadFotos = signal(0);
+  readonly minFotos = FOTOS_PEDIDO.min;
+
   constructor() {
     // Spec sección 8: el tablero se refresca cada 15 s (no toca el pedido abierto).
     usarPolling(() => this.cargarTablero());
@@ -161,6 +166,7 @@ export class ProduccionComponent implements OnInit {
 
   async seleccionar(pedido: PedidoDetalle): Promise<void> {
     this.error.set(null);
+    this.cantidadFotos.set(0);
     const detalle = await this.pedidosService.get(pedido.id);
     this.seleccionado.set(detalle);
 
@@ -178,6 +184,7 @@ export class ProduccionComponent implements OnInit {
             nombre: [l.nombre],
             unidadBase: [l.unidadBase],
             cantidadReceta: [l.cantidad],
+            stock: [l.stock],
             cantidadUsada: [l.cantidad, [Validators.required, Validators.min(0)]],
           }),
         );
@@ -191,6 +198,11 @@ export class ProduccionComponent implements OnInit {
 
   merma(linea: { cantidadReceta: number; cantidadUsada: number }): number {
     return Math.max(0, linea.cantidadUsada - linea.cantidadReceta);
+  }
+
+  /** Stock que quedaría tras confirmar con lo escrito en "Usado". */
+  queda(linea: { stock: number; cantidadUsada: number }): number {
+    return linea.stock - Number(linea.cantidadUsada || 0);
   }
 
   async asignarEncargada(encargadaId: string): Promise<void> {

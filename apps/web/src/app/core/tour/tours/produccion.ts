@@ -19,6 +19,7 @@ export const TOUR_PRODUCCION: Tour = {
         "<li>Asigna la encargada y presiona «Pasar a en armado».</li>" +
         "<li>Al terminar, anota lo que realmente usaste de cada insumo y presiona «Confirmar consumo».</li>" +
         "<li>El sistema descuenta el stock en el Kardex (consumo y merma) y deja el pedido en Listo.</li>" +
+        "<li>Con el pedido en Listo, sube de 1 a 3 fotos del arreglo terminado: sin foto no se puede despachar.</li>" +
         "</ol>",
     },
     {
@@ -62,6 +63,14 @@ export const TOUR_PRODUCCION: Tour = {
       roles: ["admin"],
     },
     {
+      elemento: "prod-fotos",
+      titulo: "Fotos del arreglo",
+      texto:
+        "<p>Con el pedido en <strong>Listo</strong>, sube de <strong>1 a 3 fotos</strong> del arreglo terminado. Se comprimen solas antes de subir.</p>" +
+        "<p>Sin al menos una foto, el pedido <strong>no se puede pasar a en camino</strong>, ni aquí ni en Delivery.</p>",
+      lado: "top",
+    },
+    {
       elemento: "prod-excel",
       titulo: "Hoja de producción",
       texto:
@@ -74,6 +83,7 @@ export const TOUR_PRODUCCION: Tour = {
         "<ul>" +
         "<li>Sin encargada o con una consulta abierta, el pedido no pasa a «en armado».</li>" +
         "<li>El consumo solo se confirma una vez y el Kardex no se edita: revisa las cantidades antes de confirmar.</li>" +
+        "<li>Sin al menos una foto del arreglo, el pedido no se despacha.</li>" +
         "<li>Si un pedido se cancela después de armado, lo consumido se reporta como merma; no vuelve al stock.</li>" +
         "<li><strong>Después:</strong> los pedidos en Listo aparecen en Delivery para despacharlos.</li>" +
         "</ul>",

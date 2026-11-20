@@ -287,20 +287,31 @@
 
   <!-- ===================== PROVEEDORES ===================== -->
   @if (pestana() === "proveedores") {
-    <form [formGroup]="proveedorForm" (ngSubmit)="crearProveedor()" class="card mb-4 grid gap-4 p-4 sm:grid-cols-4 sm:items-end">
+    <form [formGroup]="proveedorForm" (ngSubmit)="crearProveedor()" class="card mb-4 grid gap-4 p-4 sm:grid-cols-6 sm:items-start">
       <div class="sm:col-span-2">
-        <label class="field-label">Nombre</label>
-        <input formControlName="nombre" class="input" />
+        <label class="field-label" for="proveedor-nombre">Nombre</label>
+        <input id="proveedor-nombre" formControlName="nombre" class="input" />
       </div>
       <div>
-        <label class="field-label">RUC</label>
-        <input formControlName="ruc" class="input" placeholder="11 dígitos" />
+        <label class="field-label" for="proveedor-tipo">Tipo de documento</label>
+        <select id="proveedor-tipo" formControlName="tipoIdentidad" class="input">
+          @for (t of tiposIdentidad; track t.id) {
+            <option [value]="t.id">{{ t.label }}</option>
+          }
+        </select>
       </div>
       <div>
-        <label class="field-label">Teléfono</label>
-        <input formControlName="telefono" class="input" />
+        <label class="field-label" for="proveedor-num">Número de documento</label>
+        <input id="proveedor-num" formControlName="numIdentidad" class="input" [attr.inputmode]="proveedorForm.controls.tipoIdentidad.value === 'ce' ? null : 'numeric'" maxlength="12" />
+        @if (proveedorForm.controls.numIdentidad.touched && proveedorForm.controls.numIdentidad.invalid) {
+          <p class="mt-1 text-xs text-negativo">{{ mensajeIdentidad() }}.</p>
+        }
       </div>
-      <div class="sm:col-span-4 flex justify-end">
+      <div class="sm:col-span-2">
+        <label class="field-label" for="proveedor-telefono">Teléfono</label>
+        <input id="proveedor-telefono" formControlName="telefono" class="input" />
+      </div>
+      <div class="sm:col-span-6 flex justify-end">
         <button type="submit" class="btn-primary" [disabled]="proveedorForm.invalid || trabajando()">+ Agregar proveedor</button>
       </div>
     </form>
@@ -317,7 +328,7 @@
           <tr>
             <th class="col-check"><app-check-todos [tabla]="tablaProveedores" /></th>
             <th>Nombre</th>
-            <th>RUC</th>
+            <th>Documento</th>
             <th>Teléfono</th>
             <th>Estado</th>
             <th class="w-10"><span class="sr-only">Acciones</span></th>
@@ -328,7 +339,13 @@
             <tr [class.fila-sel]="tablaProveedores.marcado(p)" [class.opacity-60]="!p.activo">
               <td class="col-check"><app-check-fila [tabla]="tablaProveedores" [fila]="p" [etiqueta]="'Seleccionar ' + p.nombre" /></td>
               <td class="font-medium text-gray-900">{{ p.nombre }}</td>
-              <td>{{ p.ruc ?? "—" }}</td>
+              <td>
+                @if (p.numIdentidad) {
+                  <span class="text-muted">{{ etiquetaIdentidad[p.tipoIdentidad] }}</span> {{ p.numIdentidad }}
+                } @else {
+                  —
+                }
+              </td>
               <td>{{ p.telefono ?? "—" }}</td>
               <td>
                 <span class="badge" [class.badge-success]="p.activo" [class.badge-neutral]="!p.activo">{{ p.activo ? "Activo" : "Inactivo" }}</span>

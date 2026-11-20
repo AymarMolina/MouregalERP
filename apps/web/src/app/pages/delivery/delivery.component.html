@@ -52,7 +52,7 @@
               <article class="card space-y-3 p-4" [class.opacity-70]="p.estado === 'entregado'">
                 <header class="flex items-start justify-between gap-2">
                   <div>
-                    <a [routerLink]="['/pedidos', p.id]" class="text-base font-semibold hover:underline">#{{ p.numero }}</a>
+                    <a [routerLink]="['/pedidos', p.id]" class="text-base font-semibold hover:underline">{{ p.codigo }}</a>
                     <div class="tabular text-muted">{{ cuando(p.fechaEntrega, p.horaEntrega) }}</div>
                   </div>
                   <div class="flex flex-col items-end gap-1">
@@ -66,6 +66,11 @@
                   <div>{{ p.direccion }}</div>
                   @if (p.referencia) {
                     <div class="text-muted">Ref.: {{ p.referencia }}</div>
+                  }
+                  @if (p.ubicacionLat !== null && p.ubicacionLng !== null) {
+                    <a [href]="abrirMaps(p.ubicacionLat, p.ubicacionLng)" target="_blank" rel="noopener" class="btn-secondary mt-2 px-3 py-1.5">
+                      <app-icon name="mapa" [size]="15" /> Abrir en Google Maps
+                    </a>
                   }
                 </div>
 
@@ -100,6 +105,12 @@
                   <span class="text-muted">Total {{ soles(p.total) }}</span>
                 </div>
 
+                @if (p.estado === "listo" || p.estado === "en_camino") {
+                  <div class="border-t border-line pt-3">
+                    <app-fotos-pedido [pedidoId]="p.id" />
+                  </div>
+                }
+
                 @if (p.estado === "listo") {
                   <div class="flex flex-wrap items-center gap-2 border-t border-line pt-3">
                     @if (!esRepartidor()) {
@@ -114,9 +125,12 @@
                         }
                       </select>
                     }
-                    <button type="button" class="btn-primary flex-1" [disabled]="trabajando() === p.id" (click)="despachar(p)">
+                    <button type="button" class="btn-primary flex-1" [disabled]="trabajando() === p.id || p.fotos === 0" (click)="despachar(p)">
                       {{ trabajando() === p.id ? "Despachando..." : p.saldo > 0 && !p.linkSaldo ? "Enviar link y despachar" : "Despachar" }}
                     </button>
+                    @if (p.fotos === 0) {
+                      <p class="w-full text-negativo">Falta la foto del arreglo: Producción debe subirla antes de despachar.</p>
+                    }
                   </div>
                 }
 

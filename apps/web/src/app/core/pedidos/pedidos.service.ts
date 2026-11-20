@@ -1,7 +1,7 @@
 import { HttpClient } from "@angular/common/http";
 import { Injectable, inject } from "@angular/core";
 import { firstValueFrom } from "rxjs";
-import type { CotizacionInput, CotizacionPedidoInput, PedidoInput } from "@erp/shared";
+import type { Coordenadas, CotizacionInput, CotizacionPedidoInput, PedidoInput } from "@erp/shared";
 import { environment } from "../../../environments/environment";
 import type {
   Consulta,
@@ -47,6 +47,11 @@ export class PedidosService {
     return firstValueFrom(this.http.get<HistorialEstado[]>(`${this.base}/${id}/historial`));
   }
 
+  /** Resuelve un link de Google Maps (también los cortos) a coordenadas. */
+  ubicacion(url: string): Promise<Coordenadas> {
+    return firstValueFrom(this.http.get<Coordenadas>(`${this.base}/ubicacion`, { params: { url } }));
+  }
+
   crear(input: PedidoInput): Promise<PedidoDetalle> {
     return firstValueFrom(this.http.post<PedidoDetalle>(this.base, input));
   }
@@ -63,9 +68,27 @@ export class PedidosService {
     return firstValueFrom(this.http.post<PedidoDetalle>(`${this.base}/${id}/consumo`, { lineas }));
   }
 
-  recetaEfectiva(id: string): Promise<{ insumoId: string; nombre: string; unidadBase: string; cantidad: number }[]> {
+  listarFotos(id: string): Promise<{ id: string; tipoMime: string; createdAt: string }[]> {
+    return firstValueFrom(this.http.get<{ id: string; tipoMime: string; createdAt: string }[]>(`${this.base}/${id}/fotos`));
+  }
+
+  fotoBlob(id: string, fotoId: string): Promise<Blob> {
+    return firstValueFrom(this.http.get(`${this.base}/${id}/fotos/${fotoId}`, { responseType: "blob" }));
+  }
+
+  subirFoto(id: string, foto: Blob): Promise<unknown> {
+    const datos = new FormData();
+    datos.append("foto", foto, "arreglo.jpg");
+    return firstValueFrom(this.http.post(`${this.base}/${id}/fotos`, datos));
+  }
+
+  eliminarFoto(id: string, fotoId: string): Promise<unknown> {
+    return firstValueFrom(this.http.delete(`${this.base}/${id}/fotos/${fotoId}`));
+  }
+
+  recetaEfectiva(id: string): Promise<{ insumoId: string; nombre: string; unidadBase: string; cantidad: number; stock: number }[]> {
     return firstValueFrom(
-      this.http.get<{ insumoId: string; nombre: string; unidadBase: string; cantidad: number }[]>(`${this.base}/${id}/receta-efectiva`),
+      this.http.get<{ insumoId: string; nombre: string; unidadBase: string; cantidad: number; stock: number }[]>(`${this.base}/${id}/receta-efectiva`),
     );
   }
 }

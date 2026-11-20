@@ -4,8 +4,8 @@ import { IconComponent } from "../../shared/icon/icon.component";
 import { RowMenuComponent } from "../../shared/tabla/row-menu.component";
 import { Tabla } from "../../shared/tabla/tabla";
 import { TABLA_CONTROLES } from "../../shared/tabla/tabla-controles.component";
-import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
-import type { EstadoOc } from "@erp/shared";
+import { AbstractControl, FormBuilder, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
+import { FORMATO_IDENTIDAD, TIPO_IDENTIDAD, TIPO_IDENTIDAD_ETIQUETA, type EstadoOc, type TipoIdentidad } from "@erp/shared";
 import { mensajeError } from "../../core/http/errores";
 import { ComprasApi } from "../../core/operacion/operacion.service";
 import type {
@@ -132,7 +132,8 @@ export class ComprasComponent implements OnInit {
     nombreCsv: "proveedores",
     csv: (p) => ({
       nombre: p.nombre,
-      ruc: p.ruc ?? "",
+      tipo_identidad: TIPO_IDENTIDAD_ETIQUETA[p.tipoIdentidad],
+      num_identidad: p.numIdentidad ?? "",
       telefono: p.telefono ?? "",
       estado: p.activo ? "Activo" : "Inactivo",
     }),
@@ -140,9 +141,30 @@ export class ComprasComponent implements OnInit {
   readonly proveedoresActivos = computed(() => this.proveedores().filter((p) => p.activo));
   readonly proveedorForm = this.fb.nonNullable.group({
     nombre: ["", Validators.required],
-    ruc: ["", Validators.pattern(/^(\d{11})?$/)],
+    tipoIdentidad: ["ruc" as TipoIdentidad, Validators.required],
+    numIdentidad: ["", [Validators.required, (c: AbstractControl) => this.validarNumIdentidad(c)]],
     telefono: [""],
   });
+  readonly tiposIdentidad = TIPO_IDENTIDAD.map((id) => ({ id, label: TIPO_IDENTIDAD_ETIQUETA[id] }));
+  readonly etiquetaIdentidad = TIPO_IDENTIDAD_ETIQUETA;
+
+  /** Valida el número según el tipo elegido (RUC 11, DNI 8, CE 9–12). */
+  private validarNumIdentidad(c: AbstractControl) {
+    const tipo = c.parent?.get("tipoIdentidad")?.value as TipoIdentidad | undefined;
+    if (!tipo || !c.value) return null;
+    return FORMATO_IDENTIDAD[tipo].regex.test(String(c.value).trim()) ? null : { formato: true };
+  }
+
+  mensajeIdentidad(): string {
+    return FORMATO_IDENTIDAD[this.proveedorForm.controls.tipoIdentidad.value].mensaje;
+  }
+
+  constructor() {
+    // Al cambiar el tipo, el número se vuelve a validar con el formato nuevo.
+    this.proveedorForm.controls.tipoIdentidad.valueChanges.subscribe(() =>
+      this.proveedorForm.controls.numIdentidad.updateValueAndValidity(),
+    );
+  }
 
   async ngOnInit(): Promise<void> {
     await Promise.all([this.cargarProveedores(), this.cargarSugeridas(), this.cargarOrdenes()]);
@@ -315,7 +337,12 @@ export class ComprasComponent implements OnInit {
     if (this.proveedorForm.invalid) return;
     const v = this.proveedorForm.getRawValue();
     const p = await this.ejecutar(
-      () => this.api.crearProveedor({ nombre: v.nombre, ruc: v.ruc || undefined, telefono: v.telefono || undefined }),
+      () => this.api.crearProveedor({
+          nombre: v.nombre,
+          tipoIdentidad: v.tipoIdentidad,
+          numIdentidad: v.numIdentidad.trim(),
+          telefono: v.telefono || undefined,
+        }),
       "No se pudo crear el proveedor.",
     );
     if (!p) return;

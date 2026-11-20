@@ -39,6 +39,8 @@ export const pedidoInputSchema = z.object({
   distritoId: z.string().uuid(),
   direccion: z.string().trim().min(1),
   referencia: z.string().trim().optional(),
+  /** Link de Google Maps (opcional). El API lo resuelve a coordenadas al crear el pedido. */
+  ubicacionUrl: z.string().trim().url().max(500).optional(),
   telefonoReceptor: z.string().trim().min(1),
   nombreReceptor: z.string().trim().min(1),
   dedicatoria: z.string().trim().optional(),

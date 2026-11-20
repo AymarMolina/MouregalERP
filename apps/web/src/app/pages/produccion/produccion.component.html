@@ -53,7 +53,7 @@
               >
                 <!-- Header: número + hora -->
                 <div class="flex items-center justify-between gap-2">
-                  <span class="text-base font-bold tracking-tight text-[#161616]">#{{ p.numero }}</span>
+                  <span class="text-base font-bold tracking-tight text-[#161616]">{{ p.codigo }}</span>
                   <span
                     class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium tabular"
                     [class]="tiempo.tono === 'atrasado' ? 'bg-red-100 text-negativo' : tiempo.tono === 'pronto' ? 'bg-amber-100 text-amber-800' : 'bg-[#f4edf5] text-[#475a7d]'"
@@ -112,7 +112,7 @@
       <div class="card space-y-5" data-tour="prod-detalle">
         <div class="flex items-center justify-between border-b border-line pb-3">
           <div>
-            <h2 class="panel-title text-base">Pedido #{{ pedido.numero }}</h2>
+            <h2 class="panel-title text-base">Pedido {{ pedido.codigo }}</h2>
             <p class="panel-subtitle">{{ cuando(pedido.fechaEntrega, pedido.horaEntrega) }} · {{ pedido.nombreReceptor }}</p>
           </div>
           <button type="button" class="btn-action" (click)="cerrar()" title="Cerrar" aria-label="Cerrar"><app-icon name="cerrar" [size]="18" /></button>
@@ -168,7 +168,9 @@
                   <tr>
                     <th>Insumo</th>
                     <th class="text-right">Receta</th>
+                    <th class="text-right">Stock</th>
                     <th class="text-right">Usado</th>
+                    <th class="text-right">Queda</th>
                     <th class="text-right">Merma</th>
                   </tr>
                 </thead>
@@ -177,8 +179,12 @@
                     <tr [formGroupName]="$index">
                       <td>{{ linea.value.nombre }}</td>
                       <td class="text-right text-muted tabular">{{ cantidad(linea.value.cantidadReceta) }} {{ linea.value.unidadBase }}</td>
+                      <td class="text-right text-muted tabular">{{ cantidad(linea.value.stock) }} {{ linea.value.unidadBase }}</td>
                       <td class="text-right">
                         <input type="number" [step]="esUnidadEntera(linea.value.unidadBase) ? 1 : 0.001" min="0" formControlName="cantidadUsada" class="input w-28 py-1 text-right" />
+                      </td>
+                      <td class="text-right tabular" [class.text-negativo]="queda(linea.value) < 0">
+                        {{ cantidad(queda(linea.value)) }} {{ linea.value.unidadBase }}
                       </td>
                       <td class="text-right" [class.text-accent-2]="merma(linea.value) > 0">
                         {{ cantidad(merma(linea.value)) }}
@@ -200,8 +206,20 @@
         }
 
         @if (pedido.estado === "listo") {
+          <app-fotos-pedido [pedidoId]="pedido.id" [editable]="true" (cantidad)="cantidadFotos.set($event)" />
+        }
+
+        @if (pedido.estado === "listo") {
           @if (puedeDespachar()) {
-            <button type="button" (click)="pasarAEnCamino()" class="btn-primary">Pasar a en camino</button>
+            <button
+              type="button"
+              (click)="pasarAEnCamino()"
+              class="btn-primary"
+              [disabled]="cantidadFotos() < minFotos"
+              [title]="cantidadFotos() < minFotos ? 'Sube al menos una foto del arreglo' : 'Pasar a en camino'"
+            >
+              Pasar a en camino
+            </button>
           } @else {
             <p class="text-muted">Listo para despacho: lo despacha Delivery.</p>
           }

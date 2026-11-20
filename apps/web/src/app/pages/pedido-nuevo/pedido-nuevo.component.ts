@@ -1,8 +1,9 @@
 import { Component, HostListener, OnInit, computed, inject, signal } from "@angular/core";
 import { IconComponent } from "../../shared/icon/icon.component";
+import { MapaComponent } from "../../shared/mapa/mapa.component";
 import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms";
 import { Router } from "@angular/router";
-import type { Canal, PedidoItemInput, Talla } from "@erp/shared";
+import type { Canal, Coordenadas, PedidoItemInput, Talla } from "@erp/shared";
 import { CANAL, TALLA } from "@erp/shared";
 import type { Distrito, Producto } from "../../core/catalogo/catalogo.types";
 import { DistritosService } from "../../core/catalogo/distritos.service";
@@ -31,7 +32,7 @@ const CANAL_INFO: Record<Canal, { etiqueta: string; icono: NombreIcono }> = {
 
 @Component({
   selector: "app-pedido-nuevo",
-  imports: [ReactiveFormsModule, IconComponent],
+  imports: [ReactiveFormsModule, IconComponent, MapaComponent],
   templateUrl: "./pedido-nuevo.component.html",
 })
 export class PedidoNuevoComponent implements OnInit {
@@ -67,6 +68,11 @@ export class PedidoNuevoComponent implements OnInit {
   readonly cotizando = signal(false);
   readonly enviando = signal(false);
   readonly error = signal<string | null>(null);
+  /** Vista previa del link de Google Maps. */
+  readonly ubicacion = signal<Coordenadas | null>(null);
+  readonly ubicacionError = signal<string | null>(null);
+  readonly resolviendoUbicacion = signal(false);
+  private ultimaUbicacionUrl = "";
   /** Cotización del ítem que se está configurando. */
   readonly cotizacion = signal<ResultadoCotizacion | null>(null);
   readonly extraIds = signal<Set<string>>(new Set());
@@ -107,6 +113,7 @@ export class PedidoNuevoComponent implements OnInit {
     horaEntrega: ["", Validators.required],
     direccion: ["", Validators.required],
     referencia: [""],
+    ubicacionUrl: [""],
     telefonoReceptor: ["", Validators.required],
     nombreReceptor: ["", Validators.required],
     dedicatoria: [""],
@@ -281,6 +288,7 @@ export class PedidoNuevoComponent implements OnInit {
         distritoId: v.distritoId,
         direccion: v.direccion,
         referencia: v.referencia || undefined,
+        ubicacionUrl: v.ubicacionUrl.trim() || undefined,
         telefonoReceptor: v.telefonoReceptor,
         nombreReceptor: v.nombreReceptor,
         dedicatoria: v.dedicatoria || undefined,
@@ -293,6 +301,30 @@ export class PedidoNuevoComponent implements OnInit {
       await this.actualizarResumen();
     } finally {
       this.enviando.set(false);
+    }
+  }
+
+  /** El evento paste llega antes de que el valor cambie: se lee en el siguiente ciclo. */
+  previsualizarUbicacionLuego(): void {
+    setTimeout(() => void this.previsualizarUbicacion());
+  }
+
+  /** Al pegar o cambiar el link de Google Maps, muestra el mapa (el API abre los links cortos). */
+  async previsualizarUbicacion(): Promise<void> {
+    const url = this.form.getRawValue().ubicacionUrl.trim();
+    if (url === this.ultimaUbicacionUrl) return;
+    this.ultimaUbicacionUrl = url;
+    this.ubicacion.set(null);
+    this.ubicacionError.set(null);
+    if (!url) return;
+    this.resolviendoUbicacion.set(true);
+    try {
+      const c = await this.pedidosService.ubicacion(url);
+      if (this.ultimaUbicacionUrl === url) this.ubicacion.set(c);
+    } catch (err) {
+      if (this.ultimaUbicacionUrl === url) this.ubicacionError.set(mensajeError(err, "No se pudo leer el link de Google Maps."));
+    } finally {
+      if (this.ultimaUbicacionUrl === url) this.resolviendoUbicacion.set(false);
     }
   }
 

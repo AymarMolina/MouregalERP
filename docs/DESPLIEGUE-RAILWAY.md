@@ -46,12 +46,16 @@ node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
 | `TRUST_PROXY` | `true` |
 | `PERMITIR_ENTREGA_CON_SALDO` | `false` (o `true` si quieren permitirlo) |
 | `PAGOS_LINK_BASE` | `https://pagos.mouregal.pe/stub` (stub hasta tener pasarela) |
+| `FOTOS_DIR` | `/data/fotos` (carpeta dentro del volumen del paso 6) |
 
 No hace falta `PORT`: Railway lo pone solo.
 
 3. **Settings → Networking → Generate Domain.** Te da una URL tipo `https://mouregalerp-production.up.railway.app`.
 4. Agrega la variable `CORS_ORIGIN` con esa URL (sin `/` al final).
 5. Si el despliegue falló por falta de variables, dale **Redeploy**.
+6. **Volumen para las fotos de los pedidos.** En el lienzo del proyecto, clic derecho sobre el servicio → **Attach Volume** (o `Ctrl+K` → "volume") con *mount path* `/data`. Sin volumen, las fotos que sube Producción se borran en cada despliegue.
+   - Con un volumen, Railway no permite varias réplicas del servicio y cada despliegue tiene unos segundos sin servicio.
+   - Respaldo: el volumen tiene *Backups* en su pestaña; actívalos si las fotos importan a largo plazo.
 
 ## 4. Crear los usuarios reales
 

@@ -1,6 +1,8 @@
+import { createReadStream } from 'node:fs';
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -8,7 +10,11 @@ import {
   Query,
   Req,
   ParseUUIDPipe,
+  StreamableFile,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import type { Request } from 'express';
 import {
   asignarInputSchema,
@@ -22,10 +28,23 @@ import {
 import { Roles } from '../../common/decorators/roles.decorator';
 import type { JwtPayload } from '../auth/strategies/jwt-access.strategy';
 import { PedidosService } from './pedidos.service';
+import { UbicacionService } from './ubicacion.service';
+import { FOTO_MAX_BYTES, FotosService } from './fotos.service';
 
 @Controller('pedidos')
 export class PedidosController {
-  constructor(private readonly pedidos: PedidosService) {}
+  constructor(
+    private readonly pedidos: PedidosService,
+    private readonly ubicacion: UbicacionService,
+    private readonly fotos: FotosService,
+  ) {}
+
+  /** Vista previa del mapa: resuelve un link de Google Maps a coordenadas. */
+  @Roles('admin', 'vendedora')
+  @Get('ubicacion')
+  resolverUbicacion(@Query('url') url = '') {
+    return this.ubicacion.resolver(url);
+  }
 
   @Roles('admin', 'vendedora', 'produccion', 'delivery')
   @Get()
@@ -48,6 +67,48 @@ export class PedidosController {
   @Get(':id/historial')
   historial(@Param('id', ParseUUIDPipe) id: string) {
     return this.pedidos.historial(id);
+  }
+
+  @Roles('admin', 'vendedora', 'produccion', 'delivery')
+  @Get(':id/fotos')
+  listarFotos(@Param('id', ParseUUIDPipe) id: string) {
+    return this.fotos.listar(id);
+  }
+
+  @Roles('admin', 'vendedora', 'produccion', 'delivery')
+  @Get(':id/fotos/:fotoId')
+  async verFoto(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('fotoId', ParseUUIDPipe) fotoId: string,
+  ) {
+    const f = await this.fotos.archivo(id, fotoId);
+    return new StreamableFile(createReadStream(f.ruta), {
+      type: f.tipoMime,
+      disposition: 'inline',
+    });
+  }
+
+  /** Foto del arreglo terminado (multipart, campo "foto"). Solo Producción. */
+  @Roles('admin', 'produccion')
+  @Post(':id/fotos')
+  @UseInterceptors(
+    FileInterceptor('foto', { limits: { fileSize: FOTO_MAX_BYTES, files: 1 } }),
+  )
+  subirFoto(
+    @Param('id', ParseUUIDPipe) id: string,
+    @UploadedFile() archivo: { buffer: Buffer } | undefined,
+    @Req() req: Request & { user: JwtPayload },
+  ) {
+    return this.fotos.subir(id, archivo?.buffer, req.user.sub);
+  }
+
+  @Roles('admin', 'produccion')
+  @Delete(':id/fotos/:fotoId')
+  eliminarFoto(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('fotoId', ParseUUIDPipe) fotoId: string,
+  ) {
+    return this.fotos.eliminar(id, fotoId);
   }
 
   @Roles('admin', 'vendedora')
