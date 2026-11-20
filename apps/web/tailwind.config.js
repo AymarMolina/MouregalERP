@@ -4,12 +4,13 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Estilo SaaS claro (blancos y grises sutiles). La marca Mouregal queda
-        // como acento institucional: #9b73a1 en checkboxes, pestaña activa,
-        // foco y gráficos. Paleta completa del logo:
-        //   acento   #b584b9 #b48dbb #a382ac #9b73a1
-        //   oscuros  #4e345a  apagados #987f9c #73607c #6d5d72
-        bg: "#f8f9fa",
+        // Blanco y azul marino oscuro con toque floral (2026-11-20): títulos en
+        // Poppins (texto en Roboto), botón primario azul marino y flores en trazo fino.
+        // #1e3a6e en checkboxes, pestaña activa, foco y gráficos.
+        //   acento   #5b74a6 #6f86b3 #4a6396 #1e3a6e
+        //   oscuros  #14213d #0b1530  apagados #6b7fa6 #334a73 #475a7d
+        // El login conserva los colores del logo (lila).
+        bg: "#ffffff",
         surface: "#ffffff",
         // Superficie suave (dedicatorias, pies de tabla, resaltados)
         sidebar: "#f9fafb",
@@ -25,15 +26,18 @@ module.exports = {
         text: "#111827",
         muted: "#6b7280",
         line: "#e5e7eb",
-        accent: "#9b73a1",
-        "accent-hover": "#73607c",
+        accent: "#1e3a6e",
+        "accent-hover": "#334a73",
         "accent-soft": "#f3f4f6",
         // Énfasis oscuro (≥ 4.5:1 sobre blanco)
         "accent-2": "#111827",
         brand: {
-          DEFAULT: "#9b73a1",
-          soft: "#f6f0f7",
-          dark: "#4e345a",
+          DEFAULT: "#1e3a6e",
+          soft: "#eef2f8",
+          band: "#f5f7fb",
+          line: "#dde3ee",
+          dark: "#14213d",
+          darker: "#0b1530",
         },
         positivo: "#15803d",
         negativo: "#b91c1c",
@@ -54,7 +58,9 @@ module.exports = {
         pop: "0 10px 30px -8px rgba(17, 24, 39, 0.18), 0 2px 6px -2px rgba(17, 24, 39, 0.06)",
       },
       fontFamily: {
-        sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+        // Roboto para texto y UI; Poppins para títulos y cifras grandes.
+        sans: ["Roboto", "ui-sans-serif", "system-ui", "sans-serif"],
+        display: ["Poppins", "ui-sans-serif", "system-ui", "sans-serif"],
       },
       fontSize: {
         base: "13px",

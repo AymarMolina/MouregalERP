@@ -1,8 +1,10 @@
 import {
+  ArcElement,
   BarController,
   BarElement,
   CategoryScale,
   Chart,
+  DoughnutController,
   Filler,
   LineController,
   LineElement,
@@ -16,18 +18,18 @@ import {
 import { formatoEje } from "./escala";
 
 // Solo lo que usamos: mantiene el bundle pequeño (tree-shaking de Chart.js).
-Chart.register(LineController, LineElement, PointElement, BarController, BarElement, CategoryScale, LinearScale, Filler, Tooltip);
+Chart.register(LineController, LineElement, PointElement, BarController, BarElement, DoughnutController, ArcElement, CategoryScale, LinearScale, Filler, Tooltip);
 
-Chart.defaults.font.family = "Inter, ui-sans-serif, system-ui, sans-serif";
+Chart.defaults.font.family = "Roboto, ui-sans-serif, system-ui, sans-serif";
 Chart.defaults.font.size = 11;
-Chart.defaults.color = "#6d5d72";
+Chart.defaults.color = "#475a7d";
 
 export const TOKENS = {
   texto: "#2c2b2d",
-  muted: "#6d5d72",
+  muted: "#475a7d",
   grilla: "#e9e0eb",
   superficie: "#ffffff",
-  crosshair: "#987f9c",
+  crosshair: "#6b7fa6",
 };
 
 /** Tooltip claro: valor en negrita arriba, detalle debajo (spec de interacción). */

@@ -10,6 +10,7 @@ import { CLASE_ESTADO_PEDIDO, ETIQUETA_ESTADO_PEDIDO, cantidad, hora, soles } fr
 import { usarPolling } from "../../core/util/polling";
 import { AreaChartComponent } from "../../shared/charts/area-chart.component";
 import { BarChartComponent } from "../../shared/charts/bar-chart.component";
+import { COLORES_DONA, DonutChartComponent } from "../../shared/charts/donut-chart.component";
 import type { Punto } from "../../shared/charts/escala";
 import { IconComponent, type NombreIcono } from "../../shared/icon/icon.component";
 import { RowMenuComponent } from "../../shared/tabla/row-menu.component";
@@ -35,7 +36,7 @@ const deFecha = (f: string) => new Date(`${f}T12:00:00Z`);
 
 @Component({
   selector: "app-hoy",
-  imports: [RouterLink, FormsModule, IconComponent, AreaChartComponent, BarChartComponent, RowMenuComponent, ...TABLA_CONTROLES],
+  imports: [RouterLink, FormsModule, IconComponent, AreaChartComponent, BarChartComponent, DonutChartComponent, RowMenuComponent, ...TABLA_CONTROLES],
   templateUrl: "./hoy.component.html",
 })
 export class HoyComponent implements OnInit {
@@ -107,16 +108,22 @@ export class HoyComponent implements OnInit {
     })),
   );
 
-  /** Pedidos activos del día por estado, para la barra segmentada. */
+  /** Pedidos activos del día por estado, para la dona y su leyenda. */
   readonly estados = computed(() => {
     const conteo = this.data()?.kpis.conteoPorEstado ?? {};
     const total = ESTADOS_DIA.reduce((a, e) => a + (conteo[e] ?? 0), 0);
     return {
       total,
-      partes: ESTADOS_DIA.map((e) => ({
+      partes: ESTADOS_DIA.map((e, i) => ({
         estado: e,
         n: conteo[e] ?? 0,
-        pct: total ? ((conteo[e] ?? 0) / total) * 100 : 0,
+        pct: total ? Math.round(((conteo[e] ?? 0) / total) * 100) : 0,
+        color: COLORES_DONA[i % COLORES_DONA.length],
+      })),
+      dona: ESTADOS_DIA.map<Punto>((e) => ({
+        etiqueta: ETIQUETA_ESTADO_PEDIDO[e],
+        detalle: ETIQUETA_ESTADO_PEDIDO[e],
+        valor: conteo[e] ?? 0,
       })),
     };
   });

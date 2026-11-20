@@ -33,10 +33,10 @@
               <h2 class="text-sm font-semibold text-[#2c2b2d]">{{ col.titulo }}</h2>
               <span
                 class="flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1.5 text-xs font-semibold tabular"
-                [class]="col.pedidos.length > 0 ? 'bg-[#9b73a1] text-white' : 'bg-white text-[#6d5d72]'"
+                [class]="col.pedidos.length > 0 ? 'bg-[#1e3a6e] text-white' : 'bg-white text-[#475a7d]'"
               >{{ col.pedidos.length }}</span>
             </div>
-            <span class="text-xs text-[#6d5d72]">{{ col.ayuda }}</span>
+            <span class="text-xs text-[#475a7d]">{{ col.ayuda }}</span>
           </header>
 
           <!-- Tarjetas -->
@@ -48,15 +48,15 @@
                 type="button"
                 (click)="seleccionar(p)"
                 [attr.aria-pressed]="activo"
-                class="group w-full rounded-xl border bg-white p-3.5 text-left shadow-sm transition duration-150 hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b584b9]"
-                [class]="activo ? 'border-[#9b73a1] ring-2 ring-[#b584b9]/40' : 'border-purple-100/60'"
+                class="group w-full rounded-xl border bg-white p-3.5 text-left shadow-sm transition duration-150 hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5b74a6]"
+                [class]="activo ? 'border-[#1e3a6e] ring-2 ring-[#5b74a6]/40' : 'border-purple-100/60'"
               >
                 <!-- Header: número + hora -->
                 <div class="flex items-center justify-between gap-2">
                   <span class="text-base font-bold tracking-tight text-[#161616]">#{{ p.numero }}</span>
                   <span
                     class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium tabular"
-                    [class]="tiempo.tono === 'atrasado' ? 'bg-red-100 text-negativo' : tiempo.tono === 'pronto' ? 'bg-amber-100 text-amber-800' : 'bg-[#f4edf5] text-[#6d5d72]'"
+                    [class]="tiempo.tono === 'atrasado' ? 'bg-red-100 text-negativo' : tiempo.tono === 'pronto' ? 'bg-amber-100 text-amber-800' : 'bg-[#f4edf5] text-[#475a7d]'"
                   >
                     <app-icon name="reloj" [size]="12" />
                     {{ cuando(p.fechaEntrega, p.horaEntrega) }}
@@ -66,7 +66,7 @@
                 <!-- Cuerpo: quién recibe + qué lleva -->
                 <div class="mt-2 text-sm font-semibold text-[#2c2b2d]">{{ p.nombreReceptor }}</div>
                 @if (resumenItems(p); as resumen) {
-                  <div class="mt-0.5 truncate text-xs text-[#6d5d72]" [title]="resumen">{{ resumen }}</div>
+                  <div class="mt-0.5 truncate text-xs text-[#475a7d]" [title]="resumen">{{ resumen }}</div>
                 }
 
                 <!-- Footer sutil -->
@@ -78,17 +78,17 @@
                       [class.text-negativo]="tiempo.tono === 'atrasado'"
                     >{{ tiempo.texto }}</span>
                   }
-                  <span class="inline-flex items-center gap-1 text-[#6d5d72]">
+                  <span class="inline-flex items-center gap-1 text-[#475a7d]">
                     <app-icon name="usuario" [size]="12" />
                     {{ nombreEncargada(p) }}
                   </span>
                   @if (p.vehiculo === "carro") {
-                    <span class="inline-flex items-center gap-1 rounded-full bg-[#f4edf5] px-1.5 py-0.5 font-medium text-[#4e345a]">
+                    <span class="inline-flex items-center gap-1 rounded-full bg-[#f4edf5] px-1.5 py-0.5 font-medium text-[#14213d]">
                       <app-icon name="delivery" [size]="12" /> carro
                     </span>
                   }
                   @if (p.dedicatoria) {
-                    <span class="inline-flex items-center gap-1 text-[#6d5d72]" title="Lleva dedicatoria">
+                    <span class="inline-flex items-center gap-1 text-[#475a7d]" title="Lleva dedicatoria">
                       <app-icon name="regalo" [size]="12" /> dedicatoria
                     </span>
                   }
@@ -97,10 +97,10 @@
             } @empty {
               <!-- Estado vacío -->
               <div class="flex flex-1 flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#d9c9de] px-4 py-8 text-center">
-                <span class="flex h-9 w-9 items-center justify-center rounded-full bg-white/70 text-[#b584b9]">
+                <span class="flex h-9 w-9 items-center justify-center rounded-full bg-white/70 text-[#5b74a6]">
                   <app-icon [name]="col.icono" [size]="18" />
                 </span>
-                <p class="text-sm font-medium text-[#6d5d72]">{{ col.vacio }}</p>
+                <p class="text-sm font-medium text-[#475a7d]">{{ col.vacio }}</p>
               </div>
             }
           </div>
