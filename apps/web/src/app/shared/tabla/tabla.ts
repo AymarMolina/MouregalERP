@@ -1,4 +1,4 @@
-import { descargarExcel } from "./excel";
+import { descargarExcel, type FilaExcel } from "./excel";
 import { computed, signal } from "@angular/core";
 
 export interface OpcionesTabla<T> {
@@ -97,9 +97,13 @@ export class Tabla<T> {
 
   /** Descarga a Excel las filas seleccionadas o, si no hay selección, todas las filtradas. */
   exportarExcel(): void {
+    descargarExcel(this.opciones.nombreCsv ?? "export", this.filasExportables());
+  }
+
+  /** Lo que se exporta (selección o todo lo filtrado), ya mapeado a columnas. Lo usa la vista previa. */
+  filasExportables(): FilaExcel[] {
     const mapear = this.opciones.csv;
-    if (!mapear) return;
-    const filas = (this.cantidadSeleccionada() ? this.seleccionados() : this.fuente()).map(mapear);
-    descargarExcel(this.opciones.nombreCsv ?? "export", filas);
+    if (!mapear) return [];
+    return (this.cantidadSeleccionada() ? this.seleccionados() : this.fuente()).map(mapear);
   }
 }

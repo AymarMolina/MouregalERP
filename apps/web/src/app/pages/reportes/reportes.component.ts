@@ -15,12 +15,14 @@ import { BarChartComponent } from "../../shared/charts/bar-chart.component";
 import type { Punto } from "../../shared/charts/escala";
 import { Tabla } from "../../shared/tabla/tabla";
 import { TABLA_CONTROLES } from "../../shared/tabla/tabla-controles.component";
+import { IconComponent } from "../../shared/icon/icon.component";
+import { VistaPreviaComponent, type DatoResumen } from "../../shared/tabla/vista-previa.component";
 
 type Pestana = "cobros" | "margen" | "merma" | "vendidos" | "envios";
 
 @Component({
   selector: "app-reportes",
-  imports: [FormsModule, RouterLink, BarChartComponent, ...TABLA_CONTROLES],
+  imports: [FormsModule, RouterLink, BarChartComponent, IconComponent, VistaPreviaComponent, ...TABLA_CONTROLES],
   templateUrl: "./reportes.component.html",
 })
 export class ReportesComponent implements OnInit {
@@ -118,6 +120,87 @@ export class ReportesComponent implements OnInit {
       minute: "2-digit",
     });
   }
+
+  readonly mostrarPrevia = signal(false);
+
+  /** Rango legible para la cabecera del documento: "01/11/2026 al 23/11/2026". */
+  readonly periodoTexto = computed(() => {
+    const f = (d: string) => d.split("-").reverse().join("/");
+    return `Del ${f(this.desde())} al ${f(this.hasta())}`;
+  });
+
+  /** Tabla, título y totales de la pestaña activa, para la vista previa (Excel / PDF). */
+  readonly previa = computed<{ tabla: Tabla<unknown>; titulo: string; resumen: DatoResumen[] }>(() => {
+    switch (this.pestana()) {
+      case "cobros": {
+        const c = this.cobros();
+        return {
+          tabla: this.tablaCobros as Tabla<unknown>,
+          titulo: "Reporte de cobros",
+          resumen: c
+            ? [{ etiqueta: "Total cobrado", valor: soles(c.totales.monto) }, ...c.porMetodo.map((m) => ({ etiqueta: m.metodo.charAt(0).toUpperCase() + m.metodo.slice(1), valor: soles(m.monto) }))]
+            : [],
+        };
+      }
+      case "margen": {
+        const t = this.margen()?.totales;
+        return {
+          tabla: this.tablaMargen as Tabla<unknown>,
+          titulo: "Reporte de margen por producto y talla",
+          resumen: t
+            ? [
+                { etiqueta: "Ingresos", valor: soles(t.ingresos) },
+                { etiqueta: "Costo", valor: soles(t.costo) },
+                { etiqueta: "Margen", valor: soles(t.margen) },
+                { etiqueta: "Margen %", valor: `${t.margenPct}%` },
+              ]
+            : [],
+        };
+      }
+      case "merma": {
+        const t = this.merma()?.totales;
+        return {
+          tabla: this.tablaMerma as Tabla<unknown>,
+          titulo: "Reporte de merma por insumo",
+          resumen: t
+            ? [
+                { etiqueta: "Merma de producción", valor: soles(t.valorProduccion) },
+                { etiqueta: "Merma por cancelación", valor: soles(t.valorCancelacion) },
+                { etiqueta: "Merma total", valor: soles(t.valorTotal) },
+              ]
+            : [],
+        };
+      }
+      case "vendidos": {
+        const filas = this.vendidos()?.filas ?? [];
+        return {
+          tabla: this.tablaVendidos as Tabla<unknown>,
+          titulo: "Productos más vendidos",
+          resumen: filas.length
+            ? [
+                { etiqueta: "Unidades", valor: String(filas.reduce((t, f) => t + f.unidades, 0)) },
+                { etiqueta: "Ingresos", valor: soles(filas.reduce((t, f) => t + f.ingresos, 0)) },
+              ]
+            : [],
+        };
+      }
+      case "envios": {
+        const t = this.envios()?.totales;
+        return {
+          tabla: this.tablaEnvios as Tabla<unknown>,
+          titulo: "Envíos por distrito y vehículo",
+          resumen: t
+            ? [
+                { etiqueta: "Viajes", valor: String(t.viajes) },
+                { etiqueta: "Cobrado", valor: soles(t.cobrado) },
+                { etiqueta: "Costo", valor: soles(t.costo) },
+                { etiqueta: "Diferencia", valor: soles(t.diferencia) },
+              ]
+            : [],
+        };
+      }
+    }
+  });
 
   protected readonly Math = Math;
   readonly formatoUnidades = (v: number) => `${v} und.`;

@@ -46,6 +46,14 @@ export const TOUR_REPORTES: Tour = {
       lado: "bottom",
     },
     {
+      elemento: "rep-previa",
+      titulo: "Vista previa, Excel y PDF",
+      texto:
+        "<p>Muestra el reporte de la pestaña activa como documento: período, totales y todas las filas. Desde ahí lo descargas en Excel o lo imprimes / guardas en PDF.</p>" +
+        "<p>Si marcaste filas en la tabla, la vista previa incluye solo esas.</p>",
+      lado: "left",
+    },
+    {
       elemento: "rep-cobros-kpis",
       titulo: "Resumen de cobros",
       texto: "<p>Total cobrado en el rango y cuánto entró por cada método de pago. Solo cuenta cobros confirmados.</p>",

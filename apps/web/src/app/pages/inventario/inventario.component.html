@@ -261,60 +261,128 @@
   }
 
   @if (kardexDe(); as insumo) {
-    <div id="panel-kardex" class="card mt-6 scroll-mt-20">
-      <div class="flex items-center justify-between border-b border-line pb-3 mb-3">
-        <div>
-          <h2 class="panel-title text-base">Kardex — {{ insumo.nombre }}</h2>
-          <p class="panel-subtitle">{{ insumo.codigo }} · stock actual {{ cantidad(insumo.stockActual) }} {{ insumo.unidadBase }}</p>
-        </div>
-        <button type="button" class="btn-action" (click)="cerrarKardex()" title="Cerrar" aria-label="Cerrar"><app-icon name="cerrar" [size]="18" /></button>
-      </div>
+    <div class="fixed inset-0 z-50 flex justify-end bg-gray-900/30 backdrop-blur-[2px]" (click)="cerrarKardex()">
+      <aside
+        role="dialog"
+        aria-modal="true"
+        [attr.aria-label]="'Kardex de ' + insumo.nombre"
+        class="flex h-full w-full max-w-4xl flex-col border-l border-gray-200/80 bg-white"
+        (click)="$event.stopPropagation()"
+      >
+        <!-- Cabecera -->
+        <header class="flex items-start justify-between gap-4 border-b border-gray-200/80 px-6 py-4">
+          <div class="flex min-w-0 items-center gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-soft text-brand">
+              <app-icon name="historial" [size]="20" />
+            </span>
+            <div class="min-w-0">
+              <p class="text-xs font-medium uppercase tracking-wider text-muted">Kardex · {{ insumo.codigo }}</p>
+              <h2 class="truncate text-lg font-semibold text-gray-900">{{ insumo.nombre }}</h2>
+            </div>
+          </div>
+          <button type="button" class="btn-action" (click)="cerrarKardex()" title="Cerrar (Esc)" aria-label="Cerrar"><app-icon name="cerrar" [size]="18" /></button>
+        </header>
 
-      @if (cargandoKardex()) {
-        <div class="space-y-3">
-          @for (i of [1, 2, 3]; track i) {
-            <div class="skeleton h-8"></div>
+        <div class="flex-1 overflow-y-auto px-6 py-5">
+          <!-- Resumen -->
+          @let r = resumenKardex();
+          <div class="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <div class="rounded-xl border border-gray-200/80 px-4 py-3">
+              <p class="text-xs font-medium text-muted">Stock actual</p>
+              <p class="mt-1 text-xl font-semibold tabular" [class.text-negativo]="stockBajo(insumo)">
+                {{ cantidad(insumo.stockActual) }} <span class="text-sm font-medium text-muted">{{ unidad(insumo.unidadBase, insumo.stockActual) }}</span>
+              </p>
+              <p class="mt-0.5 text-xs text-muted">Mínimo {{ cantidad(insumo.stockMinimo) }}</p>
+            </div>
+            <div class="rounded-xl border border-gray-200/80 px-4 py-3">
+              <p class="text-xs font-medium text-muted">Valor del stock</p>
+              <p class="mt-1 text-xl font-semibold tabular">{{ soles(r.valor) }}</p>
+              <p class="mt-0.5 text-xs text-muted">Costo prom. {{ costo(insumo.costoPromedio) }}</p>
+            </div>
+            <div class="rounded-xl border border-gray-200/80 px-4 py-3">
+              <p class="text-xs font-medium text-muted">Total entradas</p>
+              <p class="mt-1 text-xl font-semibold tabular text-positivo">+{{ cantidad(r.entradas) }}</p>
+              <p class="mt-0.5 text-xs text-muted">{{ r.nEntradas }} movimiento{{ r.nEntradas === 1 ? "" : "s" }}</p>
+            </div>
+            <div class="rounded-xl border border-gray-200/80 px-4 py-3">
+              <p class="text-xs font-medium text-muted">Total salidas</p>
+              <p class="mt-1 text-xl font-semibold tabular text-negativo">−{{ cantidad(r.salidas) }}</p>
+              <p class="mt-0.5 text-xs text-muted">{{ r.nSalidas }} movimiento{{ r.nSalidas === 1 ? "" : "s" }}</p>
+            </div>
+          </div>
+
+          @if (cargandoKardex()) {
+            <div class="space-y-3">
+              @for (i of [1, 2, 3, 4]; track i) {
+                <div class="skeleton h-10"></div>
+              }
+            </div>
+          } @else {
+            <div class="table-wrap">
+              <div class="px-4 pt-3">
+                <nav class="tabs" aria-label="Filtrar movimientos">
+                  <button type="button" class="tab" [class.tab-active]="filtroKardex() === 'todos'" (click)="filtroKardex.set('todos'); tablaKardex.pagina.set(1)">
+                    Todos <span class="tab-count">{{ kardexMovimientos().length }}</span>
+                  </button>
+                  <button type="button" class="tab" [class.tab-active]="filtroKardex() === 'entradas'" (click)="filtroKardex.set('entradas'); tablaKardex.pagina.set(1)">
+                    Entradas <span class="tab-count">{{ r.nEntradas }}</span>
+                  </button>
+                  <button type="button" class="tab" [class.tab-active]="filtroKardex() === 'salidas'" (click)="filtroKardex.set('salidas'); tablaKardex.pagina.set(1)">
+                    Salidas <span class="tab-count">{{ r.nSalidas }}</span>
+                  </button>
+                </nav>
+              </div>
+              <div class="table-head">
+                <h3 class="table-title">Movimientos</h3>
+                <app-paginacion [tabla]="tablaKardex" />
+              </div>
+              <app-seleccion-bar [tabla]="tablaKardex" />
+              <div class="overflow-x-auto">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th class="col-check"><app-check-todos [tabla]="tablaKardex" /></th>
+                      <th>Fecha</th>
+                      <th>Tipo</th>
+                      <th class="text-right">Movimiento</th>
+                      <th class="text-right">Costo unit.</th>
+                      <th class="text-right">Saldo</th>
+                      <th>Detalle</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (m of tablaKardex.filas(); track m.id) {
+                      @let entra = +m.entrada > 0;
+                      @let tipo = tipoKardex[m.tipo];
+                      <tr [class.fila-sel]="tablaKardex.marcado(m)">
+                        <td class="col-check"><app-check-fila [tabla]="tablaKardex" [fila]="m" etiqueta="Seleccionar movimiento" /></td>
+                        <td class="whitespace-nowrap">
+                          <span class="block text-gray-900">{{ m.fecha | date: "d MMM y" : "America/Lima" }}</span>
+                          <span class="block text-xs text-muted tabular">{{ m.fecha | date: "HH:mm" : "America/Lima" }}</span>
+                        </td>
+                        <td><span class="badge" [class]="tipo?.clase ?? 'badge-neutral'">{{ tipo?.etiqueta ?? m.tipo }}</span></td>
+                        <td class="whitespace-nowrap text-right font-semibold tabular" [class.text-positivo]="entra" [class.text-negativo]="!entra">
+                          {{ entra ? "+" + cantidad(m.entrada) : "−" + cantidad(m.salida) }}
+                        </td>
+                        <td class="text-right text-muted tabular">{{ costo(m.costoUnitario) }}</td>
+                        <td class="text-right font-semibold text-gray-900 tabular">{{ cantidad(m.saldoResultante) }}</td>
+                        <td class="max-w-xs truncate text-muted" [title]="m.nota ?? ''">{{ m.nota || "—" }}</td>
+                      </tr>
+                    } @empty {
+                      <tr>
+                        <td colspan="7" class="py-10 text-center text-muted">
+                          {{ filtroKardex() === "todos" ? "Sin movimientos todavía." : "Sin " + filtroKardex() + " registradas." }}
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <p class="mt-3 text-xs text-muted">El Kardex es solo de inserción: cada corrección se registra como un movimiento nuevo.</p>
           }
         </div>
-      } @else {
-        <div class="table-wrap">
-          <div class="table-head">
-            <h3 class="table-title">Movimientos</h3>
-            <app-paginacion [tabla]="tablaKardex" />
-          </div>
-          <app-seleccion-bar [tabla]="tablaKardex" />
-          <div class="overflow-x-auto">
-          <table class="table">
-            <thead>
-              <tr>
-                <th class="col-check"><app-check-todos [tabla]="tablaKardex" /></th>
-                <th>Fecha</th>
-                <th>Tipo</th>
-                <th class="text-right">Entrada</th>
-                <th class="text-right">Salida</th>
-                <th class="text-right">Saldo</th>
-                <th>Nota</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (m of tablaKardex.filas(); track m.id) {
-                <tr [class.fila-sel]="tablaKardex.marcado(m)">
-                  <td class="col-check"><app-check-fila [tabla]="tablaKardex" [fila]="m" etiqueta="Seleccionar movimiento" /></td>
-                  <td class="text-muted">{{ m.fecha | date: "short" }}</td>
-                  <td class="capitalize">{{ m.tipo }}</td>
-                  <td class="text-right tabular">{{ +m.entrada ? cantidad(m.entrada) : "" }}</td>
-                  <td class="text-right tabular">{{ +m.salida ? cantidad(m.salida) : "" }}</td>
-                  <td class="text-right font-medium tabular">{{ cantidad(m.saldoResultante) }}</td>
-                  <td class="text-muted">{{ m.nota }}</td>
-                </tr>
-              } @empty {
-                <tr><td colspan="7" class="py-8 text-center text-muted">Sin movimientos todavía.</td></tr>
-              }
-            </tbody>
-          </table>
-          </div>
-        </div>
-      }
+      </aside>
     </div>
   }
 </div>

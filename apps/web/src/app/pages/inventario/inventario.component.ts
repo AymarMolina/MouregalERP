@@ -3,12 +3,12 @@ import { IconComponent } from "../../shared/icon/icon.component";
 import { RowMenuComponent } from "../../shared/tabla/row-menu.component";
 import { Tabla } from "../../shared/tabla/tabla";
 import { TABLA_CONTROLES } from "../../shared/tabla/tabla-controles.component";
-import { Component, OnInit, computed, inject, signal } from "@angular/core";
+import { Component, HostListener, OnInit, computed, inject, signal } from "@angular/core";
 import { RouterLink } from "@angular/router";
 import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms";
 import type { InsumoCategoria, UnidadBase } from "@erp/shared";
 import { INSUMO_CATEGORIA, UNIDAD_BASE } from "@erp/shared";
-import { cantidad } from "../../core/util/formato";
+import { cantidad, soles } from "../../core/util/formato";
 import type { Insumo } from "../../core/catalogo/catalogo.types";
 import { InsumosService, type KardexMovimiento } from "../../core/catalogo/insumos.service";
 
@@ -24,6 +24,7 @@ export class InventarioComponent implements OnInit {
   readonly categorias: InsumoCategoria[] = [...INSUMO_CATEGORIA];
   readonly unidades: UnidadBase[] = [...UNIDAD_BASE];
   readonly cantidad = cantidad;
+  readonly soles = soles;
   /** Costo unitario: 2 a 4 decimales (los insumos por gramo cuestan céntimos). */
   costo(valor: string | number): string {
     return `S/ ${Number(valor).toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`;
@@ -120,15 +121,47 @@ export class InventarioComponent implements OnInit {
     }),
   });
 
-  readonly tablaKardex = new Tabla(() => this.kardexMovimientos(), {
+  /** Etiqueta y color de cada tipo de movimiento (verde entra, rojo pierde, azul consumo). */
+  readonly tipoKardex: Record<string, { etiqueta: string; clase: string }> = {
+    apertura: { etiqueta: "Apertura", clase: "bg-estado-pendiente-bg text-estado-pendiente-fg" },
+    compra: { etiqueta: "Compra", clase: "bg-estado-listo-bg text-estado-listo-fg" },
+    devolucion: { etiqueta: "Devolución", clase: "bg-estado-listo-bg text-estado-listo-fg" },
+    ajuste_positivo: { etiqueta: "Ajuste +", clase: "bg-estado-listo-bg text-estado-listo-fg" },
+    consumo: { etiqueta: "Consumo", clase: "bg-estado-en-camino-bg text-estado-en-camino-fg" },
+    merma: { etiqueta: "Merma", clase: "bg-red-50 text-red-700" },
+    ajuste_negativo: { etiqueta: "Ajuste −", clase: "bg-red-50 text-red-700" },
+  };
+
+  readonly filtroKardex = signal<"todos" | "entradas" | "salidas">("todos");
+
+  readonly kardexVisibles = computed(() => {
+    const f = this.filtroKardex();
+    if (f === "todos") return this.kardexMovimientos();
+    return this.kardexMovimientos().filter((m) => Number(f === "entradas" ? m.entrada : m.salida) > 0);
+  });
+
+  readonly resumenKardex = computed(() => {
+    const movs = this.kardexMovimientos();
+    const insumo = this.kardexDe();
+    return {
+      entradas: movs.reduce((t, m) => t + Number(m.entrada), 0),
+      salidas: movs.reduce((t, m) => t + Number(m.salida), 0),
+      nEntradas: movs.filter((m) => Number(m.entrada) > 0).length,
+      nSalidas: movs.filter((m) => Number(m.salida) > 0).length,
+      valor: insumo ? Number(insumo.stockActual) * Number(insumo.costoPromedio) : 0,
+    };
+  });
+
+  readonly tablaKardex = new Tabla(() => this.kardexVisibles(), {
     id: (m) => m.id,
     porPagina: 10,
     nombreCsv: "kardex",
     csv: (m) => ({
       fecha: m.fecha,
-      tipo: m.tipo,
+      tipo: this.tipoKardex[m.tipo]?.etiqueta ?? m.tipo,
       entrada: m.entrada,
       salida: m.salida,
+      costo_unitario: m.costoUnitario,
       saldo: m.saldoResultante,
       nota: m.nota ?? "",
     }),
@@ -178,13 +211,17 @@ export class InventarioComponent implements OnInit {
     this.kardexDe.set(insumo);
     this.tablaKardex.limpiar();
     this.tablaKardex.pagina.set(1);
+    this.filtroKardex.set("todos");
+    this.kardexMovimientos.set([]);
     this.cargandoKardex.set(true);
-    // El panel se pinta debajo de la tabla: llevarlo a la vista.
-    setTimeout(() => document.getElementById("panel-kardex")?.scrollIntoView({ behavior: "smooth", block: "start" }));
-    this.kardexMovimientos.set(await this.insumosService.kardex(insumo.id));
+    const movimientos = await this.insumosService.kardex(insumo.id);
+    // Si mientras cargaba se abrió otro insumo (o se cerró), esta respuesta ya no vale.
+    if (this.kardexDe() !== insumo) return;
+    this.kardexMovimientos.set(movimientos);
     this.cargandoKardex.set(false);
   }
 
+  @HostListener("document:keydown.escape")
   cerrarKardex(): void {
     this.kardexDe.set(null);
   }

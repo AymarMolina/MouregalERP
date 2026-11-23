@@ -1,4 +1,4 @@
-import { mkdir, unlink, writeFile } from 'node:fs/promises';
+import { access, mkdir, unlink, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import {
   BadRequestException,
@@ -84,7 +84,12 @@ export class FotosService {
       )
       .limit(1);
     if (!f) throw new NotFoundException('Foto no encontrada');
-    return { ruta: join(this.dir, f.archivo), tipoMime: f.tipoMime };
+    const ruta = join(this.dir, f.archivo);
+    // Sin esto, Nest responde 400 con el ENOENT y la ruta del servidor.
+    await access(ruta).catch(() => {
+      throw new NotFoundException('El archivo de la foto ya no existe');
+    });
+    return { ruta, tipoMime: f.tipoMime };
   }
 
   async subir(

@@ -27,7 +27,7 @@ function fechaArchivo(): string {
 }
 
 /** "fechaEntrega" → "Fecha entrega", "margenPct" → "Margen pct". */
-function titulo(clave: string): string {
+export function titulo(clave: string): string {
   const t = clave.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/[_-]+/g, " ").toLowerCase();
   return t.charAt(0).toUpperCase() + t.slice(1);
 }

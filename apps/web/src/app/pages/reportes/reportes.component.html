@@ -25,13 +25,23 @@
     <p class="ml-auto max-w-sm pb-2 text-right text-xs text-muted">Cada reporte usa la fecha real: cobros por fecha de pago, margen por fecha de armado, envíos por fecha de salida y más vendidos por fecha de venta.</p>
   </div>
 
-  <nav class="tabs mb-5" data-tour="rep-pestanas" aria-label="Reporte">
-    @for (t of pestanas; track t.id) {
-      <button type="button" class="tab" [class.tab-active]="pestana() === t.id" (click)="pestana.set(t.id)">
-        {{ t.label }}
-      </button>
-    }
-  </nav>
+  <div class="mb-5 flex items-end justify-between gap-3">
+    <nav class="tabs flex-1" data-tour="rep-pestanas" aria-label="Reporte">
+      @for (t of pestanas; track t.id) {
+        <button type="button" class="tab" [class.tab-active]="pestana() === t.id" (click)="pestana.set(t.id)">
+          {{ t.label }}
+        </button>
+      }
+    </nav>
+    <button type="button" class="btn-secondary mb-1" data-tour="rep-previa" [disabled]="loading()" (click)="mostrarPrevia.set(true)" title="Ver el reporte como documento y descargarlo en Excel o PDF">
+      <app-icon name="ticket" [size]="15" /> Vista previa
+    </button>
+  </div>
+
+  @if (mostrarPrevia()) {
+    @let p = previa();
+    <app-vista-previa [tabla]="p.tabla" [titulo]="p.titulo" [periodo]="periodoTexto()" [resumen]="p.resumen" (cerrar)="mostrarPrevia.set(false)" />
+  }
 
   @if (error()) {
     <p class="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-red-800">{{ error() }}</p>
