@@ -553,8 +553,7 @@ describe('Venta en tienda: recojo, cobro en el momento y descuento', () => {
       ],
       fechaEntrega: '2026-11-10',
       horaEntrega: '10:00',
-      porcentajeAdelanto: 100,
-      pagoAhora: { metodo: 'efectivo' },
+      pagos: [{ metodo: 'efectivo', monto: 89 }],
       ...extra,
     };
   }
@@ -624,8 +623,7 @@ describe('Venta en tienda: recojo, cobro en el momento y descuento', () => {
     const pedido = await e.pedidos.crear(
       await mostrador({
         cliente: { nombre: 'Rosa', telefono: '987654321' },
-        porcentajeAdelanto: 50,
-        pagoAhora: { metodo: 'tarjeta', referencia: 'POS 0042' },
+        pagos: [{ metodo: 'tarjeta', monto: 44.5, referencia: 'POS 0042' }],
       }),
       actor('vendedora'),
     );
@@ -671,7 +669,11 @@ describe('Venta en tienda: recojo, cobro en el momento y descuento', () => {
     ).rejects.toBeInstanceOf(BadRequestException);
 
     const conDescuento = await e.pedidos.crear(
-      await mostrador({ descuento: 8.9, motivoDescuento: 'Cliente frecuente' }),
+      await mostrador({
+        descuento: 8.9,
+        motivoDescuento: 'Cliente frecuente',
+        pagos: [{ metodo: 'efectivo', monto: 80.1 }],
+      }),
       actor('vendedora'),
     );
     expect(conDescuento).toMatchObject({
@@ -681,7 +683,11 @@ describe('Venta en tienda: recojo, cobro en el momento y descuento', () => {
     });
 
     const admin = await e.pedidos.crear(
-      await mostrador({ descuento: 20, motivoDescuento: 'Cortesía' }),
+      await mostrador({
+        descuento: 20,
+        motivoDescuento: 'Cortesía',
+        pagos: [],
+      }),
       actor('admin'),
     );
     expect(admin.total).toBe('69.00');
@@ -689,7 +695,7 @@ describe('Venta en tienda: recojo, cobro en el momento y descuento', () => {
 
   it('registrar a mano el adelanto anula el link pendiente (no se cobra dos veces)', async () => {
     const pedido = await e.pedidos.crear(
-      await mostrador({ porcentajeAdelanto: 50, pagoAhora: undefined }),
+      await mostrador({ porcentajeAdelanto: 50, pagos: [] }),
       actor('vendedora'),
     );
     const [link] = await e.pagos.listPorPedido(pedido.id);
@@ -699,6 +705,97 @@ describe('Venta en tienda: recojo, cobro en el momento y descuento', () => {
     const pagos = await e.pagos.listPorPedido(pedido.id);
     expect(pagos.find((p) => p.id === link.id)?.estado).toBe('anulado');
     expect(pagos.filter((p) => p.estado === 'pendiente')).toHaveLength(0);
+  });
+
+  it('paga un monto libre en dos métodos (10 efectivo + 20 Yape) y el resto también dividido', async () => {
+    const pedido = await e.pedidos.crear(
+      await mostrador({
+        pagos: [
+          { metodo: 'efectivo', monto: 10 },
+          { metodo: 'yape', monto: 20, referencia: 'OP 123' },
+        ],
+      }),
+      actor('vendedora'),
+    );
+    expect(pedido.totalPagado).toBe('30.00');
+    const pagos = await e.pagos.listPorPedido(pedido.id);
+    expect(pagos.map((p) => [p.metodo, p.monto, p.estado]).sort()).toEqual([
+      ['efectivo', '10.00', 'pagado'],
+      ['yape', '20.00', 'pagado'],
+    ]);
+
+    // El saldo (59) no puede pasarse, aunque venga repartido.
+    await expect(
+      e.pagos.registrarManual(pedido.id, {
+        partes: [
+          { metodo: 'efectivo', monto: 50 },
+          { metodo: 'plin', monto: 10 },
+        ],
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+
+    const saldo = await e.pagos.registrarManual(pedido.id, {
+      partes: [
+        { metodo: 'efectivo', monto: 9 },
+        { metodo: 'plin', monto: 50 },
+      ],
+    });
+    expect(saldo.tipo).toBe('saldo');
+    const [actual] = await e.db
+      .select()
+      .from(schema.pedidos)
+      .where(eq(schema.pedidos.id, pedido.id));
+    expect(actual.totalPagado).toBe('89.00');
+  });
+
+  it('adelanto en soles (no en porcentaje) por link, y no se cobra más que el total', async () => {
+    const pedido = await e.pedidos.crear(
+      await mostrador({ pagos: [], montoAdelanto: 27.5 }),
+      actor('vendedora'),
+    );
+    const [link] = await e.pagos.listPorPedido(pedido.id);
+    expect(link).toMatchObject({
+      metodo: 'link',
+      monto: '27.50',
+      estado: 'pendiente',
+    });
+
+    await expect(
+      e.pedidos.crear(
+        await mostrador({ pagos: [{ metodo: 'efectivo', monto: 100 }] }),
+        actor('vendedora'),
+      ),
+    ).rejects.toThrow(/supera el total/);
+  });
+
+  it('adicional fuera de catálogo (una planta) suma a su precio y queda en la comanda', async () => {
+    const rosaRoja = await e.insumo('ROS-ROJ');
+    const pedido = await e.pedidos.crear(
+      await mostrador({
+        items: [
+          {
+            productoId: await e.productoId('ramo-clasico-de-rosas'),
+            talla: 'S',
+            florId: rosaRoja.id,
+            adicionales: [{ descripcion: 'Suculenta en maceta', precio: 15 }],
+          },
+        ],
+        pagos: [{ metodo: 'efectivo', monto: 104 }],
+      }),
+      actor('vendedora'),
+    );
+    expect(pedido.total).toBe('104.00');
+    const cambios = await e.db.select().from(schema.pedidoItemCambios);
+    expect(cambios).toEqual([
+      expect.objectContaining({
+        descripcion: 'Adicional: Suculenta en maceta',
+        ajuste: '15.00',
+        reglaId: null,
+      }),
+    ]);
+    // Tiene precio: no abre consulta a Producción.
+    const consultas = await e.db.select().from(schema.consultasProduccion);
+    expect(consultas).toHaveLength(0);
   });
 
   it('un delivery sigue exigiendo distrito, dirección y receptor', async () => {

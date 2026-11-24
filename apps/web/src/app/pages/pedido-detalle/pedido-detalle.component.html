@@ -33,22 +33,18 @@
           <div class="panel-title">Listo para entregar en tienda</div>
           <p class="panel-subtitle">
             @if (saldo() > 0) {
-              Falta cobrar {{ soles(saldo()) }}. Elige cómo paga y entrégalo.
+              Falta cobrar {{ soles(saldo()) }}. Elige cómo paga (puede dividirlo) y entrégalo.
             } @else {
               Ya está pagado. Entrégalo al cliente.
             }
           </p>
           @if (saldo() > 0) {
-            <div class="mt-3 flex flex-wrap gap-2">
-              @for (m of metodosCobro; track m.valor) {
-                <button type="button" class="chip py-2" [class.chip-sel]="metodoSaldo() === m.valor" (click)="metodoSaldo.set(m.valor)">
-                  {{ m.etiqueta }}
-                </button>
-              }
+            <div class="mt-3">
+              <app-cobro [monto]="saldo()" (cambio)="cobroSaldo.set($event)" />
             </div>
           }
         </div>
-        <button type="button" class="btn-primary px-5 py-3 text-[15px]" [disabled]="entregando()" (click)="entregarEnTienda()">
+        <button type="button" class="btn-primary px-5 py-3 text-[15px]" [disabled]="entregando() || (saldo() > 0 && !!cobroSaldo().error)" (click)="entregarEnTienda()">
           {{ entregando() ? "Entregando…" : saldo() > 0 ? "Cobrar " + soles(saldo()) + " y entregar" : "Entregar al cliente" }}
         </button>
       </section>

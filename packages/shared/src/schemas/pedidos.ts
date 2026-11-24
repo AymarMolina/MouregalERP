@@ -1,6 +1,17 @@
 import { z } from "zod";
 import { CANAL, ESTADO_PEDIDO, METODOS_COBRO_DIRECTO, TALLA, TIPO_ENTREGA } from "../enums";
 
+/**
+ * Algo que el cliente pide y no está en el catálogo de extras (una planta, un
+ * chocolate de otra marca…): la vendedora lo describe y le pone precio. Suma
+ * al precio del ítem y Producción lo ve en la comanda; no descuenta stock.
+ */
+export const adicionalInputSchema = z.object({
+  descripcion: z.string().trim().min(1, "Describe el adicional").max(80),
+  precio: z.coerce.number().positive("El precio del adicional debe ser mayor que 0").max(10000),
+});
+export type AdicionalInput = z.infer<typeof adicionalInputSchema>;
+
 export const pedidoItemInputSchema = z.object({
   productoId: z.string().uuid(),
   talla: z.enum(TALLA),
@@ -8,6 +19,7 @@ export const pedidoItemInputSchema = z.object({
   florId: z.string().uuid(),
   papelId: z.string().uuid().optional().nullable(),
   extraIds: z.array(z.string().uuid()).default([]),
+  adicionales: z.array(adicionalInputSchema).max(10).optional(),
   cambioNoListado: z.string().trim().optional(),
 });
 export type PedidoItemInput = z.infer<typeof pedidoItemInputSchema>;
@@ -19,6 +31,7 @@ export const cotizacionInputSchema = z.object({
   florId: z.string().uuid().optional(),
   papelId: z.string().uuid().optional().nullable(),
   extraIds: z.array(z.string().uuid()).default([]),
+  adicionales: z.array(adicionalInputSchema).max(10).optional(),
   /** Sin distrito (recojo en tienda) el envío es 0. */
   distritoId: z.string().uuid().optional(),
   cambioNoListado: z.string().trim().optional(),
@@ -33,6 +46,14 @@ const textoOpcional = z
   .trim()
   .optional()
   .transform((v) => (v ? v : undefined));
+
+/** Una parte de un cobro directo: método y monto. */
+export const parteCobroSchema = z.object({
+  metodo: z.enum(METODOS_COBRO_DIRECTO),
+  monto: z.coerce.number().positive("Cada monto debe ser mayor que 0"),
+  referencia: textoOpcional,
+});
+export type ParteCobro = z.input<typeof parteCobroSchema>;
 
 export const pedidoInputSchema = z
   .object({
@@ -58,16 +79,14 @@ export const pedidoInputSchema = z
     nombreReceptor: textoOpcional,
     dedicatoria: textoOpcional,
     porcentajeAdelanto: z.coerce.number().min(0).max(100).default(50),
+    /** Adelanto en soles (p. ej. 127 de 250). Si llega, gana sobre el porcentaje. */
+    montoAdelanto: z.coerce.number().min(0).optional(),
     /**
-     * Si el cliente paga el adelanto en ese momento (en tienda, Yape al chat…):
-     * se registra como pagado con este método y no se crea un link pendiente.
+     * Lo que el cliente ya pagó al crear el pedido, en uno o varios métodos
+     * (10 en efectivo + 20 por Yape). Se registra pagado y no se crea link.
+     * Vacío: se crea un link pendiente por el adelanto.
      */
-    pagoAhora: z
-      .object({
-        metodo: z.enum(METODOS_COBRO_DIRECTO),
-        referencia: textoOpcional,
-      })
-      .optional(),
+    pagos: z.array(parteCobroSchema).max(5).default([]),
     /** Descuento en soles sobre los productos (no sobre el envío). */
     descuento: z.coerce.number().min(0).default(0),
     motivoDescuento: textoOpcional,

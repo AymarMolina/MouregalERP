@@ -921,18 +921,34 @@ export class PedidosService {
           .join(' · '),
       });
 
-      const montoAdelanto = round2(total * (input.porcentajeAdelanto / 100));
-      if (montoAdelanto > 0 && input.pagoAhora) {
+      // Lo ya cobrado (uno o varios métodos) manda; si no, el adelanto va por
+      // link: en soles si llegó el monto, si no por porcentaje.
+      const pagadoAhora = round2(
+        input.pagos.reduce((acc, p) => acc + p.monto, 0),
+      );
+      const montoAdelanto = input.pagos.length
+        ? pagadoAhora
+        : round2(
+            input.montoAdelanto ?? total * (input.porcentajeAdelanto / 100),
+          );
+      if (montoAdelanto > total + 0.001)
+        throw new BadRequestException(
+          `Lo que paga ahora (S/ ${montoAdelanto.toFixed(2)}) supera el total del pedido (S/ ${total.toFixed(2)})`,
+        );
+      if (input.pagos.length) {
         // Ya cobrado (efectivo, Yape, tarjeta…): se registra pagado, sin link.
-        await tx.insert(pagos).values({
-          pedidoId: creado.id,
-          tipo: 'adelanto',
-          metodo: input.pagoAhora.metodo,
-          monto: String(montoAdelanto),
-          estado: 'pagado',
-          referenciaExterna: input.pagoAhora.referencia,
-          pagadoAt: new Date(),
-        });
+        const ahora = new Date();
+        await tx.insert(pagos).values(
+          input.pagos.map((p) => ({
+            pedidoId: creado.id,
+            tipo: 'adelanto' as const,
+            metodo: p.metodo,
+            monto: String(p.monto),
+            estado: 'pagado' as const,
+            referenciaExterna: p.referencia,
+            pagadoAt: ahora,
+          })),
+        );
         await this.pagos.recalcularTotalPagado(tx, creado.id);
       } else if (montoAdelanto > 0) {
         const [adelanto] = await tx

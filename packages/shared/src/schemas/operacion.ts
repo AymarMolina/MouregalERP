@@ -6,16 +6,24 @@ const positivo = z.coerce.number().finite().positive();
 
 // ---------- Pagos (5.11) ----------
 
-/** Registro manual de un pago ya cobrado (Yape, Plin, efectivo, transferencia...). */
-export const pagoManualInputSchema = z.object({
-  /** Opcional: si no llega, el API lo deduce (adelanto si aún no se pagó nada, si no saldo). */
-  tipo: z.enum(TIPO_PAGO).optional(),
+const parteManual = z.object({
   metodo: z.enum(METODO_PAGO).refine((m) => m !== "link" && m !== "shopify", {
     message: "Los pagos por link o Shopify se confirman, no se registran a mano",
   }),
   monto: positivo,
   referenciaExterna: z.string().trim().max(200).optional(),
 });
+/** Opcional: si no llega, el API lo deduce (adelanto si aún no se pagó nada, si no saldo). */
+const tipoManual = z.enum(TIPO_PAGO).optional();
+
+/**
+ * Registro manual de un pago ya cobrado (Yape, Plin, efectivo, transferencia...).
+ * Un método (`metodo` + `monto`) o varios a la vez (`partes`: 10 en efectivo y 20 por Yape).
+ */
+export const pagoManualInputSchema = z.union([
+  parteManual.extend({ tipo: tipoManual }),
+  z.object({ tipo: tipoManual, partes: z.array(parteManual).min(1).max(5) }),
+]);
 export type PagoManualInput = z.infer<typeof pagoManualInputSchema>;
 
 export const confirmarPagoInputSchema = z.object({

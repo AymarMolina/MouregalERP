@@ -49,6 +49,8 @@ export interface ItemSolicitado {
   florId?: string;
   papelId?: string | null;
   extraIds: string[];
+  /** Lo que no está en el catálogo, con precio puesto por la vendedora. */
+  adicionales?: { descripcion: string; precio: number }[];
   cambioNoListado?: string;
 }
 
@@ -314,6 +316,15 @@ export class ItemResolverService {
         consultas.push(
           `Cambio de papel → ${nombre(papelId)} ${ev.listado ? 'requiere consulta' : 'no listado'} (${producto.nombre} ${talla.talla})`,
         );
+    }
+
+    // Adicionales fuera de catálogo: suman al precio y quedan en la comanda
+    // (pedido_item_cambios sin regla). No pasan por Producción: ya tienen precio.
+    for (const a of solicitado.adicionales ?? []) {
+      ajustes.push({
+        descripcion: `Adicional: ${a.descripcion.trim()}`,
+        ajuste: a.precio,
+      });
     }
 
     // Pedido especial escrito por la vendedora: siempre va a Producción (5.4).

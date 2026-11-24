@@ -2,7 +2,8 @@ import { DatePipe } from "@angular/common";
 import { MapaComponent } from "../../shared/mapa/mapa.component";
 import { Component, Input, OnInit, computed, inject, signal } from "@angular/core";
 import { RouterLink } from "@angular/router";
-import { calcularSaldo, validarTransicion, type MetodoCobroDirecto } from "@erp/shared";
+import { calcularSaldo, validarTransicion } from "@erp/shared";
+import { CobroComponent, type EstadoCobro } from "../../shared/cobro/cobro.component";
 import { AuthService } from "../../core/auth/auth.service";
 import { mensajeError } from "../../core/http/errores";
 import { PagosApi } from "../../core/operacion/operacion.service";
@@ -13,7 +14,7 @@ import { CLASE_ESTADO_PAGO, CLASE_ESTADO_PEDIDO, ETIQUETA_ESTADO_PEDIDO, hora, s
 
 @Component({
   selector: "app-pedido-detalle",
-  imports: [DatePipe, RouterLink, MapaComponent],
+  imports: [DatePipe, RouterLink, MapaComponent, CobroComponent],
   templateUrl: "./pedido-detalle.component.html",
 })
 export class PedidoDetalleComponent implements OnInit {
@@ -37,15 +38,8 @@ export class PedidoDetalleComponent implements OnInit {
   readonly errorAccion = signal<string | null>(null);
   readonly cancelando = signal(false);
   readonly entregando = signal(false);
-  /** Con qué paga el saldo al recoger. */
-  readonly metodoSaldo = signal<MetodoCobroDirecto>("efectivo");
-  readonly metodosCobro: { valor: MetodoCobroDirecto; etiqueta: string }[] = [
-    { valor: "efectivo", etiqueta: "Efectivo" },
-    { valor: "yape", etiqueta: "Yape" },
-    { valor: "plin", etiqueta: "Plin" },
-    { valor: "tarjeta", etiqueta: "Tarjeta" },
-    { valor: "transferencia", etiqueta: "Transferencia" },
-  ];
+  /** Con qué paga el saldo al recoger (uno o varios métodos). */
+  readonly cobroSaldo = signal<EstadoCobro>({ partes: [], error: null });
 
   /** Recojo listo: la vendedora lo entrega en el mostrador (y cobra lo que falte). */
   readonly puedeEntregarEnTienda = computed(() => {
@@ -121,7 +115,14 @@ export class PedidoDetalleComponent implements OnInit {
     try {
       const saldo = this.saldo();
       if (saldo > 0) {
-        await this.pagosApi.registrar(p.id, { metodo: this.metodoSaldo(), monto: saldo });
+        const partes = this.cobroSaldo().partes;
+        if (this.cobroSaldo().error || !partes.length) {
+          this.errorAccion.set(this.cobroSaldo().error ?? "Elige cómo paga.");
+          return;
+        }
+        await this.pagosApi.registrar(p.id, {
+          partes: partes.map((x) => ({ metodo: x.metodo, monto: x.monto, referenciaExterna: x.referencia })),
+        });
       }
       await this.pedidosService.transicion(p.id, "entregado", "Entregado en tienda");
       await this.cargar();

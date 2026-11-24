@@ -166,6 +166,7 @@ export class CotizacionesService {
       florId: input.florId,
       papelId: input.papelId,
       extraIds: input.extraIds,
+      adicionales: input.adicionales,
       cambioNoListado: input.cambioNoListado,
     };
     const item = this.resolver.resolverConReceta(

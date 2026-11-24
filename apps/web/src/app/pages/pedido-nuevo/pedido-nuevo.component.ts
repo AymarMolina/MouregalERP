@@ -4,7 +4,7 @@ import { IconComponent } from "../../shared/icon/icon.component";
 import { MapaComponent } from "../../shared/mapa/mapa.component";
 import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms";
 import { Router } from "@angular/router";
-import type { Canal, Coordenadas, MetodoCobroDirecto, PedidoItemInput, Talla, TipoEntrega } from "@erp/shared";
+import type { AdicionalInput, Canal, Coordenadas, MetodoCobroDirecto, PedidoItemInput, Talla, TipoEntrega } from "@erp/shared";
 import { CANAL, DESCUENTO_MAX_VENDEDORA_PCT, TALLA } from "@erp/shared";
 import { AuthService } from "../../core/auth/auth.service";
 import type { Distrito, Producto } from "../../core/catalogo/catalogo.types";
@@ -15,6 +15,7 @@ import { CotizacionesService, PedidosService } from "../../core/pedidos/pedidos.
 import type { ResultadoCotizacion, ResultadoCotizacionPedido } from "../../core/pedidos/pedidos.types";
 import { cantidad, diasDesdeHoy, hoyLima, soles } from "../../core/util/formato";
 import type { NombreIcono } from "../../shared/icon/icon.component";
+import { CobroComponent, type EstadoCobro } from "../../shared/cobro/cobro.component";
 
 /** Ítem ya agregado al pedido, con lo necesario para mostrarlo. */
 interface ItemCarrito {
@@ -23,17 +24,10 @@ interface ItemCarrito {
   detalle: string;
 }
 
-/** Cómo paga lo de ahora: un método directo (ya cobrado) o un link que se envía. */
-type MetodoPagoAhora = MetodoCobroDirecto | "link";
+/** Cuánto paga ahora: todo, la mitad, nada o un monto que dice el cliente. */
+type ModoAhora = "todo" | "mitad" | "nada" | "otro";
 
-const METODOS_PAGO: { valor: MetodoPagoAhora; etiqueta: string; icono: NombreIcono }[] = [
-  { valor: "efectivo", etiqueta: "Efectivo", icono: "ventas" },
-  { valor: "yape", etiqueta: "Yape", icono: "telefono" },
-  { valor: "plin", etiqueta: "Plin", icono: "telefono" },
-  { valor: "tarjeta", etiqueta: "Tarjeta", icono: "pagos" },
-  { valor: "transferencia", etiqueta: "Transferencia", icono: "enlace" },
-  { valor: "link", etiqueta: "Enviar link", icono: "whatsapp" },
-];
+const r2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
 
 /** Pasos del kiosko: destino → productos → entrega y pago. */
 export type Paso = 1 | 2 | 3;
@@ -46,7 +40,7 @@ const CANAL_INFO: Record<Canal, { etiqueta: string; icono: NombreIcono }> = {
 
 @Component({
   selector: "app-pedido-nuevo",
-  imports: [ReactiveFormsModule, IconComponent, MapaComponent],
+  imports: [ReactiveFormsModule, IconComponent, MapaComponent, CobroComponent],
   templateUrl: "./pedido-nuevo.component.html",
 })
 export class PedidoNuevoComponent implements OnInit {
@@ -66,8 +60,22 @@ export class PedidoNuevoComponent implements OnInit {
   readonly manana = diasDesdeHoy(1);
   readonly canalInfo = CANAL_INFO;
   readonly horasRapidas = ["09:00", "11:00", "13:00", "15:00", "17:00", "19:00"];
-  readonly adelantosRapidos = [0, 50, 100];
-  readonly metodosPago = METODOS_PAGO;
+  readonly modosAhora: { valor: ModoAhora; etiqueta: string }[] = [
+    { valor: "todo", etiqueta: "Todo" },
+    { valor: "mitad", etiqueta: "La mitad" },
+    { valor: "otro", etiqueta: "Otro monto" },
+    { valor: "nada", etiqueta: "Nada ahora" },
+  ];
+  /** Cuánto paga ahora (en tienda, por defecto todo). */
+  readonly modoAhora = signal<ModoAhora>("todo");
+  /** Lo cobra en este momento o se le manda un link. */
+  readonly cobrarCon = signal<"ahora" | "link">("ahora");
+  /** Métodos y montos del cobro (los arma `app-cobro`). */
+  readonly estadoCobro = signal<EstadoCobro>({ partes: [], error: null });
+  /** Método con el que arranca el cobro: efectivo en tienda, Yape por WhatsApp. */
+  readonly metodoInicial = computed<MetodoCobroDirecto>(() => (this.valores().canal === "vendedora" ? "efectivo" : "yape"));
+  /** Adicionales fuera de catálogo del ítem en configuración (una planta, un chocolate…). */
+  readonly adicionales = signal<AdicionalInput[]>([]);
   readonly descuentoMaxPct = DESCUENTO_MAX_VENDEDORA_PCT;
   /** Descuento abierto (se esconde por defecto: es la excepción, no la regla). */
   readonly mostrarDescuento = signal(false);
@@ -139,19 +147,39 @@ export class PedidoNuevoComponent implements OnInit {
     return r ? Math.round((r.total - this.descuento() + Number.EPSILON) * 100) / 100 : 0;
   });
 
+  /** Lo que paga ahora, en soles. "Otro monto" es lo que diga el cliente (127 de 250). */
   readonly adelanto = computed(() => {
-    const pct = Number(this.valores().porcentajeAdelanto ?? 50);
-    return Math.round(((this.totalFinal() * pct) / 100 + Number.EPSILON) * 100) / 100;
+    const total = this.totalFinal();
+    switch (this.modoAhora()) {
+      case "todo":
+        return total;
+      case "mitad":
+        return r2(total / 2);
+      case "nada":
+        return 0;
+      default: {
+        const v = Number(this.valores().montoOtro ?? 0);
+        return Number.isFinite(v) && v > 0 ? r2(v) : 0;
+      }
+    }
   });
 
-  readonly saldo = computed(() => Math.round((this.totalFinal() - this.adelanto() + Number.EPSILON) * 100) / 100);
+  readonly saldo = computed(() => r2(this.totalFinal() - this.adelanto()));
+
+  /** Por qué no se puede confirmar el pago (null = todo bien). */
+  readonly errorPago = computed(() => {
+    if (this.adelanto() > this.totalFinal() + 0.001) return `No puede pagar más que el total (${soles(this.totalFinal())}).`;
+    if (this.modoAhora() === "otro" && !this.adelanto()) return "Escribe cuánto paga ahora.";
+    if (this.cobrarCon() === "ahora" && this.adelanto() > 0) return this.estadoCobro().error;
+    return null;
+  });
 
   /** Texto del botón final: dice exactamente qué va a pasar. */
   readonly textoConfirmar = computed(() => {
-    const metodo = this.valores().metodoPago;
-    if (this.adelanto() > 0 && metodo && metodo !== "link") {
+    if (this.adelanto() > 0 && this.cobrarCon() === "ahora") {
       return `Cobrar ${soles(this.adelanto())} y crear pedido`;
     }
+    if (this.adelanto() > 0) return `Crear pedido y enviar link por ${soles(this.adelanto())}`;
     return "Confirmar pedido";
   });
 
@@ -160,6 +188,8 @@ export class PedidoNuevoComponent implements OnInit {
     talla: ["S" as Talla, Validators.required],
     cantidad: [1, [Validators.required, Validators.min(1)]],
     cambioNoListado: [""],
+    adicionalDescripcion: [""],
+    adicionalPrecio: [null as number | null],
   });
 
   readonly form = this.fb.nonNullable.group({
@@ -175,9 +205,7 @@ export class PedidoNuevoComponent implements OnInit {
     dedicatoria: [""],
     clienteNombre: ["", Validators.required],
     clienteTelefono: [""],
-    porcentajeAdelanto: [100, [Validators.required, Validators.min(0), Validators.max(100)]],
-    metodoPago: ["efectivo" as MetodoPagoAhora],
-    referenciaPago: [""],
+    montoOtro: [0, [Validators.min(0)]],
     descuento: [0, [Validators.min(0)]],
     motivoDescuento: [""],
   });
@@ -212,6 +240,7 @@ export class PedidoNuevoComponent implements OnInit {
   async onProductoChange(): Promise<void> {
     this.cotizacion.set(null);
     this.extraIds.set(new Set());
+    this.adicionales.set([]);
     await this.actualizarCotizacion(true);
   }
 
@@ -239,6 +268,28 @@ export class PedidoNuevoComponent implements OnInit {
     await this.actualizarCotizacion(false);
   }
 
+  /** Agrega algo que no está en la lista, con el precio que le pone la vendedora. */
+  async agregarAdicional(): Promise<void> {
+    const v = this.itemForm.getRawValue();
+    const descripcion = v.adicionalDescripcion.trim();
+    const precio = Number(v.adicionalPrecio);
+    if (!descripcion || !Number.isFinite(precio) || precio <= 0) {
+      this.errorAdicional.set("Escribe qué es y su precio.");
+      return;
+    }
+    this.errorAdicional.set(null);
+    this.adicionales.update((l) => [...l, { descripcion, precio: r2(precio) }]);
+    this.itemForm.patchValue({ adicionalDescripcion: "", adicionalPrecio: null });
+    await this.actualizarCotizacion(false);
+  }
+
+  async quitarAdicional(i: number): Promise<void> {
+    this.adicionales.update((l) => l.filter((_, j) => j !== i));
+    await this.actualizarCotizacion(false);
+  }
+
+  readonly errorAdicional = signal<string | null>(null);
+
   private async actualizarCotizacion(
     reiniciarSeleccion: boolean,
     forzar?: { florId?: string; papelId?: string },
@@ -258,6 +309,7 @@ export class PedidoNuevoComponent implements OnInit {
         florId: forzar?.florId ?? anterior?.florId ?? undefined,
         papelId: forzar?.papelId ?? anterior?.papelId ?? undefined,
         extraIds: [...this.extraIds()],
+        adicionales: this.adicionales(),
         distritoId: this.esRecojo() ? undefined : distritoId,
         cambioNoListado: item.cambioNoListado || undefined,
         // Lo ya agregado al pedido también consume stock.
@@ -292,10 +344,17 @@ export class PedidoNuevoComponent implements OnInit {
           florId: c.florId,
           papelId: c.papelId,
           extraIds: [...c.extraIds],
+          adicionales: this.adicionales(),
           cambioNoListado: item.cambioNoListado || undefined,
         },
         producto,
-        detalle: [flor, papel, ...extras, item.cambioNoListado ? `“${item.cambioNoListado}”` : null]
+        detalle: [
+          flor,
+          papel,
+          ...extras,
+          ...this.adicionales().map((a) => `+ ${a.descripcion}`),
+          item.cambioNoListado ? `“${item.cambioNoListado}”` : null,
+        ]
           .filter(Boolean)
           .join(" · "),
       },
@@ -304,6 +363,7 @@ export class PedidoNuevoComponent implements OnInit {
     this.itemForm.reset({ productoId: "", talla: "S", cantidad: 1, cambioNoListado: "" });
     this.cotizacion.set(null);
     this.extraIds.set(new Set());
+    this.adicionales.set([]);
     await this.actualizarResumen();
   }
 
@@ -337,14 +397,14 @@ export class PedidoNuevoComponent implements OnInit {
 
   async confirmarPedido(): Promise<void> {
     const r = this.resumen();
-    if (!r || !r.disponible || this.form.invalid || !this.carrito().length || this.errorDescuento()) {
+    if (!r || !r.disponible || this.form.invalid || !this.carrito().length || this.errorDescuento() || this.errorPago()) {
       this.form.markAllAsTouched();
       if (this.errorDescuento()) this.mostrarDescuento.set(true);
       return;
     }
     const v = this.form.getRawValue();
     const recojo = this.esRecojo();
-    const pagaAhora = v.metodoPago !== "link" && this.adelanto() > 0;
+    const pagaAhora = this.cobrarCon() === "ahora" && this.adelanto() > 0;
 
     this.enviando.set(true);
     this.error.set(null);
@@ -363,10 +423,8 @@ export class PedidoNuevoComponent implements OnInit {
         telefonoReceptor: recojo ? undefined : v.telefonoReceptor,
         nombreReceptor: recojo ? undefined : v.nombreReceptor,
         dedicatoria: v.dedicatoria || undefined,
-        porcentajeAdelanto: v.porcentajeAdelanto,
-        pagoAhora: pagaAhora
-          ? { metodo: v.metodoPago as MetodoCobroDirecto, referencia: v.referenciaPago || undefined }
-          : undefined,
+        montoAdelanto: this.adelanto(),
+        pagos: pagaAhora ? this.estadoCobro().partes : [],
         descuento: this.descuento(),
         motivoDescuento: this.descuento() ? v.motivoDescuento : undefined,
       });
@@ -426,12 +484,11 @@ export class PedidoNuevoComponent implements OnInit {
     if (tipo === "recojo") {
       this.form.controls.distritoId.setValue("");
       this.distritoSel.set("");
-      this.form.patchValue({ porcentajeAdelanto: 100, metodoPago: "efectivo" });
+      this.modoAhora.set("todo");
+      this.cobrarCon.set("ahora");
     } else {
-      this.form.patchValue({
-        porcentajeAdelanto: 50,
-        metodoPago: this.form.value.canal === "vendedora" ? "efectivo" : "link",
-      });
+      this.modoAhora.set("mitad");
+      this.cobrarCon.set(this.form.value.canal === "vendedora" ? "ahora" : "link");
     }
     this.aplicarValidadores();
     await Promise.all([this.actualizarCotizacion(false), this.actualizarResumen()]);
@@ -461,14 +518,6 @@ export class PedidoNuevoComponent implements OnInit {
   /** El cliente se lo lleva en este momento. */
   readonly esAhora = signal(false);
 
-  elegirMetodo(metodo: MetodoPagoAhora): void {
-    this.form.controls.metodoPago.setValue(metodo);
-  }
-
-  /** Métodos que se ofrecen: en recojo no tiene sentido mandar un link. */
-  metodosVisibles() {
-    return this.esRecojo() ? this.metodosPago.filter((m) => m.valor !== "link") : this.metodosPago;
-  }
 
   async elegirDistrito(id: string): Promise<void> {
     this.form.controls.distritoId.setValue(id);
@@ -495,6 +544,7 @@ export class PedidoNuevoComponent implements OnInit {
     this.itemForm.reset({ productoId: "", talla: "S", cantidad: 1, cambioNoListado: "" });
     this.cotizacion.set(null);
     this.extraIds.set(new Set());
+    this.adicionales.set([]);
   }
 
   productoAbierto(): Producto | null {
@@ -538,8 +588,10 @@ export class PedidoNuevoComponent implements OnInit {
     this.esAhora.set(false);
   }
 
-  elegirAdelanto(pct: number): void {
-    this.form.controls.porcentajeAdelanto.setValue(pct);
+  /** Monto de cada opción rápida, para mostrarlo en el botón. */
+  montoDeModo(modo: ModoAhora): number | null {
+    const t = this.totalFinal();
+    return modo === "todo" ? t : modo === "mitad" ? r2(t / 2) : null;
   }
 
   /** Para pintar los pasos completos en la barra de progreso. */

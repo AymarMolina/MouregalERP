@@ -1,10 +1,11 @@
 import { Component, OnInit, computed, inject, signal } from "@angular/core";
+import { toSignal } from "@angular/core/rxjs-interop";
+import { CobroComponent, type EstadoCobro } from "../../shared/cobro/cobro.component";
 import { IconComponent } from "../../shared/icon/icon.component";
 import { Tabla } from "../../shared/tabla/tabla";
 import { TABLA_CONTROLES } from "../../shared/tabla/tabla-controles.component";
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { RouterLink } from "@angular/router";
-import type { MetodoPago } from "@erp/shared";
 import { mensajeError } from "../../core/http/errores";
 import { PagosApi } from "../../core/operacion/operacion.service";
 import type { Pago, PedidoConSaldo } from "../../core/operacion/operacion.types";
@@ -16,19 +17,10 @@ import {
   soles,
 } from "../../core/util/formato";
 
-type MetodoManual = Exclude<MetodoPago, "link" | "shopify">;
-
-const METODOS_MANUALES: { valor: MetodoManual; etiqueta: string }[] = [
-  { valor: "efectivo", etiqueta: "Efectivo" },
-  { valor: "yape", etiqueta: "Yape" },
-  { valor: "plin", etiqueta: "Plin" },
-  { valor: "tarjeta", etiqueta: "Tarjeta" },
-  { valor: "transferencia", etiqueta: "Transferencia" },
-];
 
 @Component({
   selector: "app-pagos",
-  imports: [FormsModule, ReactiveFormsModule, RouterLink, IconComponent, ...TABLA_CONTROLES],
+  imports: [FormsModule, ReactiveFormsModule, RouterLink, IconComponent, CobroComponent, ...TABLA_CONTROLES],
   templateUrl: "./pagos.component.html",
 })
 export class PagosComponent implements OnInit {
@@ -40,7 +32,6 @@ export class PagosComponent implements OnInit {
   readonly claseEstado = CLASE_ESTADO_PEDIDO;
   readonly etiquetaEstado = ETIQUETA_ESTADO_PEDIDO;
   readonly clasePago = CLASE_ESTADO_PAGO;
-  readonly metodos = METODOS_MANUALES;
 
   readonly soloConSaldo = signal(true);
   readonly fecha = signal("");
@@ -84,10 +75,12 @@ export class PagosComponent implements OnInit {
   readonly totalSaldo = computed(() => this.visibles().reduce((acc, f) => acc + f.saldo, 0));
 
   readonly pagoForm = this.fb.nonNullable.group({
-    metodo: ["efectivo" as MetodoManual, Validators.required],
     monto: [0, [Validators.required, Validators.min(0.01)]],
-    referenciaExterna: [""],
   });
+  /** Cuánto paga ahora (puede ser menos que el saldo: 127 de 250). */
+  readonly montoCobro = toSignal(this.pagoForm.controls.monto.valueChanges, { initialValue: 0 });
+  /** Cómo lo paga: uno o varios métodos. */
+  readonly cobro = signal<EstadoCobro>({ partes: [], error: null });
 
   async ngOnInit(): Promise<void> {
     await this.cargar();
@@ -109,12 +102,8 @@ export class PagosComponent implements OnInit {
     this.seleccionadoId.set(f.id);
     this.aviso.set(null);
     // El tipo (adelanto o saldo) lo deduce el API: aquí solo importa cuánto y cómo.
-    this.pagoForm.reset({
-      metodo: "efectivo",
-      // Lo que se espera cobrar: el link pendiente si hay uno, si no todo el saldo.
-      monto: Number(this.pagoPendiente(f)?.monto ?? f.saldo),
-      referenciaExterna: "",
-    });
+    // Lo que se espera cobrar: el link pendiente si hay uno, si no todo el saldo.
+    this.pagoForm.reset({ monto: Number(this.pagoPendiente(f)?.monto ?? f.saldo) });
   }
 
   pagoPendiente(f: PedidoConSaldo): Pago | undefined {
@@ -148,14 +137,13 @@ export class PagosComponent implements OnInit {
   }
 
   registrarPago(f: PedidoConSaldo): Promise<void> {
-    if (this.pagoForm.invalid) return Promise.resolve();
+    const c = this.cobro();
+    if (this.pagoForm.invalid || c.error || !c.partes.length) return Promise.resolve();
     const v = this.pagoForm.getRawValue();
     return this.ejecutar(
       () =>
         this.api.registrar(f.id, {
-          metodo: v.metodo,
-          monto: Number(v.monto),
-          referenciaExterna: v.referenciaExterna || undefined,
+          partes: c.partes.map((p) => ({ metodo: p.metodo, monto: p.monto, referenciaExterna: p.referencia })),
         }),
       `Pago de ${soles(v.monto)} registrado en ${f.codigo}.`,
       "No se pudo registrar el pago.",

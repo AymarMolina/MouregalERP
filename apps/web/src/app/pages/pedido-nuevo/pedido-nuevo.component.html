@@ -579,62 +579,62 @@
               </div>
               <div class="etiqueta mt-5">¿Cuánto paga ahora?</div>
               <div class="flex flex-wrap items-center gap-2">
-                @for (pct of adelantosRapidos; track pct) {
+                @for (m of modosAhora; track m.valor) {
                   <button
                     type="button"
                     class="chip"
-                    [class.chip-sel]="form.value.porcentajeAdelanto == pct"
-                    (click)="elegirAdelanto(pct)"
+                    [class.chip-sel]="modoAhora() === m.valor"
+                    [attr.aria-pressed]="modoAhora() === m.valor"
+                    (click)="modoAhora.set(m.valor)"
                   >
-                    {{
-                      pct === 0
-                        ? "Sin adelanto"
-                        : pct === 100
-                          ? "Paga todo"
-                          : pct + "%"
-                    }}
+                    {{ m.etiqueta }}
+                    @if (montoDeModo(m.valor) !== null && resumen()) {
+                      <span class="ml-1.5 tabular opacity-70">{{ soles(montoDeModo(m.valor)!) }}</span>
+                    }
                   </button>
                 }
-                <div class="relative">
-                  <input
-                    type="number"
-                    formControlName="porcentajeAdelanto"
-                    min="0"
-                    max="100"
-                    class="input w-28 py-2.5 pr-7 text-right tabular"
-                    aria-label="Porcentaje de adelanto"
-                  />
-                  <span
-                    class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted"
-                    >%</span
-                  >
-                </div>
+                @if (modoAhora() === "otro") {
+                  <div class="relative">
+                    <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted">S/</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.5"
+                      formControlName="montoOtro"
+                      class="input w-32 py-2.5 pl-8 text-right tabular"
+                      aria-label="Monto que paga ahora"
+                    />
+                  </div>
+                }
               </div>
+              @if (adelanto() > 0 && saldo() > 0) {
+                <p class="mt-2 text-[13px] text-muted">
+                  Paga {{ soles(adelanto()) }} ahora y queda debiendo <strong class="text-gray-900">{{ soles(saldo()) }}</strong>.
+                </p>
+              }
 
               @if (adelanto() > 0) {
                 <div class="etiqueta mt-5">¿Cómo paga?</div>
-                <div class="flex flex-wrap gap-2" data-tour="nuevo-metodo">
-                  @for (m of metodosVisibles(); track m.valor) {
-                    <button
-                      type="button"
-                      class="chip"
-                      [class.chip-sel]="valores().metodoPago === m.valor"
-                      (click)="elegirMetodo(m.valor)"
-                    >
-                      <app-icon [name]="m.icono" [size]="15" class="mr-1.5" /> {{ m.etiqueta }}
+                @if (!esRecojo()) {
+                  <div class="mb-3 flex flex-wrap gap-2">
+                    <button type="button" class="chip" [class.chip-sel]="cobrarCon() === 'ahora'" (click)="cobrarCon.set('ahora')">
+                      <app-icon name="pagos" [size]="15" class="mr-1.5" /> Ya me pagó
                     </button>
-                  }
-                </div>
-                @if (valores().metodoPago === "link") {
-                  <p class="mt-2 text-[13px] text-muted">Se le envía un link por {{ soles(adelanto()) }}; el pago se confirma cuando llegue.</p>
-                } @else if (valores().metodoPago !== "efectivo") {
-                  <input
-                    formControlName="referenciaPago"
-                    class="input mt-3 max-w-xs py-2.5"
-                    placeholder="N° de operación (opcional)"
-                    aria-label="Número de operación"
-                  />
+                    <button type="button" class="chip" [class.chip-sel]="cobrarCon() === 'link'" (click)="cobrarCon.set('link')">
+                      <app-icon name="whatsapp" [size]="15" class="mr-1.5" /> Enviarle link
+                    </button>
+                  </div>
                 }
+                @if (cobrarCon() === "link" && !esRecojo()) {
+                  <p class="text-[13px] text-muted">Se le envía un link por {{ soles(adelanto()) }}; el pago se confirma cuando llegue.</p>
+                } @else {
+                  <div data-tour="nuevo-metodo">
+                    <app-cobro [monto]="adelanto()" [metodoInicial]="metodoInicial()" (cambio)="estadoCobro.set($event)" />
+                  </div>
+                }
+              }
+              @if (errorPago() && (modoAhora() === "otro" || adelanto() > totalFinal())) {
+                <p class="mt-2 text-[13px] text-red-700">{{ errorPago() }}</p>
               }
 
               <div class="mt-5 border-t border-gray-100 pt-4">
@@ -800,7 +800,7 @@
                       <dt
                         class="text-[12.5px] uppercase tracking-wider text-muted"
                       >
-                        Paga ahora {{ valores().porcentajeAdelanto }}%
+                        Paga ahora
                       </dt>
                       <dd class="font-semibold tabular">
                         {{ soles(adelanto()) }}
@@ -875,7 +875,8 @@
                   cotizandoResumen() ||
                   !resumen() ||
                   !resumen()!.disponible ||
-                  !!errorDescuento()
+                  !!errorDescuento() ||
+                  !!errorPago()
                 "
                 (click)="confirmarPedido()"
               >
@@ -1040,7 +1041,7 @@
           <!-- Flor -->
           <div>
             <div class="etiqueta">
-              <app-icon name="flor" [size]="13" /> Flor
+              <app-icon name="flor" [size]="13" /> Flor o color
             </div>
             <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
               @for (o of c.opciones.flores; track o.insumoId) {
@@ -1154,6 +1155,56 @@
               </div>
             </div>
           }
+
+          <!-- Adicionales fuera de catálogo -->
+          <form [formGroup]="itemForm" (ngSubmit)="agregarAdicional()">
+            <div class="etiqueta">
+              <app-icon name="nuevo" [size]="13" /> ¿Le agrega algo que no está en la lista?
+              <span class="normal-case tracking-normal">(una planta, un chocolate… con su precio)</span>
+            </div>
+            @if (adicionales().length) {
+              <ul class="mb-2 flex flex-wrap gap-2">
+                @for (a of adicionales(); track $index; let i = $index) {
+                  <li class="chip chip-sel py-1.5">
+                    {{ a.descripcion }} <span class="ml-1.5 tabular">+{{ soles(a.precio) }}</span>
+                    <button
+                      type="button"
+                      class="ml-2 opacity-70 hover:opacity-100"
+                      (click)="quitarAdicional(i)"
+                      [attr.aria-label]="'Quitar ' + a.descripcion"
+                      title="Quitar"
+                    >
+                      <app-icon name="cerrar" [size]="13" />
+                    </button>
+                  </li>
+                }
+              </ul>
+            }
+            <div class="flex flex-wrap items-center gap-2">
+              <input
+                formControlName="adicionalDescripcion"
+                class="input min-w-[12rem] flex-1 py-2.5"
+                placeholder="Ej. suculenta pequeña"
+                aria-label="Qué se agrega"
+              />
+              <div class="relative">
+                <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted">S/</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  formControlName="adicionalPrecio"
+                  class="input w-28 py-2.5 pl-8 text-right tabular"
+                  placeholder="0.00"
+                  aria-label="Precio del adicional"
+                />
+              </div>
+              <button type="submit" class="btn-secondary py-2.5" [disabled]="cotizando()">Agregar</button>
+            </div>
+            @if (errorAdicional()) {
+              <p class="mt-1.5 text-[13px] text-red-700">{{ errorAdicional() }}</p>
+            }
+          </form>
 
           <!-- Pedido especial -->
           <form [formGroup]="itemForm">

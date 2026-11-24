@@ -103,26 +103,34 @@ export class PagosService {
         Number(pedido.total),
         Number(pedido.totalPagado),
       );
-      if (input.monto > saldo + 0.001)
+      // Un cobro puede venir en varias partes (10 en efectivo + 20 por Yape).
+      const partes = 'partes' in input ? input.partes : [input];
+      const monto =
+        Math.round(partes.reduce((acc, p) => acc + p.monto, 0) * 100) / 100;
+      if (monto > saldo + 0.001)
         throw new BadRequestException(
-          `El monto (S/ ${input.monto.toFixed(2)}) supera el saldo del pedido (S/ ${saldo.toFixed(2)})`,
+          `El monto (S/ ${monto.toFixed(2)}) supera el saldo del pedido (S/ ${saldo.toFixed(2)})`,
         );
 
-      const [pago] = await tx
+      // Sin tipo: adelanto si es el primer cobro, si no saldo.
+      const tipo =
+        input.tipo ?? (Number(pedido.totalPagado) > 0 ? 'saldo' : 'adelanto');
+      const ahora = new Date();
+      const insertados = await tx
         .insert(pagos)
-        .values({
-          pedidoId,
-          // Sin tipo: adelanto si es el primer cobro, si no saldo.
-          tipo:
-            input.tipo ??
-            (Number(pedido.totalPagado) > 0 ? 'saldo' : 'adelanto'),
-          metodo: input.metodo,
-          monto: String(input.monto),
-          estado: 'pagado',
-          referenciaExterna: input.referenciaExterna,
-          pagadoAt: new Date(),
-        })
+        .values(
+          partes.map((p) => ({
+            pedidoId,
+            tipo,
+            metodo: p.metodo,
+            monto: String(p.monto),
+            estado: 'pagado' as const,
+            referenciaExterna: p.referenciaExterna,
+            pagadoAt: ahora,
+          })),
+        )
         .returning();
+      const pago = insertados[0];
 
       // Lo cobrado a mano reemplaza a los links pendientes: si siguieran vivos,
       // el cliente podría pagar dos veces lo mismo. Si aún queda saldo, se
@@ -138,7 +146,7 @@ export class PagosService {
           ),
         );
       await this.recalcularTotalPagado(tx, pedidoId);
-      await this.avisarPago(tx, pedido, input.monto);
+      await this.avisarPago(tx, pedido, monto);
       return pago;
     });
   }
