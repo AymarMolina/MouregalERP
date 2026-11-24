@@ -1,7 +1,7 @@
 import { HttpClient } from "@angular/common/http";
 import { Injectable, inject } from "@angular/core";
 import { firstValueFrom } from "rxjs";
-import type { Coordenadas, CotizacionInput, CotizacionPedidoInput, PedidoInput } from "@erp/shared";
+import type { Coordenadas, CotizacionInput, CotizacionPedidoInput, PedidoEntrada } from "@erp/shared";
 import { environment } from "../../../environments/environment";
 import type {
   Consulta,
@@ -52,7 +52,7 @@ export class PedidosService {
     return firstValueFrom(this.http.get<Coordenadas>(`${this.base}/ubicacion`, { params: { url } }));
   }
 
-  crear(input: PedidoInput): Promise<PedidoDetalle> {
+  crear(input: PedidoEntrada): Promise<PedidoDetalle> {
     return firstValueFrom(this.http.post<PedidoDetalle>(this.base, input));
   }
 

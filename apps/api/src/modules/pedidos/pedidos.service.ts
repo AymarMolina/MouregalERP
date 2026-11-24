@@ -18,6 +18,8 @@ import {
   validarDespacho,
   validarEntrega,
   validarTransicion,
+  validarDescuento,
+  totalPedido,
   FOTOS_PEDIDO,
   type ConsumoInput,
   type DespacharInput,
@@ -25,6 +27,8 @@ import {
   type Canal,
   type LineaCantidad,
   type PedidoInput,
+  type PedidoEntrada,
+  pedidoInputSchema,
   type RolUsuario,
 } from '@erp/shared';
 import { DB } from '../../db/db.module';
@@ -121,6 +125,8 @@ export class PedidosService {
         ilike(pedidos.telefonoReceptor, patron),
         ilike(pedidos.direccion, patron),
         ilike(pedidos.codigo, patron),
+        // En recojo no hay receptor: se busca también por el cliente.
+        sql`exists (select 1 from clientes c where c.id = ${pedidos.clienteId} and (c.nombre ilike ${patron} or c.telefono ilike ${patron}))`,
       );
       const numero = Number(q.replace(/^#/, ''));
       condiciones.push(
@@ -354,7 +360,12 @@ export class PedidosService {
   ) {
     const pedido = await this.bloquearPedido(tx, id);
 
-    const v = validarTransicion(actor.rol, pedido.estado, destino);
+    const v = validarTransicion(
+      actor.rol,
+      pedido.estado,
+      destino,
+      pedido.tipoEntrega,
+    );
     if (!v.ok) throw new BadRequestException(v.motivo);
 
     const notas: string[] = [];
@@ -362,9 +373,18 @@ export class PedidosService {
 
     if (destino === 'en_armado') {
       if (!pedido.encargadaId) {
-        throw new BadRequestException(
-          'Asigna una encargada antes de pasar a en_armado',
-        );
+        // Quien de producción empieza a armar sin elegir encargada, se la queda:
+        // un paso menos en la mesa.
+        if (actor.rol !== 'produccion') {
+          throw new BadRequestException(
+            'Asigna una encargada antes de pasar a en_armado',
+          );
+        }
+        await tx
+          .update(pedidos)
+          .set({ encargadaId: actor.sub })
+          .where(eq(pedidos.id, id));
+        notas.push('Encargada: quien empezó a armar');
       }
       const [consultaAbierta] = await tx
         .select({ id: consultasProduccion.id })
@@ -509,9 +529,15 @@ export class PedidosService {
       .innerJoin(distritos, eq(pedidos.distritoId, distritos.id))
       .innerJoin(clientes, eq(pedidos.clienteId, clientes.id))
       .where(
-        or(
-          inArray(pedidos.estado, ['listo', 'en_camino']),
-          and(eq(pedidos.estado, 'entregado'), eq(pedidos.fechaEntrega, fecha)),
+        and(
+          eq(pedidos.tipoEntrega, 'delivery'),
+          or(
+            inArray(pedidos.estado, ['listo', 'en_camino']),
+            and(
+              eq(pedidos.estado, 'entregado'),
+              eq(pedidos.fechaEntrega, fecha),
+            ),
+          ),
         ),
       )
       .orderBy(asc(pedidos.fechaEntrega), asc(pedidos.horaEntrega));
@@ -652,57 +678,61 @@ export class PedidosService {
         ).map((i) => [i.id, i.unidadBase]),
       );
 
-      for (const [insumoId, cantidadReceta] of totalPorInsumo) {
-        const linea = input.lineas.find((l) => l.insumoId === insumoId);
-        const cantidadUsada = linea ? linea.cantidadUsada : cantidadReceta;
-        const { consumo, merma } = desglosarConsumo(
-          cantidadReceta,
-          cantidadUsada,
-        );
+      // Movimientos de Kardex y filas de consumo de todos los insumos, que se
+      // escriben en lote (ver KardexService.registrarSalidas).
+      const salidas: Parameters<KardexService['registrarSalidas']>[1] = [];
+      const consumosPorInsumo = [...totalPorInsumo].map(
+        ([insumoId, cantidadReceta]) => {
+          const linea = input.lineas.find((l) => l.insumoId === insumoId);
+          const cantidadUsada = linea ? linea.cantidadUsada : cantidadReceta;
+          const { consumo, merma } = desglosarConsumo(
+            cantidadReceta,
+            cantidadUsada,
+          );
 
-        // Sin costoUnitario: el Kardex valoriza al costo_promedio vigente con la fila bloqueada.
-        await this.kardexService.registrarMovimiento(tx, {
-          insumoId,
-          tipo: 'consumo',
-          salida: consumo,
-          referenciaTipo: 'pedido',
-          referenciaId: id,
-          usuarioId,
-        });
-        if (merma > 0) {
-          await this.kardexService.registrarMovimiento(tx, {
+          // Sin costo: el Kardex valoriza al costo_promedio vigente con la fila bloqueada.
+          const base = {
             insumoId,
-            tipo: 'merma',
-            salida: merma,
             referenciaTipo: 'pedido',
             referenciaId: id,
-            nota: `usó ${cantidadUsada} de ${cantidadReceta}`,
             usuarioId,
-          });
-        }
+          };
+          salidas.push({ ...base, tipo: 'consumo', salida: consumo });
+          if (merma > 0)
+            salidas.push({
+              ...base,
+              tipo: 'merma',
+              salida: merma,
+              nota: `usó ${cantidadUsada} de ${cantidadReceta}`,
+            });
 
-        const partes = items
-          .map((item) => ({
-            id: item.id,
-            cantidadReceta:
-              (recetaPorItem.get(item.id) ?? []).find(
-                (l) => l.insumoId === insumoId,
-              )?.cantidad ?? 0,
-          }))
-          .filter((p) => p.cantidadReceta > 0);
-        const enteros = esUnidadEntera(unidades.get(insumoId) ?? '');
-        for (const parte of repartirUsado(partes, cantidadUsada, { enteros })) {
-          await tx.insert(pedidoConsumos).values({
-            pedidoItemId: parte.id,
-            insumoId,
-            cantidadReceta: String(
-              partes.find((p) => p.id === parte.id)?.cantidadReceta ?? 0,
-            ),
-            cantidadUsada: String(parte.usado),
-            confirmadoPor: usuarioId,
-          });
-        }
-      }
+          const partes = items
+            .map((item) => ({
+              id: item.id,
+              cantidadReceta:
+                (recetaPorItem.get(item.id) ?? []).find(
+                  (l) => l.insumoId === insumoId,
+                )?.cantidad ?? 0,
+            }))
+            .filter((p) => p.cantidadReceta > 0);
+          const enteros = esUnidadEntera(unidades.get(insumoId) ?? '');
+          return repartirUsado(partes, cantidadUsada, { enteros }).map(
+            (parte) => ({
+              pedidoItemId: parte.id,
+              insumoId,
+              cantidadReceta: String(
+                partes.find((p) => p.id === parte.id)?.cantidadReceta ?? 0,
+              ),
+              cantidadUsada: String(parte.usado),
+              confirmadoPor: usuarioId,
+            }),
+          );
+        },
+      );
+      await this.kardexService.registrarSalidas(tx, salidas);
+      const filasConsumo = consumosPorInsumo.flat();
+      if (filasConsumo.length)
+        await tx.insert(pedidoConsumos).values(filasConsumo);
 
       await tx
         .update(pedidos)
@@ -726,25 +756,38 @@ export class PedidosService {
    * efectiva de todos los ítems quepa en el disponible (5.3): dos ventas
    * simultáneas no pueden reservar el mismo stock.
    */
-  async crear(input: PedidoInput, creadoPor: string) {
+  async crear(entrada: PedidoEntrada, actor: Actor) {
+    // Normaliza (valores por defecto y validaciones de delivery/recojo) aunque
+    // llegue sin pasar por el controlador.
+    const input = pedidoInputSchema.parse(entrada);
+    const creadoPor = actor.sub;
+    const esRecojo = input.tipoEntrega === 'recojo';
     // Fuera de la transacción: puede tardar (abre el link corto) y no toca la base.
-    const ubicacion = input.ubicacionUrl
-      ? await this.ubicacion.resolver(input.ubicacionUrl)
-      : null;
+    const ubicacion =
+      !esRecojo && input.ubicacionUrl
+        ? await this.ubicacion.resolver(input.ubicacionUrl)
+        : null;
     const pedidoId = await this.db.transaction(async (tx) => {
-      const [distrito] = await tx
-        .select()
-        .from(distritos)
-        .where(eq(distritos.id, input.distritoId))
-        .limit(1);
-      if (!distrito || !distrito.activo)
+      // Recojo en tienda: sin distrito ni envío. Lo independiente va en paralelo.
+      const [filasDistrito, ctx] = await Promise.all([
+        esRecojo
+          ? Promise.resolve([] as (typeof distritos.$inferSelect)[])
+          : tx
+              .select()
+              .from(distritos)
+              .where(eq(distritos.id, input.distritoId!))
+              .limit(1),
+        this.resolver.cargarContexto(tx),
+      ]);
+      const distrito = filasDistrito[0] ?? null;
+      if (!esRecojo && (!distrito || !distrito.activo))
         throw new NotFoundException('Distrito no encontrado o inactivo');
 
-      const ctx = await this.resolver.cargarContexto(tx);
-      const items: ItemResuelto[] = [];
-      for (const itemInput of input.items) {
-        items.push(await this.resolver.resolver(tx, ctx, itemInput));
-      }
+      const items: ItemResuelto[] = await Promise.all(
+        input.items.map((itemInput) =>
+          this.resolver.resolver(tx, ctx, itemInput),
+        ),
+      );
 
       await tx.execute(LOCK_RESERVA_STOCK);
       const disponibleDe = await this.disponibilidad.disponibleDe(tx);
@@ -767,40 +810,57 @@ export class PedidosService {
       const subtotalProductos = round2(
         items.reduce((acc, i) => acc + i.subtotal, 0),
       );
-      // Carro si CUALQUIER ítem lo requiere (sección 5.5).
-      const vehiculo = items.some((i) => i.vehiculo === 'carro')
-        ? 'carro'
-        : 'moto';
-      const costoEnvio = calcularEnvio(vehiculo, {
-        tarifaMoto: Number(distrito.tarifaMoto),
-        tarifaCarro: Number(distrito.tarifaCarro),
+      // Carro si CUALQUIER ítem lo requiere (sección 5.5). En recojo no hay vehículo.
+      const vehiculo = distrito
+        ? items.some((i) => i.vehiculo === 'carro')
+          ? 'carro'
+          : 'moto'
+        : null;
+      const costoEnvio =
+        distrito && vehiculo
+          ? calcularEnvio(vehiculo, {
+              tarifaMoto: Number(distrito.tarifaMoto),
+              tarifaCarro: Number(distrito.tarifaCarro),
+            })
+          : 0;
+      const descuento = round2(input.descuento);
+      const vDescuento = validarDescuento({
+        descuento,
+        subtotalProductos,
+        rol: actor.rol,
       });
-      const total = round2(subtotalProductos + costoEnvio);
+      if (!vDescuento.ok) throw new BadRequestException(vDescuento.motivo);
+      const total = totalPedido({ subtotalProductos, descuento, costoEnvio });
 
-      const cliente = await this.resolverCliente(tx, input.cliente);
-      const codigo = await this.siguienteCodigo(tx);
+      const [cliente, codigo] = await Promise.all([
+        this.resolverCliente(tx, input.cliente),
+        this.siguienteCodigo(tx),
+      ]);
 
       const [creado] = await tx
         .insert(pedidos)
         .values({
           codigo,
           canal: input.canal,
+          tipoEntrega: input.tipoEntrega,
           clienteId: cliente.id,
           estado: 'pendiente',
           fechaEntrega: input.fechaEntrega,
           horaEntrega: input.horaEntrega,
-          distritoId: input.distritoId,
-          direccion: input.direccion,
-          referencia: input.referencia,
+          distritoId: distrito?.id ?? null,
+          direccion: esRecojo ? null : input.direccion,
+          referencia: esRecojo ? null : input.referencia,
           ubicacionUrl: ubicacion ? input.ubicacionUrl : null,
           ubicacionLat: ubicacion?.lat ?? null,
           ubicacionLng: ubicacion?.lng ?? null,
-          telefonoReceptor: input.telefonoReceptor,
-          nombreReceptor: input.nombreReceptor,
+          telefonoReceptor: esRecojo ? null : input.telefonoReceptor,
+          nombreReceptor: esRecojo ? null : input.nombreReceptor,
           dedicatoria: input.dedicatoria,
           vehiculo,
           subtotalProductos: String(subtotalProductos),
           costoEnvio: String(costoEnvio),
+          descuento: String(descuento),
+          motivoDescuento: descuento > 0 ? input.motivoDescuento : null,
           total: String(total),
           creadoPor,
         })
@@ -851,11 +911,30 @@ export class PedidosService {
         estadoAnterior: null,
         estadoNuevo: 'pendiente',
         usuarioId: creadoPor,
-        nota: 'Pedido creado',
+        nota: [
+          esRecojo ? 'Pedido creado · recoge en tienda' : 'Pedido creado',
+          descuento > 0
+            ? `Descuento S/ ${descuento.toFixed(2)}: ${input.motivoDescuento}`
+            : null,
+        ]
+          .filter(Boolean)
+          .join(' · '),
       });
 
       const montoAdelanto = round2(total * (input.porcentajeAdelanto / 100));
-      if (montoAdelanto > 0) {
+      if (montoAdelanto > 0 && input.pagoAhora) {
+        // Ya cobrado (efectivo, Yape, tarjeta…): se registra pagado, sin link.
+        await tx.insert(pagos).values({
+          pedidoId: creado.id,
+          tipo: 'adelanto',
+          metodo: input.pagoAhora.metodo,
+          monto: String(montoAdelanto),
+          estado: 'pagado',
+          referenciaExterna: input.pagoAhora.referencia,
+          pagadoAt: new Date(),
+        });
+        await this.pagos.recalcularTotalPagado(tx, creado.id);
+      } else if (montoAdelanto > 0) {
         const [adelanto] = await tx
           .insert(pagos)
           .values({
@@ -886,18 +965,31 @@ export class PedidosService {
   }
 
   private async resolverCliente(tx: Tx, cliente: PedidoInput['cliente']) {
+    const nombre = cliente.nombre ?? 'Cliente de mostrador';
     if (cliente.telefono) {
       const [existente] = await tx
         .select()
         .from(clientes)
         .where(eq(clientes.telefono, cliente.telefono))
         .limit(1);
-      if (existente) return existente;
+      if (existente) {
+        // El teléfono reconoce al cliente; si la vendedora escribió otro nombre,
+        // ese es el dato más nuevo y se guarda (antes se ignoraba en silencio).
+        if (cliente.nombre && cliente.nombre !== existente.nombre) {
+          const [actualizado] = await tx
+            .update(clientes)
+            .set({ nombre: cliente.nombre })
+            .where(eq(clientes.id, existente.id))
+            .returning();
+          return actualizado;
+        }
+        return existente;
+      }
     }
     const [creado] = await tx
       .insert(clientes)
       .values({
-        nombre: cliente.nombre,
+        nombre,
         telefono: cliente.telefono,
         email: cliente.email,
       })

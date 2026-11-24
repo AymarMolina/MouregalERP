@@ -18,11 +18,11 @@ export const TOUR_PEDIDO_NUEVO: Tour = {
       titulo: "Cómo funciona",
       texto:
         "<ol>" +
-        "<li>Elige el canal y el distrito de entrega.</li>" +
+        "<li>Elige el canal y si el cliente lo recoge en tienda o va por delivery (con distrito).</li>" +
         "<li>Toca un producto, elige tamaño, flor, papel y extras, y agrégalo. Puedes sumar varios.</li>" +
-        "<li>Completa cliente, fecha y hora, quién recibe, dirección y dedicatoria.</li>" +
-        "<li>Elige el porcentaje de adelanto y confirma.</li>" +
-        "<li>El sistema revisa el stock, reserva los insumos, crea el link de pago del adelanto y abre el detalle del pedido.</li>" +
+        "<li>Completa cuándo se entrega. En tienda basta «Se lo lleva ahora»; en delivery, quién recibe y la dirección.</li>" +
+        "<li>Elige cuánto paga ahora y cómo (efectivo, Yape, tarjeta…). Si ya te pagó, queda registrado al confirmar.</li>" +
+        "<li>El sistema revisa el stock, reserva los insumos y abre el detalle del pedido.</li>" +
         "</ol>",
     },
     {
@@ -36,6 +36,13 @@ export const TOUR_PEDIDO_NUEVO: Tour = {
       elemento: "nuevo-canal",
       titulo: "Canal",
       texto: "<p>Por dónde llegó el pedido: en tienda, WhatsApp o web. Queda guardado en el pedido y se usa en los reportes.</p>",
+      lado: "bottom",
+    },
+    {
+      elemento: "nuevo-tipo-entrega",
+      titulo: "Recoge en tienda o delivery",
+      texto:
+        "<p><strong>Recoge en tienda:</strong> no se pide dirección ni se cobra envío. Sirve para el cliente que se lo lleva ahora y para el que pasa después.</p><p><strong>Delivery:</strong> elige el distrito.</p>",
       lado: "bottom",
     },
     {
@@ -68,10 +75,10 @@ export const TOUR_PEDIDO_NUEVO: Tour = {
     },
     {
       elemento: "nuevo-adelanto",
-      titulo: "Adelanto",
+      titulo: "Pago",
       texto:
-        "<p>Porcentaje del total que se cobra primero. Al confirmar, el sistema crea un cobro pendiente con link de pago; se marca como pagado en la pantalla Pagos.</p>" +
-        "<p>El resto queda como saldo.</p>",
+        "<p>Cuánto paga ahora (todo, 50 % o nada) y cómo. Con efectivo, Yape, Plin, tarjeta o transferencia el cobro queda registrado al confirmar; con «Enviar link» se le manda un link y se confirma cuando pague.</p>" +
+        "<p>«Aplicar descuento» pide monto y motivo. La vendedora puede hasta 10 % de los productos.</p>",
       lado: "top",
     },
     {

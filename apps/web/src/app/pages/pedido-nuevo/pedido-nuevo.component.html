@@ -98,6 +98,47 @@
             </div>
           </section>
 
+          <section class="card" data-tour="nuevo-tipo-entrega">
+            <div class="flex items-start gap-3">
+              <span class="seccion-icono"
+                ><app-icon name="bolsa" [size]="20"
+              /></span>
+              <div>
+                <h2 class="panel-title text-[19px]">¿Cómo se lo lleva?</h2>
+                <p class="panel-subtitle">Si lo recoge en la tienda no se pide dirección ni se cobra envío.</p>
+              </div>
+            </div>
+            <div class="mt-5 grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                (click)="elegirEntrega('recojo')"
+                class="opcion flex items-center gap-3.5 px-5 py-4"
+                [class.opcion-sel]="esRecojo()"
+              >
+                <span class="seccion-icono"><app-icon name="tienda" [size]="20" /></span>
+                <span class="flex flex-col">
+                  <span class="font-semibold">Recoge en tienda</span>
+                  <span class="text-[13px] text-muted">Se lo lleva ahora o pasa después</span>
+                </span>
+                <span class="marca"><app-icon name="check" [size]="11" /></span>
+              </button>
+              <button
+                type="button"
+                (click)="elegirEntrega('delivery')"
+                class="opcion flex items-center gap-3.5 px-5 py-4"
+                [class.opcion-sel]="!esRecojo()"
+              >
+                <span class="seccion-icono"><app-icon name="delivery" [size]="20" /></span>
+                <span class="flex flex-col">
+                  <span class="font-semibold">Delivery</span>
+                  <span class="text-[13px] text-muted">Lo lleva un repartidor</span>
+                </span>
+                <span class="marca"><app-icon name="check" [size]="11" /></span>
+              </button>
+            </div>
+          </section>
+
+          @if (!esRecojo()) {
           <section class="card" data-tour="nuevo-distrito">
             <div class="flex items-start gap-3">
               <span class="seccion-icono"
@@ -134,12 +175,13 @@
               }
             </div>
           </section>
+          }
 
           <div class="flex justify-end">
             <button
               type="button"
               class="btn-primary px-6 py-3 text-[15px]"
-              [disabled]="!distritoSel()"
+              [disabled]="!pasoListo(1)"
               (click)="irAPaso(2)"
             >
               Siguiente: elegir productos <app-icon name="flecha" [size]="16" />
@@ -162,17 +204,15 @@
                   </p>
                 </div>
               </div>
-              @if (distritoNombre()) {
-                <button
-                  type="button"
-                  class="pill px-3.5 py-1.5 text-[13.5px]"
-                  (click)="irAPaso(1)"
-                >
-                  <app-icon name="tarifario" [size]="14" />
-                  {{ distritoNombre() }}
-                  <span class="text-muted">· cambiar</span>
-                </button>
-              }
+              <button
+                type="button"
+                class="pill px-3.5 py-1.5 text-[13.5px]"
+                (click)="irAPaso(1)"
+              >
+                <app-icon [name]="esRecojo() ? 'tienda' : 'tarifario'" [size]="14" />
+                {{ esRecojo() ? "Recoge en tienda" : distritoNombre() }}
+                <span class="text-muted">· cambiar</span>
+              </button>
             </div>
 
             @if (!productos().length) {
@@ -290,18 +330,21 @@
                 /></span>
                 <div>
                   <h2 class="panel-title text-[19px]">Cliente</h2>
-                  <p class="panel-subtitle">Quien hace el pedido.</p>
+                  <p class="panel-subtitle">
+                    {{ esRecojo() ? "Opcional en tienda. Con el teléfono lo reconoce la próxima vez." : "Quien hace el pedido." }}
+                  </p>
                 </div>
               </div>
               <div class="mt-5 grid gap-4 sm:grid-cols-2">
                 <div>
                   <label class="field-label text-[13.5px]" for="clienteNombre"
-                    >Nombre del cliente *</label
+                    >Nombre del cliente{{ esRecojo() ? "" : " *" }}</label
                   >
                   <input
                     id="clienteNombre"
                     formControlName="clienteNombre"
                     class="input py-3"
+                    [placeholder]="esRecojo() ? 'Cliente de mostrador' : ''"
                     [class.border-red-300]="invalido('clienteNombre')"
                   />
                 </div>
@@ -326,12 +369,26 @@
                   ><app-icon name="calendario" [size]="20"
                 /></span>
                 <div>
-                  <h2 class="panel-title text-[19px]">¿Cuándo se entrega?</h2>
+                  <h2 class="panel-title text-[19px]">
+                    {{ esRecojo() ? "¿Cuándo lo recoge?" : "¿Cuándo se entrega?" }}
+                  </h2>
                   <p class="panel-subtitle">
                     Elige un atajo o escribe la fecha y hora.
                   </p>
                 </div>
               </div>
+              @if (esRecojo()) {
+                <div class="mt-5">
+                  <button
+                    type="button"
+                    class="chip"
+                    [class.chip-sel]="esAhora()"
+                    (click)="ahora()"
+                  >
+                    <app-icon name="bolsa" [size]="15" class="mr-1.5" /> Se lo lleva ahora
+                  </button>
+                </div>
+              }
               <div class="mt-5 grid gap-5 md:grid-cols-2">
                 <div>
                   <div class="etiqueta">
@@ -341,7 +398,7 @@
                     <button
                       type="button"
                       class="chip"
-                      [class.chip-sel]="form.value.fechaEntrega === hoy"
+                      [class.chip-sel]="form.value.fechaEntrega === hoy && !esAhora()"
                       (click)="elegirFecha(hoy)"
                     >
                       Hoy
@@ -373,7 +430,7 @@
                       <button
                         type="button"
                         class="chip tabular"
-                        [class.chip-sel]="form.value.horaEntrega === h"
+                        [class.chip-sel]="form.value.horaEntrega === h && !esAhora()"
                         (click)="elegirHora(h)"
                       >
                         {{ h }}
@@ -391,6 +448,7 @@
               </div>
             </section>
 
+            @if (!esRecojo()) {
             <section class="card" data-tour="nuevo-entrega">
               <div class="flex flex-wrap items-start justify-between gap-3">
                 <div class="flex items-start gap-3">
@@ -488,21 +546,23 @@
                     placeholder="Ej. puerta verde, frente al parque"
                   />
                 </div>
-                <div class="sm:col-span-2">
-                  <label
-                    class="field-label text-[13.5px] flex items-center gap-1"
-                    for="dedicatoria"
-                    ><app-icon name="regalo" [size]="13" /> Dedicatoria</label
-                  >
-                  <textarea
-                    id="dedicatoria"
-                    formControlName="dedicatoria"
-                    rows="3"
-                    class="input bg-sidebar"
-                    placeholder="Mensaje para la tarjeta"
-                  ></textarea>
-                </div>
               </div>
+            </section>
+            }
+
+            <section class="card">
+              <label
+                class="field-label flex items-center gap-1 text-[13.5px]"
+                for="dedicatoria"
+                ><app-icon name="regalo" [size]="13" /> Dedicatoria (opcional)</label
+              >
+              <textarea
+                id="dedicatoria"
+                formControlName="dedicatoria"
+                rows="2"
+                class="input bg-sidebar"
+                placeholder="Mensaje para la tarjeta"
+              ></textarea>
             </section>
 
             <section class="card" data-tour="nuevo-adelanto">
@@ -511,13 +571,14 @@
                   ><app-icon name="pagos" [size]="20"
                 /></span>
                 <div>
-                  <h2 class="panel-title text-[19px]">Adelanto</h2>
+                  <h2 class="panel-title text-[19px]">Pago</h2>
                   <p class="panel-subtitle">
-                    Lo que paga ahora; el resto queda como saldo.
+                    Cuánto paga ahora y cómo. Si ya te pagó, queda registrado al crear el pedido.
                   </p>
                 </div>
               </div>
-              <div class="mt-5 flex flex-wrap items-center gap-2">
+              <div class="etiqueta mt-5">¿Cuánto paga ahora?</div>
+              <div class="flex flex-wrap items-center gap-2">
                 @for (pct of adelantosRapidos; track pct) {
                   <button
                     type="button"
@@ -548,6 +609,64 @@
                     >%</span
                   >
                 </div>
+              </div>
+
+              @if (adelanto() > 0) {
+                <div class="etiqueta mt-5">¿Cómo paga?</div>
+                <div class="flex flex-wrap gap-2" data-tour="nuevo-metodo">
+                  @for (m of metodosVisibles(); track m.valor) {
+                    <button
+                      type="button"
+                      class="chip"
+                      [class.chip-sel]="valores().metodoPago === m.valor"
+                      (click)="elegirMetodo(m.valor)"
+                    >
+                      <app-icon [name]="m.icono" [size]="15" class="mr-1.5" /> {{ m.etiqueta }}
+                    </button>
+                  }
+                </div>
+                @if (valores().metodoPago === "link") {
+                  <p class="mt-2 text-[13px] text-muted">Se le envía un link por {{ soles(adelanto()) }}; el pago se confirma cuando llegue.</p>
+                } @else if (valores().metodoPago !== "efectivo") {
+                  <input
+                    formControlName="referenciaPago"
+                    class="input mt-3 max-w-xs py-2.5"
+                    placeholder="N° de operación (opcional)"
+                    aria-label="Número de operación"
+                  />
+                }
+              }
+
+              <div class="mt-5 border-t border-gray-100 pt-4">
+                @if (!mostrarDescuento()) {
+                  <button type="button" class="btn-text -ml-2" (click)="mostrarDescuento.set(true)">
+                    <app-icon name="nuevo" [size]="14" /> Aplicar descuento
+                  </button>
+                } @else {
+                  <div class="etiqueta">Descuento</div>
+                  <div class="flex flex-wrap items-start gap-3">
+                    <div class="relative">
+                      <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted">S/</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.5"
+                        formControlName="descuento"
+                        class="input w-32 py-2.5 pl-8 text-right tabular"
+                        aria-label="Descuento en soles"
+                      />
+                    </div>
+                    <input
+                      formControlName="motivoDescuento"
+                      class="input min-w-[14rem] flex-1 py-2.5"
+                      placeholder="Motivo (ej. cliente frecuente)"
+                      aria-label="Motivo del descuento"
+                    />
+                  </div>
+                  <p class="mt-1.5 text-[13px]" [class.text-red-700]="errorDescuento()" [class.text-muted]="!errorDescuento()">
+                    {{ errorDescuento() ?? (topeDescuento() !== null ? "Puedes descontar hasta " + soles(topeDescuento()) + " (" + descuentoMaxPct + " % de los productos)." : "Sobre los productos, no sobre el envío.") }}
+                  </p>
+                }
               </div>
             </section>
 
@@ -590,7 +709,7 @@
                   ><app-icon name="bolsa" [size]="20"
                 /></span>
                 <span class="mt-1">Aún no hay productos.</span>
-                @if (paso() !== 2 && distritoSel()) {
+                @if (paso() !== 2 && pasoListo(1)) {
                   <button type="button" class="btn-text" (click)="irAPaso(2)">
                     Elegir productos
                   </button>
@@ -650,9 +769,20 @@
                     <dd class="tabular">{{ soles(r.subtotalProductos) }}</dd>
                   </div>
                   <div class="flex justify-between">
-                    <dt class="text-muted">Envío ({{ r.vehiculo }})</dt>
-                    <dd class="tabular">{{ soles(r.costoEnvio) }}</dd>
+                    @if (esRecojo()) {
+                      <dt class="text-muted">Recoge en tienda</dt>
+                      <dd class="tabular text-muted">sin envío</dd>
+                    } @else {
+                      <dt class="text-muted">Envío ({{ r.vehiculo }})</dt>
+                      <dd class="tabular">{{ soles(r.costoEnvio) }}</dd>
+                    }
                   </div>
+                  @if (descuento() > 0) {
+                    <div class="flex justify-between">
+                      <dt class="text-muted">Descuento</dt>
+                      <dd class="tabular text-positivo">−{{ soles(descuento()) }}</dd>
+                    </div>
+                  }
                   <div
                     class="flex items-baseline justify-between border-t border-gray-200 pt-3"
                   >
@@ -660,7 +790,7 @@
                     <dd
                       class="font-display text-[30px] font-semibold leading-none tracking-[-0.02em] text-brand-dark tabular"
                     >
-                      {{ soles(r.total) }}
+                      {{ soles(totalFinal()) }}
                     </dd>
                   </div>
                   <div class="grid grid-cols-2 gap-2 pt-1">
@@ -670,7 +800,7 @@
                       <dt
                         class="text-[12.5px] uppercase tracking-wider text-muted"
                       >
-                        Adelanto {{ form.value.porcentajeAdelanto }}%
+                        Paga ahora {{ valores().porcentajeAdelanto }}%
                       </dt>
                       <dd class="font-semibold tabular">
                         {{ soles(adelanto()) }}
@@ -744,7 +874,8 @@
                   enviando() ||
                   cotizandoResumen() ||
                   !resumen() ||
-                  !resumen()!.disponible
+                  !resumen()!.disponible ||
+                  !!errorDescuento()
                 "
                 (click)="confirmarPedido()"
               >
@@ -752,7 +883,7 @@
                   <span class="spinner border-white/40 border-t-white"></span>
                   Creando…
                 } @else {
-                  <app-icon name="confirmar" [size]="18" /> Confirmar pedido
+                  <app-icon name="confirmar" [size]="18" /> {{ textoConfirmar() }}
                 }
               </button>
               @if (form.invalid && carrito().length) {

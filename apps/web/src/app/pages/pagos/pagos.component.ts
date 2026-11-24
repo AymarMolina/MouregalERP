@@ -1,11 +1,10 @@
 import { Component, OnInit, computed, inject, signal } from "@angular/core";
 import { IconComponent } from "../../shared/icon/icon.component";
-import { RowMenuComponent } from "../../shared/tabla/row-menu.component";
 import { Tabla } from "../../shared/tabla/tabla";
 import { TABLA_CONTROLES } from "../../shared/tabla/tabla-controles.component";
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { RouterLink } from "@angular/router";
-import type { MetodoPago, TipoPago } from "@erp/shared";
+import type { MetodoPago } from "@erp/shared";
 import { mensajeError } from "../../core/http/errores";
 import { PagosApi } from "../../core/operacion/operacion.service";
 import type { Pago, PedidoConSaldo } from "../../core/operacion/operacion.types";
@@ -20,15 +19,16 @@ import {
 type MetodoManual = Exclude<MetodoPago, "link" | "shopify">;
 
 const METODOS_MANUALES: { valor: MetodoManual; etiqueta: string }[] = [
+  { valor: "efectivo", etiqueta: "Efectivo" },
   { valor: "yape", etiqueta: "Yape" },
   { valor: "plin", etiqueta: "Plin" },
+  { valor: "tarjeta", etiqueta: "Tarjeta" },
   { valor: "transferencia", etiqueta: "Transferencia" },
-  { valor: "efectivo", etiqueta: "Efectivo" },
 ];
 
 @Component({
   selector: "app-pagos",
-  imports: [FormsModule, ReactiveFormsModule, RouterLink, IconComponent, RowMenuComponent, ...TABLA_CONTROLES],
+  imports: [FormsModule, ReactiveFormsModule, RouterLink, IconComponent, ...TABLA_CONTROLES],
   templateUrl: "./pagos.component.html",
 })
 export class PagosComponent implements OnInit {
@@ -84,8 +84,7 @@ export class PagosComponent implements OnInit {
   readonly totalSaldo = computed(() => this.visibles().reduce((acc, f) => acc + f.saldo, 0));
 
   readonly pagoForm = this.fb.nonNullable.group({
-    tipo: ["saldo" as TipoPago, Validators.required],
-    metodo: ["yape" as MetodoManual, Validators.required],
+    metodo: ["efectivo" as MetodoManual, Validators.required],
     monto: [0, [Validators.required, Validators.min(0.01)]],
     referenciaExterna: [""],
   });
@@ -109,10 +108,11 @@ export class PagosComponent implements OnInit {
   seleccionar(f: PedidoConSaldo): void {
     this.seleccionadoId.set(f.id);
     this.aviso.set(null);
+    // El tipo (adelanto o saldo) lo deduce el API: aquí solo importa cuánto y cómo.
     this.pagoForm.reset({
-      tipo: Number(f.totalPagado) > 0 ? "saldo" : "adelanto",
-      metodo: "yape",
-      monto: f.saldo,
+      metodo: "efectivo",
+      // Lo que se espera cobrar: el link pendiente si hay uno, si no todo el saldo.
+      monto: Number(this.pagoPendiente(f)?.monto ?? f.saldo),
       referenciaExterna: "",
     });
   }
@@ -153,7 +153,6 @@ export class PagosComponent implements OnInit {
     return this.ejecutar(
       () =>
         this.api.registrar(f.id, {
-          tipo: v.tipo,
           metodo: v.metodo,
           monto: Number(v.monto),
           referenciaExterna: v.referenciaExterna || undefined,

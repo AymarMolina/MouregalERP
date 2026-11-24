@@ -75,7 +75,7 @@
                 </td>
                 <td>
                   <div>{{ f.fechaEntrega }}</div>
-                  <div class="text-xs text-muted">{{ hora(f.horaEntrega) }} · {{ f.distrito }}</div>
+                  <div class="text-xs text-muted">{{ hora(f.horaEntrega) }} · {{ f.distrito ?? "recoge en tienda" }}</div>
                 </td>
                 <td><span [class]="'badge ' + claseEstado[f.estado]">{{ etiquetaEstado[f.estado] }}</span></td>
                 <td class="text-right tabular-nums">{{ soles(f.total) }}</td>
@@ -91,10 +91,15 @@
                   }
                 </td>
                 <td (click)="$event.stopPropagation()">
-                  <app-row-menu [etiqueta]="'Acciones del pedido ' + f.codigo">
-                    <button type="button" class="btn-action" (click)="seleccionar(f)" aria-label="Gestionar cobro"><app-icon name="pagos" [size]="15" /></button>
-                    <a [routerLink]="['/pedidos', f.id]" class="btn-action" aria-label="Ver pedido"><app-icon name="pedido" [size]="15" /></a>
-                  </app-row-menu>
+                  <!-- Cobrar es lo que se hace aquí: va a la vista, no dentro de un menú. -->
+                  <div class="acciones">
+                    @if (f.saldo > 0) {
+                      <button type="button" class="btn-secondary px-3 py-1.5" (click)="seleccionar(f)">
+                        <app-icon name="pagos" [size]="14" /> Cobrar
+                      </button>
+                    }
+                    <a [routerLink]="['/pedidos', f.id]" class="btn-action" title="Ver pedido" aria-label="Ver pedido"><app-icon name="pedido" [size]="15" /></a>
+                  </div>
                 </td>
               </tr>
             } @empty {
@@ -161,28 +166,24 @@
         </section>
 
         @if (f.saldo > 0) {
-          <button type="button" class="btn-secondary w-full" data-tour="pagos-link" [disabled]="trabajando()" (click)="generarLink(f)">
-            {{ pagoPendiente(f) ? "Regenerar y reenviar link del saldo" : "Generar y enviar link del saldo" }}
-          </button>
-
           <form data-tour="pagos-registrar" [formGroup]="pagoForm" (ngSubmit)="registrarPago(f)" class="space-y-3 border-t border-line pt-4">
             <h3 class="font-medium">Registrar pago recibido</h3>
+            <div>
+              <label class="field-label">¿Cómo pagó?</label>
+              <div class="flex flex-wrap gap-1.5">
+                @for (m of metodos; track m.valor) {
+                  <button
+                    type="button"
+                    class="chip px-3 py-1.5 text-[13px]"
+                    [class.chip-sel]="pagoForm.value.metodo === m.valor"
+                    (click)="pagoForm.controls.metodo.setValue(m.valor)"
+                  >
+                    {{ m.etiqueta }}
+                  </button>
+                }
+              </div>
+            </div>
             <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="field-label">Tipo</label>
-                <select formControlName="tipo" class="input">
-                  <option value="adelanto">Adelanto</option>
-                  <option value="saldo">Saldo</option>
-                </select>
-              </div>
-              <div>
-                <label class="field-label">Método</label>
-                <select formControlName="metodo" class="input">
-                  @for (m of metodos; track m.valor) {
-                    <option [value]="m.valor">{{ m.etiqueta }}</option>
-                  }
-                </select>
-              </div>
               <div>
                 <label class="field-label">Monto (S/)</label>
                 <input type="number" step="0.01" min="0.01" [max]="f.saldo" formControlName="monto" class="input" />
@@ -192,8 +193,14 @@
                 <input formControlName="referenciaExterna" class="input" placeholder="Opcional" />
               </div>
             </div>
-            <button type="submit" class="btn-primary w-full" [disabled]="pagoForm.invalid || trabajando()">Registrar pago</button>
+            <button type="submit" class="btn-primary w-full" [disabled]="pagoForm.invalid || trabajando()">
+              Registrar {{ soles(pagoForm.value.monto ?? 0) }}
+            </button>
           </form>
+
+          <button type="button" class="btn-secondary w-full" data-tour="pagos-link" [disabled]="trabajando()" (click)="generarLink(f)">
+            {{ pagoPendiente(f) ? "Regenerar y reenviar link del saldo" : "O envíale un link por el saldo" }}
+          </button>
         }
       </aside>
     }

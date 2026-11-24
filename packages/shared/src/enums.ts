@@ -55,6 +55,21 @@ export const ESTADO_PEDIDO = [
 export type EstadoPedido = (typeof ESTADO_PEDIDO)[number];
 
 export const VEHICULO = ["moto", "carro"] as const;
+
+/**
+ * Cómo llega el pedido al cliente:
+ * - delivery: lo lleva un repartidor (distrito, dirección y receptor obligatorios, cobra envío).
+ * - recojo: el cliente lo recoge en la tienda o se lo lleva al momento (sin envío ni dirección).
+ */
+export const TIPO_ENTREGA = ["delivery", "recojo"] as const;
+export type TipoEntrega = (typeof TIPO_ENTREGA)[number];
+
+/** Métodos que la vendedora registra a mano porque ya cobró (no son links ni Shopify). */
+export const METODOS_COBRO_DIRECTO = ["efectivo", "yape", "plin", "tarjeta", "transferencia"] as const;
+export type MetodoCobroDirecto = (typeof METODOS_COBRO_DIRECTO)[number];
+
+/** Descuento máximo que puede dar una vendedora, en % de los productos. El admin no tiene tope. */
+export const DESCUENTO_MAX_VENDEDORA_PCT = 10;
 export type Vehiculo = (typeof VEHICULO)[number];
 
 export const TIPO_MOVIMIENTO = [
@@ -80,7 +95,7 @@ export type EstadoConsulta = (typeof ESTADO_CONSULTA)[number];
 export const TIPO_PAGO = ["adelanto", "saldo"] as const;
 export type TipoPago = (typeof TIPO_PAGO)[number];
 
-export const METODO_PAGO = ["shopify", "link", "yape", "plin", "transferencia", "efectivo"] as const;
+export const METODO_PAGO = ["shopify", "link", "yape", "plin", "transferencia", "efectivo", "tarjeta"] as const;
 export type MetodoPago = (typeof METODO_PAGO)[number];
 
 export const ESTADO_PAGO = ["pendiente", "pagado", "fallido", "anulado"] as const;

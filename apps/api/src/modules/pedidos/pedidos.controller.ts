@@ -114,7 +114,10 @@ export class PedidosController {
   @Roles('admin', 'vendedora')
   @Post()
   crear(@Body() body: unknown, @Req() req: Request & { user: JwtPayload }) {
-    return this.pedidos.crear(pedidoInputSchema.parse(body), req.user.sub);
+    return this.pedidos.crear(pedidoInputSchema.parse(body), {
+      sub: req.user.sub,
+      rol: req.user.rol,
+    });
   }
 
   @Roles('admin', 'produccion')

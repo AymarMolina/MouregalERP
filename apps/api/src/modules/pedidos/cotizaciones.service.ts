@@ -89,30 +89,67 @@ export class CotizacionesService {
     private readonly resolver: ItemResolverService,
   ) {}
 
-  async cotizar(input: CotizacionInput): Promise<ResultadoCotizacion> {
+  /** Sin distrito (recojo en tienda) no hay envío. */
+  private async cargarDistrito(distritoId: string | undefined) {
+    if (!distritoId) return null;
     const [distrito] = await this.db
       .select()
       .from(distritos)
-      .where(eq(distritos.id, input.distritoId))
+      .where(eq(distritos.id, distritoId))
       .limit(1);
     if (!distrito || !distrito.activo)
       throw new NotFoundException('Distrito no encontrado o inactivo');
+    return distrito;
+  }
 
-    const ctx = await this.resolver.cargarContexto(this.db);
-    const producto = await this.resolver.cargarProducto(
-      this.db,
-      input.productoId,
-    );
-    const { talla, lineasBase } = await this.resolver.cargarTalla(
-      this.db,
-      producto,
-      input.talla,
-    );
-    const disponibleBase = await this.disponibilidad.disponibleDe(this.db);
+  private envio(
+    distrito: Awaited<ReturnType<CotizacionesService['cargarDistrito']>>,
+    vehiculo: 'moto' | 'carro',
+  ): number {
+    if (!distrito) return 0;
+    return calcularEnvio(vehiculo, {
+      tarifaMoto: Number(distrito.tarifaMoto),
+      tarifaCarro: Number(distrito.tarifaCarro),
+    });
+  }
+
+  async cotizar(input: CotizacionInput): Promise<ResultadoCotizacion> {
+    // Todo lo independiente va en paralelo: cada toque del cotizador espera
+    // la ida y vuelta más lenta, no la suma de todas.
+    const [distrito, ctx, producto, disponibleBase, tallasRows] =
+      await Promise.all([
+        this.cargarDistrito(input.distritoId),
+        this.resolver.cargarContexto(this.db),
+        this.resolver.cargarProducto(this.db, input.productoId),
+        this.disponibilidad.disponibleDe(this.db),
+        this.db
+          .select()
+          .from(productoTallas)
+          .where(eq(productoTallas.productoId, input.productoId)),
+      ]);
+    const tallasActivas = tallasRows.filter((t) => t.activo);
+    const [{ talla, lineasBase }, lineasTallas, carrito] = await Promise.all([
+      this.resolver.cargarTalla(this.db, producto, input.talla),
+      tallasActivas.length
+        ? this.db
+            .select()
+            .from(recetaLineas)
+            .where(
+              inArray(
+                recetaLineas.productoTallaId,
+                tallasActivas.map((t) => t.id),
+              ),
+            )
+        : Promise.resolve([] as (typeof recetaLineas.$inferSelect)[]),
+      Promise.all(
+        input.itemsEnCarrito.map((otro) =>
+          this.resolver.resolver(this.db, ctx, otro),
+        ),
+      ),
+    ]);
     // Lo que ya está en el carrito de este pedido también consume stock.
     const enCarrito = new Map<string, number>();
-    for (const otro of input.itemsEnCarrito) {
-      const r = await this.resolver.resolver(this.db, ctx, otro);
+    for (const r of carrito) {
       for (const l of r.recetaEfectiva)
         enCarrito.set(
           l.insumoId,
@@ -170,22 +207,6 @@ export class CotizacionesService {
     };
 
     // Tallas
-    const tallasRows = await this.db
-      .select()
-      .from(productoTallas)
-      .where(eq(productoTallas.productoId, producto.id));
-    const tallasActivas = tallasRows.filter((t) => t.activo);
-    const lineasTallas = tallasActivas.length
-      ? await this.db
-          .select()
-          .from(recetaLineas)
-          .where(
-            inArray(
-              recetaLineas.productoTallaId,
-              tallasActivas.map((t) => t.id),
-            ),
-          )
-      : [];
     const opcionesTallas: OpcionTalla[] = tallasActivas.map((t) => {
       const lineas: RecetaLineaBase[] = lineasTallas
         .filter((l) => l.productoTallaId === t.id)
@@ -287,10 +308,7 @@ export class CotizacionesService {
         };
       });
 
-    const costoEnvio = calcularEnvio(item.vehiculo, {
-      tarifaMoto: Number(distrito.tarifaMoto),
-      tarifaCarro: Number(distrito.tarifaCarro),
-    });
+    const costoEnvio = this.envio(distrito, item.vehiculo);
 
     return {
       productoId: producto.id,
@@ -328,20 +346,14 @@ export class CotizacionesService {
    * requiere), envío, total, stock combinado y consultas que se abrirán.
    */
   async cotizarPedido(input: CotizacionPedidoInput) {
-    const [distrito] = await this.db
-      .select()
-      .from(distritos)
-      .where(eq(distritos.id, input.distritoId))
-      .limit(1);
-    if (!distrito || !distrito.activo)
-      throw new NotFoundException('Distrito no encontrado o inactivo');
-
-    const ctx = await this.resolver.cargarContexto(this.db);
-    const items: ItemResuelto[] = [];
-    for (const it of input.items)
-      items.push(await this.resolver.resolver(this.db, ctx, it));
-
-    const disponibleDe = await this.disponibilidad.disponibleDe(this.db);
+    const [distrito, ctx, disponibleDe] = await Promise.all([
+      this.cargarDistrito(input.distritoId),
+      this.resolver.cargarContexto(this.db),
+      this.disponibilidad.disponibleDe(this.db),
+    ]);
+    const items: ItemResuelto[] = await Promise.all(
+      input.items.map((it) => this.resolver.resolver(this.db, ctx, it)),
+    );
     const faltan = faltantes(
       sumarRecetas(items.map((i) => i.recetaEfectiva)),
       disponibleDe,
@@ -355,10 +367,7 @@ export class CotizacionesService {
     const vehiculo = items.some((i) => i.vehiculo === 'carro')
       ? 'carro'
       : 'moto';
-    const costoEnvio = calcularEnvio(vehiculo, {
-      tarifaMoto: Number(distrito.tarifaMoto),
-      tarifaCarro: Number(distrito.tarifaCarro),
-    });
+    const costoEnvio = this.envio(distrito, vehiculo);
 
     return {
       items: items.map((i) => ({

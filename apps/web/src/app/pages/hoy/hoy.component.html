@@ -52,7 +52,10 @@
             <div class="kpi-label">{{ k.etiqueta }}</div>
             <div class="kpi-value">{{ k.valor }}</div>
             <div class="kpi-delta">
-              @if (k.variacion !== null) {
+              @if (k.variacion !== null && k.variacion <= -100) {
+                <!-- Al abrir el día todo sale en cero: no es una caída, es que aún no empieza. -->
+                Aún sin registros hoy · vs {{ comparadoCon() }}
+              } @else if (k.variacion !== null) {
                 <span class="font-medium" [class.text-positivo]="k.variacion > 0" [class.text-negativo]="k.variacion < 0">
                   {{ k.variacion > 0 ? "▲" : k.variacion < 0 ? "▼" : "" }} {{ delta(k.variacion) }}
                 </span>
@@ -192,7 +195,13 @@
                 <span class="truncate font-display text-[16px] font-medium text-gray-900">{{ p.cliente }}</span>
                 <span [class]="'badge ' + claseEstado[p.estado]">{{ etiquetaEstado[p.estado] }}</span>
               </div>
-              <div class="mb-3 text-xs text-muted">Recibe {{ p.nombreReceptor }} · {{ p.distrito }}</div>
+              <div class="mb-3 text-xs text-muted">
+                @if (p.tipoEntrega === "recojo") {
+                  Recoge en tienda
+                } @else {
+                  Recibe {{ p.nombreReceptor }} · {{ p.distrito }}
+                }
+              </div>
               <div class="flex items-center justify-end gap-1.5 text-[13px] text-gray-600">
                 @if (saldo(p) > 0) {
                   <span class="mr-auto text-xs font-medium text-negativo">Saldo {{ soles(saldo(p)) }}</span>
@@ -265,11 +274,18 @@
                   <td class="tabular-nums">{{ hora(p.horaEntrega) }}</td>
                   <td>
                     <div class="text-gray-900">{{ p.cliente }}</div>
-                    <div class="text-xs text-muted">Recibe {{ p.nombreReceptor }}</div>
+                    @if (p.nombreReceptor) {
+                      <div class="text-xs text-muted">Recibe {{ p.nombreReceptor }}</div>
+                    }
                   </td>
                   <td>
-                    <div>{{ p.distrito }}</div>
-                    <div class="text-xs uppercase text-muted">{{ p.vehiculo }}</div>
+                    @if (p.tipoEntrega === "recojo") {
+                      <div>Tienda</div>
+                      <div class="text-xs text-muted">recoge</div>
+                    } @else {
+                      <div>{{ p.distrito }}</div>
+                      <div class="text-xs uppercase text-muted">{{ p.vehiculo }}</div>
+                    }
                   </td>
                   <td><span [class]="'badge ' + claseEstado[p.estado]">{{ etiquetaEstado[p.estado] }}</span></td>
                   <td class="text-right tabular-nums text-gray-900">{{ soles(p.total) }}</td>

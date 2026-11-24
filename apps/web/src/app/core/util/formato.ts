@@ -37,7 +37,9 @@ export const CLASE_ESTADO_OC: Record<EstadoOc, string> = {
 /** S/ 1,234.50 */
 export function soles(valor: number | string | null | undefined): string {
   const n = Number(valor ?? 0);
-  return `S/ ${n.toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const texto = Math.abs(n).toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  // "−S/ 3.00" y no "S/ -3.00": el signo va delante, como se lee un descuento.
+  return n < 0 ? `−S/ ${texto}` : `S/ ${texto}`;
 }
 
 /** Cantidad con hasta 3 decimales, sin ceros de más. */

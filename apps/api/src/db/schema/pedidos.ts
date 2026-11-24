@@ -15,6 +15,7 @@ import {
   canalEnum,
   estadoConsultaEnum,
   estadoPedidoEnum,
+  tipoEntregaEnum,
   vehiculoEnum,
 } from './enums';
 import { clientes } from './clientes';
@@ -37,24 +38,29 @@ export const pedidos = pgTable(
     estado: estadoPedidoEnum('estado').notNull().default('pendiente'),
     fechaEntrega: date('fecha_entrega').notNull(),
     horaEntrega: time('hora_entrega').notNull(),
-    distritoId: uuid('distrito_id')
-      .notNull()
-      .references(() => distritos.id),
-    direccion: text('direccion').notNull(),
+    /** delivery o recojo (en tienda). En recojo no hay distrito, dirección, receptor ni vehículo. */
+    tipoEntrega: tipoEntregaEnum('tipo_entrega').notNull().default('delivery'),
+    distritoId: uuid('distrito_id').references(() => distritos.id),
+    direccion: text('direccion'),
     referencia: text('referencia'),
     /** Link de Google Maps tal como lo pegó la vendedora, y sus coordenadas resueltas. */
     ubicacionUrl: text('ubicacion_url'),
     ubicacionLat: doublePrecision('ubicacion_lat'),
     ubicacionLng: doublePrecision('ubicacion_lng'),
-    telefonoReceptor: text('telefono_receptor').notNull(),
-    nombreReceptor: text('nombre_receptor').notNull(),
+    telefonoReceptor: text('telefono_receptor'),
+    nombreReceptor: text('nombre_receptor'),
     dedicatoria: text('dedicatoria'),
-    vehiculo: vehiculoEnum('vehiculo').notNull(),
+    vehiculo: vehiculoEnum('vehiculo'),
     subtotalProductos: numeric('subtotal_productos', {
       precision: 12,
       scale: 2,
     }).notNull(),
     costoEnvio: numeric('costo_envio', { precision: 12, scale: 2 }).notNull(),
+    /** Descuento en soles sobre los productos; total = productos − descuento + envío. */
+    descuento: numeric('descuento', { precision: 12, scale: 2 })
+      .notNull()
+      .default('0'),
+    motivoDescuento: text('motivo_descuento'),
     total: numeric('total', { precision: 12, scale: 2 }).notNull(),
     // Caché de pagos con estado 'pagado'.
     totalPagado: numeric('total_pagado', { precision: 12, scale: 2 })

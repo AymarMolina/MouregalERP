@@ -52,11 +52,12 @@ export class DashboardService {
         total: pedidos.total,
         totalPagado: pedidos.totalPagado,
         vehiculo: pedidos.vehiculo,
+        tipoEntrega: pedidos.tipoEntrega,
         distrito: distritos.nombre,
         cliente: clientes.nombre,
       })
       .from(pedidos)
-      .innerJoin(distritos, eq(pedidos.distritoId, distritos.id))
+      .leftJoin(distritos, eq(pedidos.distritoId, distritos.id))
       .innerJoin(clientes, eq(pedidos.clienteId, clientes.id))
       .where(eq(pedidos.fechaEntrega, hoy))
       .orderBy(asc(pedidos.horaEntrega));

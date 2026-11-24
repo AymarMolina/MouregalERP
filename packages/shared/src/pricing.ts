@@ -1,4 +1,4 @@
-import type { RolRecetaLinea, Talla, Vehiculo } from "./enums";
+import { DESCUENTO_MAX_VENDEDORA_PCT, type RolRecetaLinea, type RolUsuario, type Talla, type Vehiculo } from "./enums";
 
 export interface RecetaLineaBase {
   insumoId: string;
@@ -104,4 +104,34 @@ function round2(n: number): number {
 
 function round3(n: number): number {
   return Math.round((n + Number.EPSILON) * 1000) / 1000;
+}
+
+/**
+ * Descuento sobre los productos (no sobre el envío). La vendedora tiene tope
+ * (`DESCUENTO_MAX_VENDEDORA_PCT`); el admin no, salvo no pasar del subtotal.
+ */
+export function validarDescuento(p: {
+  descuento: number;
+  subtotalProductos: number;
+  rol: RolUsuario;
+}): { ok: true } | { ok: false; motivo: string } {
+  if (p.descuento < 0) return { ok: false, motivo: "El descuento no puede ser negativo" };
+  if (p.descuento > p.subtotalProductos) {
+    return { ok: false, motivo: "El descuento no puede ser mayor que el valor de los productos" };
+  }
+  if (p.rol !== "admin") {
+    const tope = round2((p.subtotalProductos * DESCUENTO_MAX_VENDEDORA_PCT) / 100);
+    if (p.descuento > tope + 0.001) {
+      return {
+        ok: false,
+        motivo: `Tu rol puede descontar hasta ${DESCUENTO_MAX_VENDEDORA_PCT} % (S/ ${tope.toFixed(2)}). Para más, pide al admin.`,
+      };
+    }
+  }
+  return { ok: true };
+}
+
+/** Total del pedido: productos − descuento + envío (el envío es 0 en recojo). */
+export function totalPedido(p: { subtotalProductos: number; descuento: number; costoEnvio: number }): number {
+  return round2(p.subtotalProductos - p.descuento + p.costoEnvio);
 }

@@ -6,7 +6,7 @@ import { Component, Input } from "@angular/core";
     <div class="p-6">
       <div class="page-header">
         <div>
-          <h1 class="panel-title text-lg">{{ titulo }}</h1>
+          <h1 class="page-title">{{ titulo }}</h1>
         </div>
       </div>
       <div class="card flex flex-col items-center gap-2 py-16 text-center">

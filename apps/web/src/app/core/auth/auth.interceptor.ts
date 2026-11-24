@@ -25,6 +25,11 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
       return from(auth.renovarAccessToken()).pipe(
         switchMap((nuevo) => {
           if (!nuevo) {
+            // Sin red no se cierra la sesión: se devuelve la falla de red para
+            // que el modo sin conexión responda con la copia guardada.
+            if (auth.renovacionSinRed) {
+              return throwError(() => new HttpErrorResponse({ status: 0, statusText: "Sin conexión", url: req.url }));
+            }
             auth.logout();
             return throwError(() => err);
           }

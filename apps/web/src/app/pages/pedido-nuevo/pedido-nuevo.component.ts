@@ -1,10 +1,12 @@
 import { Component, HostListener, OnInit, computed, inject, signal } from "@angular/core";
+import { toSignal } from "@angular/core/rxjs-interop";
 import { IconComponent } from "../../shared/icon/icon.component";
 import { MapaComponent } from "../../shared/mapa/mapa.component";
 import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms";
 import { Router } from "@angular/router";
-import type { Canal, Coordenadas, PedidoItemInput, Talla } from "@erp/shared";
-import { CANAL, TALLA } from "@erp/shared";
+import type { Canal, Coordenadas, MetodoCobroDirecto, PedidoItemInput, Talla, TipoEntrega } from "@erp/shared";
+import { CANAL, DESCUENTO_MAX_VENDEDORA_PCT, TALLA } from "@erp/shared";
+import { AuthService } from "../../core/auth/auth.service";
 import type { Distrito, Producto } from "../../core/catalogo/catalogo.types";
 import { DistritosService } from "../../core/catalogo/distritos.service";
 import { ProductosService } from "../../core/catalogo/productos.service";
@@ -20,6 +22,18 @@ interface ItemCarrito {
   producto: string;
   detalle: string;
 }
+
+/** Cómo paga lo de ahora: un método directo (ya cobrado) o un link que se envía. */
+type MetodoPagoAhora = MetodoCobroDirecto | "link";
+
+const METODOS_PAGO: { valor: MetodoPagoAhora; etiqueta: string; icono: NombreIcono }[] = [
+  { valor: "efectivo", etiqueta: "Efectivo", icono: "ventas" },
+  { valor: "yape", etiqueta: "Yape", icono: "telefono" },
+  { valor: "plin", etiqueta: "Plin", icono: "telefono" },
+  { valor: "tarjeta", etiqueta: "Tarjeta", icono: "pagos" },
+  { valor: "transferencia", etiqueta: "Transferencia", icono: "enlace" },
+  { valor: "link", etiqueta: "Enviar link", icono: "whatsapp" },
+];
 
 /** Pasos del kiosko: destino → productos → entrega y pago. */
 export type Paso = 1 | 2 | 3;
@@ -42,6 +56,7 @@ export class PedidoNuevoComponent implements OnInit {
   private readonly pedidosService = inject(PedidosService);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
+  private readonly auth = inject(AuthService);
 
   readonly soles = soles;
   readonly cantidad = cantidad;
@@ -52,15 +67,22 @@ export class PedidoNuevoComponent implements OnInit {
   readonly canalInfo = CANAL_INFO;
   readonly horasRapidas = ["09:00", "11:00", "13:00", "15:00", "17:00", "19:00"];
   readonly adelantosRapidos = [0, 50, 100];
+  readonly metodosPago = METODOS_PAGO;
+  readonly descuentoMaxPct = DESCUENTO_MAX_VENDEDORA_PCT;
+  /** Descuento abierto (se esconde por defecto: es la excepción, no la regla). */
+  readonly mostrarDescuento = signal(false);
 
   readonly pasos: { n: Paso; titulo: string; detalle: string; icono: NombreIcono }[] = [
-    { n: 1, titulo: "Destino", detalle: "Canal y distrito", icono: "tarifario" },
+    { n: 1, titulo: "Destino", detalle: "Canal y entrega", icono: "tarifario" },
     { n: 2, titulo: "Productos", detalle: "Arma el pedido", icono: "flor" },
     { n: 3, titulo: "Entrega y pago", detalle: "Cliente, fecha y adelanto", icono: "calendario" },
   ];
   readonly paso = signal<Paso>(1);
   /** Valores del formulario como signals, para que los computed reaccionen. */
   readonly distritoSel = signal("");
+  /** En tienda lo normal es que el cliente se lo lleve o lo recoja. */
+  readonly tipoEntrega = signal<TipoEntrega>("recojo");
+  readonly esRecojo = computed(() => this.tipoEntrega() === "recojo");
 
   readonly productos = signal<Producto[]>([]);
   readonly distritos = signal<Distrito[]>([]);
@@ -88,15 +110,49 @@ export class PedidoNuevoComponent implements OnInit {
     return c?.opciones.tallas.find((t) => t.talla === c.talla && !t.disponible) ?? null;
   });
 
-  readonly adelanto = computed(() => {
-    const r = this.resumen();
-    const pct = Number(this.form.value.porcentajeAdelanto ?? 50);
-    return r ? Math.round(((r.total * pct) / 100 + Number.EPSILON) * 100) / 100 : 0;
+  /** Descuento en soles (0 si no aplica). */
+  readonly descuento = computed(() => {
+    const v = Number(this.valores().descuento ?? 0);
+    return Number.isFinite(v) && v > 0 ? Math.round(v * 100) / 100 : 0;
   });
 
-  readonly saldo = computed(() => {
+  /** Tope de descuento para el rol actual (null = sin tope, admin). */
+  readonly topeDescuento = computed(() => {
     const r = this.resumen();
-    return r ? Math.round((r.total - this.adelanto() + Number.EPSILON) * 100) / 100 : 0;
+    if (!r || this.auth.user()?.rol === "admin") return null;
+    return Math.round(((r.subtotalProductos * DESCUENTO_MAX_VENDEDORA_PCT) / 100) * 100) / 100;
+  });
+
+  readonly errorDescuento = computed(() => {
+    const d = this.descuento();
+    if (!d) return null;
+    const r = this.resumen();
+    const tope = this.topeDescuento();
+    if (r && d > r.subtotalProductos) return "No puede ser mayor que los productos.";
+    if (tope !== null && d > tope) return `Máximo ${soles(tope)} (${DESCUENTO_MAX_VENDEDORA_PCT} %). Para más, pide al admin.`;
+    if (!this.valores().motivoDescuento?.trim()) return "Escribe el motivo.";
+    return null;
+  });
+
+  readonly totalFinal = computed(() => {
+    const r = this.resumen();
+    return r ? Math.round((r.total - this.descuento() + Number.EPSILON) * 100) / 100 : 0;
+  });
+
+  readonly adelanto = computed(() => {
+    const pct = Number(this.valores().porcentajeAdelanto ?? 50);
+    return Math.round(((this.totalFinal() * pct) / 100 + Number.EPSILON) * 100) / 100;
+  });
+
+  readonly saldo = computed(() => Math.round((this.totalFinal() - this.adelanto() + Number.EPSILON) * 100) / 100);
+
+  /** Texto del botón final: dice exactamente qué va a pasar. */
+  readonly textoConfirmar = computed(() => {
+    const metodo = this.valores().metodoPago;
+    if (this.adelanto() > 0 && metodo && metodo !== "link") {
+      return `Cobrar ${soles(this.adelanto())} y crear pedido`;
+    }
+    return "Confirmar pedido";
   });
 
   readonly itemForm = this.fb.nonNullable.group({
@@ -119,10 +175,21 @@ export class PedidoNuevoComponent implements OnInit {
     dedicatoria: [""],
     clienteNombre: ["", Validators.required],
     clienteTelefono: [""],
-    porcentajeAdelanto: [50, [Validators.required, Validators.min(0), Validators.max(100)]],
+    porcentajeAdelanto: [100, [Validators.required, Validators.min(0), Validators.max(100)]],
+    metodoPago: ["efectivo" as MetodoPagoAhora],
+    referenciaPago: [""],
+    descuento: [0, [Validators.min(0)]],
+    motivoDescuento: [""],
   });
 
+  /** Valores del formulario como signal (los computed de arriba se recalculan al escribir). */
+  readonly valores = toSignal(this.form.valueChanges, { initialValue: this.form.getRawValue() });
+
+  /** Campos que solo exige el delivery. */
+  private readonly camposDelivery = ["distritoId", "direccion", "telefonoReceptor", "nombreReceptor", "clienteNombre"] as const;
+
   async ngOnInit(): Promise<void> {
+    this.aplicarValidadores();
     this.loading.set(true);
     try {
       const [productos, distritos] = await Promise.all([this.productosService.list(), this.distritosService.list()]);
@@ -178,7 +245,7 @@ export class PedidoNuevoComponent implements OnInit {
   ): Promise<void> {
     const item = this.itemForm.getRawValue();
     const distritoId = this.form.getRawValue().distritoId;
-    if (!item.productoId || !distritoId) return;
+    if (!item.productoId || (!this.esRecojo() && !distritoId)) return;
 
     this.cotizando.set(true);
     this.error.set(null);
@@ -191,7 +258,7 @@ export class PedidoNuevoComponent implements OnInit {
         florId: forzar?.florId ?? anterior?.florId ?? undefined,
         papelId: forzar?.papelId ?? anterior?.papelId ?? undefined,
         extraIds: [...this.extraIds()],
-        distritoId,
+        distritoId: this.esRecojo() ? undefined : distritoId,
         cambioNoListado: item.cambioNoListado || undefined,
         // Lo ya agregado al pedido también consume stock.
         itemsEnCarrito: this.carrito().map((c) => c.input),
@@ -249,7 +316,7 @@ export class PedidoNuevoComponent implements OnInit {
 
   private async actualizarResumen(): Promise<void> {
     const distritoId = this.form.getRawValue().distritoId;
-    if (!this.carrito().length || !distritoId) {
+    if (!this.carrito().length || (!this.esRecojo() && !distritoId)) {
       this.resumen.set(null);
       return;
     }
@@ -258,7 +325,7 @@ export class PedidoNuevoComponent implements OnInit {
       this.resumen.set(
         await this.cotizacionesService.cotizarPedido({
           items: this.carrito().map((c) => c.input),
-          distritoId,
+          distritoId: this.esRecojo() ? undefined : distritoId,
         }),
       );
     } catch (err) {
@@ -270,29 +337,38 @@ export class PedidoNuevoComponent implements OnInit {
 
   async confirmarPedido(): Promise<void> {
     const r = this.resumen();
-    if (!r || !r.disponible || this.form.invalid || !this.carrito().length) {
+    if (!r || !r.disponible || this.form.invalid || !this.carrito().length || this.errorDescuento()) {
       this.form.markAllAsTouched();
+      if (this.errorDescuento()) this.mostrarDescuento.set(true);
       return;
     }
     const v = this.form.getRawValue();
+    const recojo = this.esRecojo();
+    const pagaAhora = v.metodoPago !== "link" && this.adelanto() > 0;
 
     this.enviando.set(true);
     this.error.set(null);
     try {
       const pedido = await this.pedidosService.crear({
         canal: v.canal,
-        cliente: { nombre: v.clienteNombre, telefono: v.clienteTelefono || undefined },
+        tipoEntrega: this.tipoEntrega(),
+        cliente: { nombre: v.clienteNombre || undefined, telefono: v.clienteTelefono || undefined },
         items: this.carrito().map((c) => c.input),
         fechaEntrega: v.fechaEntrega,
         horaEntrega: v.horaEntrega,
-        distritoId: v.distritoId,
-        direccion: v.direccion,
-        referencia: v.referencia || undefined,
-        ubicacionUrl: v.ubicacionUrl.trim() || undefined,
-        telefonoReceptor: v.telefonoReceptor,
-        nombreReceptor: v.nombreReceptor,
+        distritoId: recojo ? undefined : v.distritoId,
+        direccion: recojo ? undefined : v.direccion,
+        referencia: recojo ? undefined : v.referencia || undefined,
+        ubicacionUrl: recojo ? undefined : v.ubicacionUrl.trim() || undefined,
+        telefonoReceptor: recojo ? undefined : v.telefonoReceptor,
+        nombreReceptor: recojo ? undefined : v.nombreReceptor,
         dedicatoria: v.dedicatoria || undefined,
         porcentajeAdelanto: v.porcentajeAdelanto,
+        pagoAhora: pagaAhora
+          ? { metodo: v.metodoPago as MetodoCobroDirecto, referencia: v.referenciaPago || undefined }
+          : undefined,
+        descuento: this.descuento(),
+        motivoDescuento: this.descuento() ? v.motivoDescuento : undefined,
       });
       await this.router.navigate(["/pedidos", pedido.id]);
     } catch (err) {
@@ -331,12 +407,67 @@ export class PedidoNuevoComponent implements OnInit {
   // ---------- Kiosko: selección por toque ----------
 
   irAPaso(paso: Paso): void {
+    // En tienda, lo más común es que se lo lleve ya: se propone "Ahora".
+    if (paso === 3 && this.esRecojo() && !this.form.value.horaEntrega) this.ahora();
     this.paso.set(paso);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   elegirCanal(canal: Canal): void {
     this.form.controls.canal.setValue(canal);
+    // Web y WhatsApp casi siempre son delivery; en tienda, recojo.
+    void this.elegirEntrega(canal === "vendedora" ? "recojo" : "delivery");
+  }
+
+  /** Recoge en tienda / se lo lleva, o delivery. Cambia qué se pide y cómo se cobra. */
+  async elegirEntrega(tipo: TipoEntrega): Promise<void> {
+    if (this.tipoEntrega() === tipo) return;
+    this.tipoEntrega.set(tipo);
+    if (tipo === "recojo") {
+      this.form.controls.distritoId.setValue("");
+      this.distritoSel.set("");
+      this.form.patchValue({ porcentajeAdelanto: 100, metodoPago: "efectivo" });
+    } else {
+      this.form.patchValue({
+        porcentajeAdelanto: 50,
+        metodoPago: this.form.value.canal === "vendedora" ? "efectivo" : "link",
+      });
+    }
+    this.aplicarValidadores();
+    await Promise.all([this.actualizarCotizacion(false), this.actualizarResumen()]);
+  }
+
+  /** Los datos de reparto solo son obligatorios en delivery. */
+  private aplicarValidadores(): void {
+    for (const campo of this.camposDelivery) {
+      const c = this.form.controls[campo];
+      c.setValidators(this.esRecojo() ? [] : [Validators.required]);
+      c.updateValueAndValidity({ emitEvent: false });
+    }
+    this.form.updateValueAndValidity();
+  }
+
+  /** "Se lo lleva": hoy, a esta hora. */
+  ahora(): void {
+    const hora = new Date().toLocaleTimeString("en-GB", {
+      timeZone: "America/Lima",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    this.form.patchValue({ fechaEntrega: hoyLima(), horaEntrega: hora });
+    this.esAhora.set(true);
+  }
+
+  /** El cliente se lo lleva en este momento. */
+  readonly esAhora = signal(false);
+
+  elegirMetodo(metodo: MetodoPagoAhora): void {
+    this.form.controls.metodoPago.setValue(metodo);
+  }
+
+  /** Métodos que se ofrecen: en recojo no tiene sentido mandar un link. */
+  metodosVisibles() {
+    return this.esRecojo() ? this.metodosPago.filter((m) => m.valor !== "link") : this.metodosPago;
   }
 
   async elegirDistrito(id: string): Promise<void> {
@@ -399,10 +530,12 @@ export class PedidoNuevoComponent implements OnInit {
 
   elegirFecha(fecha: string): void {
     this.form.controls.fechaEntrega.setValue(fecha);
+    this.esAhora.set(false);
   }
 
   elegirHora(hora: string): void {
     this.form.controls.horaEntrega.setValue(hora);
+    this.esAhora.set(false);
   }
 
   elegirAdelanto(pct: number): void {
@@ -411,7 +544,7 @@ export class PedidoNuevoComponent implements OnInit {
 
   /** Para pintar los pasos completos en la barra de progreso. */
   pasoListo(paso: Paso): boolean {
-    if (paso === 1) return !!this.distritoSel();
+    if (paso === 1) return this.esRecojo() || !!this.distritoSel();
     if (paso === 2) return this.carrito().length > 0;
     return this.form.valid;
   }

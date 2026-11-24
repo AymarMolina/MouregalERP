@@ -8,10 +8,12 @@
     <div class="page-header">
       <div>
         <div class="flex items-center gap-3" data-tour="detalle-estado">
-          <h1 class="panel-title text-lg">Pedido {{ p.codigo }}</h1>
+          <h1 class="page-title">Pedido {{ p.codigo }}</h1>
           <span [class]="'badge text-sm ' + claseEstado[p.estado]">{{ etiquetaEstado[p.estado] }}</span>
         </div>
-        <p class="panel-subtitle">Entrega {{ p.fechaEntrega }} · {{ hora(p.horaEntrega) }} · canal {{ p.canal }}</p>
+        <p class="panel-subtitle">
+          {{ p.tipoEntrega === "recojo" ? "Recoge en tienda" : "Entrega" }} {{ p.fechaEntrega }} · {{ hora(p.horaEntrega) }} · canal {{ p.canal }}
+        </p>
       </div>
       <div class="flex items-center gap-2">
         @if (puedeVerPagos() && saldo() > 0 && p.estado !== "cancelado") {
@@ -24,6 +26,33 @@
         }
       </div>
     </div>
+
+    @if (puedeEntregarEnTienda()) {
+      <section class="card mb-6 flex flex-wrap items-center gap-4 border-oro bg-oro-soft/40" data-tour="detalle-entregar">
+        <div class="min-w-0 flex-1">
+          <div class="panel-title">Listo para entregar en tienda</div>
+          <p class="panel-subtitle">
+            @if (saldo() > 0) {
+              Falta cobrar {{ soles(saldo()) }}. Elige cómo paga y entrégalo.
+            } @else {
+              Ya está pagado. Entrégalo al cliente.
+            }
+          </p>
+          @if (saldo() > 0) {
+            <div class="mt-3 flex flex-wrap gap-2">
+              @for (m of metodosCobro; track m.valor) {
+                <button type="button" class="chip py-2" [class.chip-sel]="metodoSaldo() === m.valor" (click)="metodoSaldo.set(m.valor)">
+                  {{ m.etiqueta }}
+                </button>
+              }
+            </div>
+          }
+        </div>
+        <button type="button" class="btn-primary px-5 py-3 text-[15px]" [disabled]="entregando()" (click)="entregarEnTienda()">
+          {{ entregando() ? "Entregando…" : saldo() > 0 ? "Cobrar " + soles(saldo()) + " y entregar" : "Entregar al cliente" }}
+        </button>
+      </section>
+    }
 
     @if (errorAccion()) {
       <p class="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-red-800">{{ errorAccion() }}</p>
@@ -60,6 +89,12 @@
           }
         </section>
 
+        @if (p.tipoEntrega === "recojo") {
+          <section class="card" data-tour="detalle-entrega">
+            <h2 class="panel-title mb-1">Entrega</h2>
+            <p class="text-muted">El cliente lo recoge en la tienda: sin envío ni repartidor.</p>
+          </section>
+        } @else {
         <section class="card" data-tour="detalle-entrega">
           <h2 class="panel-title mb-3">Entrega</h2>
           <dl class="grid gap-x-4 gap-y-2 sm:grid-cols-[8rem_1fr]">
@@ -74,6 +109,7 @@
             <div class="mt-4"><app-mapa [lat]="p.ubicacionLat" [lng]="p.ubicacionLng" alto="h-56" /></div>
           }
         </section>
+        }
 
         <section class="card" data-tour="detalle-historial">
           <h2 class="panel-title mb-3">Historial</h2>
@@ -102,9 +138,15 @@
             <span>{{ soles(p.subtotalProductos) }}</span>
           </div>
           <div class="flex justify-between">
-            <span class="text-muted">Envío</span>
+            <span class="text-muted">{{ p.tipoEntrega === "recojo" ? "Recojo en tienda" : "Envío" }}</span>
             <span>{{ soles(p.costoEnvio) }}</span>
           </div>
+          @if (num(p.descuento) > 0) {
+            <div class="flex justify-between" [title]="p.motivoDescuento ?? ''">
+              <span class="text-muted">Descuento</span>
+              <span class="text-positivo">−{{ soles(p.descuento) }}</span>
+            </div>
+          }
           <div class="flex justify-between border-t border-line pt-2 font-semibold">
             <span>Total</span>
             <span>{{ soles(p.total) }}</span>
@@ -126,7 +168,7 @@
               <li class="flex items-center justify-between gap-2">
                 <div>
                   <span class="capitalize">{{ pg.tipo }}</span>
-                  <span class="text-muted"> · {{ pg.metodo }}</span>
+                  <span class="text-muted capitalize"> · {{ pg.metodo }}</span>
                   <div><span [class]="'badge ' + clasePago[pg.estado]">{{ pg.estado }}</span></div>
                 </div>
                 <span class="font-medium">{{ soles(pg.monto) }}</span>

@@ -1,7 +1,8 @@
-import { Component, computed, inject, signal } from "@angular/core";
+import { Component, computed, HostListener, inject, signal } from "@angular/core";
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from "@angular/router";
 import { filter } from "rxjs";
 import { AuthService } from "../../core/auth/auth.service";
+import { ConexionService } from "../../core/offline/conexion.service";
 import { TourService } from "../../core/tour/tour.service";
 import { IconComponent } from "../../shared/icon/icon.component";
 import { NAV_GROUPS } from "../nav-items";
@@ -16,9 +17,26 @@ export class ShellComponent {
   private readonly router = inject(Router);
   readonly tour = inject(TourService);
 
+  readonly conexion = inject(ConexionService);
+
   readonly user = this.auth.user;
+  /** Menú lateral en pantallas angostas (tablet vertical, celular). */
   readonly menuAbierto = signal(false);
+  /** Menú desplegable del usuario en la barra superior. */
+  readonly menuUsuario = signal(false);
   readonly currentUrl = signal(this.router.url);
+
+  /** "hoy 14:42" o "21 nov, 18:05": de cuándo son los datos que se ven sin conexión. */
+  readonly datosDe = computed(() => {
+    const iso = this.conexion.datosDe();
+    if (!iso) return "";
+    const d = new Date(iso);
+    const zona = { timeZone: "America/Lima" } as const;
+    const dia = (x: Date) => x.toLocaleDateString("es-PE", zona);
+    const horaTxt = d.toLocaleTimeString("es-PE", { ...zona, hour: "2-digit", minute: "2-digit", hour12: false });
+    if (dia(d) === dia(new Date())) return `hoy ${horaTxt}`;
+    return `${d.toLocaleDateString("es-PE", { ...zona, day: "numeric", month: "short" })}, ${horaTxt}`;
+  });
 
   readonly groups = computed(() => {
     const rol = this.user()?.rol;
@@ -62,7 +80,22 @@ export class ShellComponent {
     this.router.events.pipe(filter((e) => e instanceof NavigationEnd)).subscribe(() => {
       this.currentUrl.set(this.router.url);
       this.menuAbierto.set(false);
+      this.menuUsuario.set(false);
     });
+  }
+
+  /** Cierra el menú del usuario con Escape o al hacer clic fuera. */
+  @HostListener("document:keydown.escape")
+  cerrarMenus(): void {
+    this.menuUsuario.set(false);
+    this.menuAbierto.set(false);
+  }
+
+  @HostListener("document:click", ["$event"])
+  alHacerClic(ev: MouseEvent): void {
+    if (!this.menuUsuario()) return;
+    const dentro = (ev.target as HTMLElement | null)?.closest("[data-menu-usuario]");
+    if (!dentro) this.menuUsuario.set(false);
   }
 
   readonly busqueda = signal("");

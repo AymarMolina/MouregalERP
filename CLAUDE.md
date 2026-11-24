@@ -39,6 +39,17 @@ Usuarios dev (seed): `admin|vendedora|produccion|almacen|delivery@mouregal.pe`, 
 
 `apps/api/.env` **no está en git** (tiene la URL de Neon). Copia `apps/api/.env.example` y pide los valores. Variables nuevas además de las del spec: `CORS_ORIGIN`, `TRUST_PROXY`, `PAGOS_LINK_BASE` (stub de links de pago), `PERMITIR_ENTREGA_CON_SALDO`.
 
+## App instalable y modo sin conexión (PWA)
+
+- La web es una **PWA**: `@angular/service-worker` (`ngsw-config.json`, solo en el build de producción) y `public/manifest.webmanifest`. Se instala desde Chrome/Edge en PC, laptop o tablet y abre sin internet.
+- **Lectura sin conexión** (`core/offline/`):
+  - `offline.interceptor.ts` guarda cada GET del API en IndexedDB (`mouregal-erp`, clave `<userId>|<url>`). Si un GET falla por red, responde con la última copia.
+  - `esFallaDeRed()` cuenta como "sin red" los estados 0, 502, 503 y **504**: sin red, el service worker de Angular devuelve 504, no 0.
+  - `ConexionService` muestra el aviso "Sin conexión" en el marco y prueba `/api/salud` cada 15 s. Al volver, el aviso se quita solo.
+  - Sin red, la sesión **no** se cierra: se entra con el usuario guardado (`erp_usuario`) y el token se renueva al volver. Logout borra la copia de ese usuario.
+- **Lo que no es GET falla** con "Sin conexión… necesita conexión". No hay cola de escrituras: crear pedidos, cobrar o cambiar estados necesita al servidor (stock compartido). Una cola para acciones seguras (consumo, entregado, cobro en efectivo) es el siguiente paso posible.
+- Probar el modo sin conexión exige el build de producción (`ng build` + API con `NODE_ENV=production`); con `ng serve` el service worker está apagado.
+
 ## Base de datos y migraciones
 
 - Migraciones en `apps/api/drizzle/`. Nunca `drizzle-kit push`: `pnpm db:generate` → revisar el SQL → `pnpm db:migrate`.
@@ -60,6 +71,12 @@ Todo cálculo de negocio está en el backend o en `packages/shared` como funcion
 | Disponibilidad = stock − reservado (pendiente + en_armado) | `apps/api/src/modules/pedidos/disponibilidad.service.ts` |
 | Único punto de escritura del stock (bloquea la fila del insumo, recalcula costo en compras) | `apps/api/src/modules/inventario/kardex.service.ts` |
 
+**Velocidad con la base lejos:** desde Lima a Neon (us-east-2) cada consulta tarda ~110 ms, y dentro de una transacción se atienden **de a una** aunque se envíen en paralelo. Por eso:
+- Fuera de transacciones, lo independiente va con `Promise.all` (cotizador, contexto del catálogo, recetas).
+- Dentro de transacciones se reduce el **número** de consultas: `KardexService.registrarSalidas` bloquea, inserta y actualiza todos los insumos en 3 consultas.
+- `DB_CONEXION_DIRECTA=true` usa `DATABASE_URL_UNPOOLED`: el pooler de Neon no reutiliza consultas preparadas (2 viajes por consulta en vez de 1). Recomendado en un servidor que corre siempre.
+- Lo que más ayuda: **servidor y base en la misma región** (o Postgres en el mismo VPS).
+
 **Concurrencia:**
 - Transiciones, consumo, pagos y recepciones bloquean la fila con `SELECT … FOR UPDATE` dentro de la transacción.
 - Crear un pedido toma `pg_advisory_xact_lock` y revalida el stock, para que dos ventas simultáneas no reserven lo mismo.
@@ -70,7 +87,7 @@ Todo cálculo de negocio está en el backend o en `packages/shared` como funcion
 - **Permisos por transición** (`validarTransicion`):
   - `en_armado`: produccion y admin.
   - `en_camino`: delivery, vendedora y admin.
-  - `entregado`: delivery y admin.
+  - `entregado`: delivery y admin; en **recojo**, vendedora y admin (listo → entregado en el mostrador, sin en_camino ni foto).
   - `cancelado`: la vendedora solo antes de consumir (pendiente o en_armado); desde listo o en_camino solo el admin, porque lo consumido cuenta como merma.
 - Producción **no** despacha: el botón solo aparece a quien la regla lo permite.
 - **No se puede crear un pedido sin stock** (409 con el detalle de lo que falta).
@@ -89,21 +106,33 @@ Todo cálculo de negocio está en el backend o en `packages/shared` como funcion
   - Merma: por la fecha del movimiento de Kardex.
   - Un pedido para el 19 que se arma y despacha hoy cuenta hoy.
 - **Exportar a Excel:** `.xlsx` real generado sin dependencias en `shared/tabla/excel.ts`. Cada `Tabla` con `csv` muestra el botón "Excel" junto a la paginación (exporta lo seleccionado o, si no hay selección, todo lo filtrado). Delivery, Producción y Compras sugeridas tienen su propio botón.
+- **Venta en tienda** (2026-11-24, migración `0006_venta_mostrador`):
+  - `pedidos.tipo_entrega`: `delivery` (por defecto) o `recojo`. En recojo no hay distrito, dirección, receptor ni vehículo, el envío es 0 y no aparece en Delivery ni en el reporte de envíos. El cliente puede ir vacío ("Cliente de mostrador").
+  - En "Nuevo pedido", el canal En tienda propone **Recoge en tienda** y en el paso 3 marca **Se lo lleva ahora** (hoy, a esta hora) y **paga todo en efectivo**: no hay que escribir nada.
+  - **pagoAhora** (`efectivo|yape|plin|tarjeta|transferencia`): el adelanto se registra pagado al crear, sin link. Solo con «Enviar link» queda un cobro pendiente. `tarjeta` es método nuevo.
+  - **Descuento** en soles sobre los productos, con motivo obligatorio (queda en el historial). La vendedora hasta `DESCUENTO_MAX_VENDEDORA_PCT` (10 %); el admin sin tope.
+  - **Registrar un pago a mano anula los links pendientes** (si no, el cliente podía pagar dos veces). El tipo (adelanto/saldo) lo deduce el API.
+  - El teléfono reconoce al cliente; si se escribe otro nombre, se actualiza.
+  - Producción: si quien empieza a armar no eligió encargada, queda como encargada.
+  - Tutorial: solo el general (3 pasos) se abre solo; los de cada pantalla, con "?".
 - **Login:** máximo 5 fallos en 15 min por IP+email (en memoria; con varias instancias habría que pasarlo a Redis). Logout incrementa `token_version`.
 
 ## Guía de diseño (UI/UX) — obligatoria
 
-Estética **SaaS claro y corporativo**: blancos y grises muy sutiles, bordes finos, nada de sombras marcadas (rediseño del 2026-11-09, a pedido del usuario; reemplaza el sidebar morado).
+**Estructura de la Intranet de NeuroLee** (2026-11-24, a pedido del usuario) con la **paleta azul marino** de Mouregal (2026-11-20). La estructura se tomó de `WEBSY/neurolee` (capturas en `neurolee/manuales/guia/capturas/`); los colores de NeuroLee (morado, turquesa) **no** se usan.
 
 - **Colores** (tokens en `tailwind.config.js`):
-  - Fondo `#f8f9fa` (`bg`), superficies blancas, bordes `gray-200/80`.
-  - Texto `#111827`, secundario `#6b7280` (`muted`).
-  - La marca Mouregal queda como **acento institucional** `#9b73a1` (`accent`/`brand`, `brand-soft`, `brand-dark`): checkboxes marcados, pestaña activa, ícono del menú activo, foco y gráficos. Paleta del logo: `#b584b9 #b48dbb #a382ac #9b73a1`, oscuros `#4e345a`, apagados `#987f9c #73607c #6d5d72`.
+  - Fondo y superficies blancos, bordes `brand-line` (`#dde3ee`), cabecera de tabla `brand-band`.
+  - Azul marino: `brand-dark` `#14213d` (menú lateral, botón primario, recuadro del título), `brand` `#1e3a6e` (acento, foco, gráficos), `brand-soft` (fondos suaves).
+  - `oro` (`#f2c14e`, `oro-soft`, `oro-fg`): marca del ítem activo del menú, contadores de pestañas y aviso sin conexión. Es relleno; nunca texto sobre blanco.
   - Badges pastel por estado (`estado.*`, con punto de color) y `positivo`/`negativo`.
-- **Layout:** sidebar blanco con borde derecho; ítem activo `bg-gray-100` y texto oscuro. Barra superior blanca con migas y buscador "Buscar o escribe un comando…" (salta a la pantalla que coincide). Tarjetas blancas `rounded-xl border border-gray-200/80`.
-- **Botón primario** `bg-gray-900` texto blanco seminegrita; secundario blanco con borde gris.
-- **Login:** video de fondo `public/videos/fondo logo erp.mp4`, tarjeta blanca y logo `public/logo-mouregal.png` (mantiene la marca).
-- **Tipografía:** Inter. 400 para texto, 500 para etiquetas y UI, 600/700 para números y títulos. Números tabulares en tablas, inventarios y ejes.
+- **Layout** (`layout/shell`):
+  - Barra superior blanca a todo el ancho (56 px): logo + "ERP", buscador "Buscar o escribe un comando…", botón "?" y píldora del usuario con menú (correo, Cerrar sesión).
+  - Menú lateral oscuro (`brand-dark`, 240 px) con grupos; ítem activo `.nav-item-activo` (fondo blanco al 12 % y barra dorada). Bajo `lg` se oculta y se abre con el botón de menú.
+  - Contenido sobre blanco con migas (`.migas`) arriba. Cada `h1` usa `.page-title` (recuadro azul marino con la flor + título) dentro de `.page-header`, que cierra con una línea.
+- **Botón primario** `bg-brand-dark` texto blanco seminegrita; secundario blanco con borde gris.
+- **Login:** video de fondo `public/videos/fondo logo erp.mp4`, tarjeta blanca y logo `public/logo-mouregal.png` (conserva el lila del logo).
+- **Tipografía:** Poppins (`font-display`) en títulos y cifras grandes, Roboto en el texto. Números tabulares en tablas, inventarios y ejes.
 - **Componentes base** en `apps/web/src/styles.css` (Tailwind `@apply`): `card`, `kpi`, `toolbar`, `search`, `pill`/`pill-active`, `tabs`/`tab`/`tab-active`/`tab-count`, `table-wrap`/`table`/`table-head`/`col-check`/`fila-sel`, `seleccion-bar`, `badge`, `btn-primary`/`btn-secondary`/`btn-text`, `btn-action` (+ `-danger`/`-ok`), `spinner`, `skeleton`.
 - **Tablas de datos** (`shared/tabla/`): toda lista usa `Tabla<T>` (paginación + selección múltiple + export CSV) con `TABLA_CONTROLES`:
   - Primera columna checkbox (`app-check-todos` / `app-check-fila`), barra `app-seleccion-bar` al marcar.

@@ -1,4 +1,4 @@
-import type { EstadoPedido, RolUsuario } from "./enums";
+import type { EstadoPedido, RolUsuario, TipoEntrega } from "./enums";
 import type { LineaCantidad } from "./pricing";
 
 /**
@@ -8,7 +8,8 @@ import type { LineaCantidad } from "./pricing";
 export const TRANSICIONES_VALIDAS: Record<EstadoPedido, readonly EstadoPedido[]> = {
   pendiente: ["en_armado", "cancelado"],
   en_armado: ["cancelado"],
-  listo: ["en_camino", "cancelado"],
+  // listo → entregado solo en recojo (el cliente lo recoge en tienda); ver validarTransicion.
+  listo: ["en_camino", "entregado", "cancelado"],
   en_camino: ["entregado", "cancelado"],
   entregado: [],
   cancelado: [],
@@ -18,7 +19,8 @@ export const TRANSICIONES_VALIDAS: Record<EstadoPedido, readonly EstadoPedido[]>
  * Quién puede llevar un pedido a cada estado (sección 3):
  * - en_armado: producción arma el pedido.
  * - en_camino: delivery despacha; la vendedora también ("Enviar link y despachar").
- * - entregado: delivery marca la entrega.
+ * - entregado: delivery marca la entrega. En recojo la marca la vendedora al
+ *   entregarlo en el mostrador (listo → entregado, sin pasar por en_camino).
  * - cancelado: la vendedora puede cancelar mientras no se haya consumido
  *   inventario (pendiente / en_armado). Desde listo o en_camino la
  *   cancelación genera merma, así que solo la hace el admin.
@@ -29,7 +31,7 @@ const ROLES_POR_DESTINO: Record<EstadoPedido, readonly RolUsuario[]> = {
   en_armado: ["admin", "produccion"],
   listo: ["admin", "produccion"],
   en_camino: ["admin", "delivery", "vendedora"],
-  entregado: ["admin", "delivery"],
+  entregado: ["admin", "delivery", "vendedora"],
   cancelado: ["admin", "vendedora"],
 };
 
@@ -37,12 +39,31 @@ const ESTADOS_SIN_CONSUMO: readonly EstadoPedido[] = ["pendiente", "en_armado"];
 
 export type ResultadoTransicion = { ok: true } | { ok: false; motivo: string };
 
-export function validarTransicion(rol: RolUsuario, desde: EstadoPedido, hacia: EstadoPedido): ResultadoTransicion {
+export function validarTransicion(
+  rol: RolUsuario,
+  desde: EstadoPedido,
+  hacia: EstadoPedido,
+  tipoEntrega: TipoEntrega = "delivery",
+): ResultadoTransicion {
   if (!TRANSICIONES_VALIDAS[desde].includes(hacia)) {
     return { ok: false, motivo: `No se puede pasar de "${desde}" a "${hacia}"` };
   }
   if (!ROLES_POR_DESTINO[hacia].includes(rol)) {
     return { ok: false, motivo: `El rol "${rol}" no puede pasar un pedido a "${hacia}"` };
+  }
+  if (tipoEntrega === "recojo" && hacia === "en_camino") {
+    return { ok: false, motivo: "Es un pedido para recoger en tienda: no se despacha, se entrega en el mostrador" };
+  }
+  if (tipoEntrega === "delivery" && hacia === "entregado") {
+    if (desde === "listo") {
+      return { ok: false, motivo: "Un pedido con delivery primero se despacha (en_camino) y luego se entrega" };
+    }
+    if (rol === "vendedora") {
+      return { ok: false, motivo: "La entrega de un delivery la marca el repartidor o el admin" };
+    }
+  }
+  if (tipoEntrega === "recojo" && hacia === "entregado" && rol === "delivery") {
+    return { ok: false, motivo: "Un pedido para recoger lo entrega la tienda, no el repartidor" };
   }
   if (hacia === "cancelado" && rol !== "admin" && !ESTADOS_SIN_CONSUMO.includes(desde)) {
     return {

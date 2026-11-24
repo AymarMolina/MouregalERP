@@ -39,6 +39,7 @@ node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
 |---|---|
 | `DATABASE_URL` | la pooled de Neon |
 | `DATABASE_URL_UNPOOLED` | la unpooled de Neon |
+| `DB_CONEXION_DIRECTA` | `true`: el API usa la unpooled (1 ida y vuelta por consulta en vez de 2). Pon el servicio en la misma región que la base. |
 | `JWT_SECRET` | la primera clave del paso 2 |
 | `JWT_REFRESH_SECRET` | la segunda clave del paso 2 |
 | `NODE_ENV` | `production` |

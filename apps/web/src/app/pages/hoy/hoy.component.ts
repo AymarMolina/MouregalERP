@@ -136,9 +136,9 @@ export class HoyComponent implements OnInit {
         (!estado || p.estado === estado) &&
         (!q ||
           p.codigo.toLowerCase().includes(q) ||
-          p.nombreReceptor.toLowerCase().includes(q) ||
+          (p.nombreReceptor ?? "").toLowerCase().includes(q) ||
           p.cliente.toLowerCase().includes(q) ||
-          p.distrito.toLowerCase().includes(q)),
+          (p.distrito ?? "tienda").toLowerCase().includes(q)),
     );
   });
 

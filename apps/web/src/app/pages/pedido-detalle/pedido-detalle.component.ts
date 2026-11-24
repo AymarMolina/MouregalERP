@@ -2,7 +2,7 @@ import { DatePipe } from "@angular/common";
 import { MapaComponent } from "../../shared/mapa/mapa.component";
 import { Component, Input, OnInit, computed, inject, signal } from "@angular/core";
 import { RouterLink } from "@angular/router";
-import { calcularSaldo, validarTransicion } from "@erp/shared";
+import { calcularSaldo, validarTransicion, type MetodoCobroDirecto } from "@erp/shared";
 import { AuthService } from "../../core/auth/auth.service";
 import { mensajeError } from "../../core/http/errores";
 import { PagosApi } from "../../core/operacion/operacion.service";
@@ -36,6 +36,28 @@ export class PedidoDetalleComponent implements OnInit {
   readonly error = signal<string | null>(null);
   readonly errorAccion = signal<string | null>(null);
   readonly cancelando = signal(false);
+  readonly entregando = signal(false);
+  /** Con qué paga el saldo al recoger. */
+  readonly metodoSaldo = signal<MetodoCobroDirecto>("efectivo");
+  readonly metodosCobro: { valor: MetodoCobroDirecto; etiqueta: string }[] = [
+    { valor: "efectivo", etiqueta: "Efectivo" },
+    { valor: "yape", etiqueta: "Yape" },
+    { valor: "plin", etiqueta: "Plin" },
+    { valor: "tarjeta", etiqueta: "Tarjeta" },
+    { valor: "transferencia", etiqueta: "Transferencia" },
+  ];
+
+  /** Recojo listo: la vendedora lo entrega en el mostrador (y cobra lo que falte). */
+  readonly puedeEntregarEnTienda = computed(() => {
+    const p = this.pedido();
+    const rol = this.auth.user()?.rol;
+    return (
+      !!p &&
+      !!rol &&
+      p.tipoEntrega === "recojo" &&
+      validarTransicion(rol, p.estado, "entregado", "recojo").ok
+    );
+  });
 
   readonly saldo = computed(() => {
     const p = this.pedido();
@@ -87,6 +109,27 @@ export class PedidoDetalleComponent implements OnInit {
       this.errorAccion.set(mensajeError(err, "No se pudo cancelar el pedido."));
     } finally {
       this.cancelando.set(false);
+    }
+  }
+
+  /** Cobra el saldo (si hay) y marca entregado, en un solo toque. */
+  async entregarEnTienda(): Promise<void> {
+    const p = this.pedido();
+    if (!p) return;
+    this.entregando.set(true);
+    this.errorAccion.set(null);
+    try {
+      const saldo = this.saldo();
+      if (saldo > 0) {
+        await this.pagosApi.registrar(p.id, { metodo: this.metodoSaldo(), monto: saldo });
+      }
+      await this.pedidosService.transicion(p.id, "entregado", "Entregado en tienda");
+      await this.cargar();
+    } catch (err) {
+      this.errorAccion.set(mensajeError(err, "No se pudo entregar el pedido."));
+      await this.cargar();
+    } finally {
+      this.entregando.set(false);
     }
   }
 

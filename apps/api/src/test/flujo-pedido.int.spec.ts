@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException } from '@nestjs/common';
 import { and, eq } from 'drizzle-orm';
-import type { PedidoInput } from '@erp/shared';
+import type { PedidoEntrada as PedidoInput } from '@erp/shared';
 import * as schema from '../db/schema';
 import { crearEntornoDePrueba, type EntornoDePrueba } from './db-test';
 
@@ -53,10 +53,10 @@ describe('Flujo de pedido (integración, Postgres en memoria)', () => {
   it('Ramo Clásico L con rosa roja → carro; el total del servidor coincide con la cotización', async () => {
     const input = await pedidoBase(e, { talla: 'L' });
     const cot = await e.cotizaciones.cotizarPedido({
-      items: input.items,
+      items: input.items.map((i) => ({ cantidad: 1, extraIds: [], ...i })),
       distritoId: input.distritoId,
     });
-    const pedido = await e.pedidos.crear(input, e.usuarios.vendedora);
+    const pedido = await e.pedidos.crear(input, actor('vendedora'));
 
     expect(pedido.vehiculo).toBe('carro');
     expect(Number(pedido.costoEnvio)).toBe(20);
@@ -96,7 +96,7 @@ describe('Flujo de pedido (integración, Postgres en memoria)', () => {
       florId: rosaBlanca.id,
     });
     await expect(
-      e.pedidos.crear(input, e.usuarios.vendedora),
+      e.pedidos.crear(input, actor('vendedora')),
     ).rejects.toBeInstanceOf(ConflictException);
   });
 
@@ -105,13 +105,13 @@ describe('Flujo de pedido (integración, Postgres en memoria)', () => {
     // 24 de 30 rosas blancas reservadas...
     await e.pedidos.crear(
       await pedidoBase(e, { talla: 'M', florId: rosaBlanca.id }),
-      e.usuarios.vendedora,
+      actor('vendedora'),
     );
     // ...un ramo S con 12 más ya no cabe.
     await expect(
       e.pedidos.crear(
         await pedidoBase(e, { talla: 'S', florId: rosaBlanca.id }),
-        e.usuarios.vendedora,
+        actor('vendedora'),
       ),
     ).rejects.toBeInstanceOf(ConflictException);
   });
@@ -121,7 +121,7 @@ describe('Flujo de pedido (integración, Postgres en memoria)', () => {
     const stockInicial = Number(rosaRoja.stockActual);
     const pedido = await e.pedidos.crear(
       await pedidoBase(e, { talla: 'L' }),
-      e.usuarios.vendedora,
+      actor('vendedora'),
     );
 
     await e.pedidos.asignar(pedido.id, { encargadaId: e.usuarios.produccion });
@@ -198,7 +198,7 @@ describe('Flujo de pedido (integración, Postgres en memoria)', () => {
   it('no se despacha con saldo sin link; "despachar" lo genera; el pago cierra el saldo (spec fase 5)', async () => {
     const pedido = await e.pedidos.crear(
       await pedidoBase(e, { talla: 'S' }),
-      e.usuarios.vendedora,
+      actor('vendedora'),
     );
     await e.pedidos.asignar(pedido.id, { encargadaId: e.usuarios.produccion });
     await e.pedidos.transicion(
@@ -273,7 +273,7 @@ describe('Flujo de pedido (integración, Postgres en memoria)', () => {
   it('pago manual: no puede exceder el saldo y actualiza total_pagado', async () => {
     const pedido = await e.pedidos.crear(
       await pedidoBase(e, { talla: 'S' }),
-      e.usuarios.vendedora,
+      actor('vendedora'),
     );
     const total = Number(pedido.total);
     await expect(
@@ -298,7 +298,7 @@ describe('Flujo de pedido (integración, Postgres en memoria)', () => {
         talla: 'S',
         cambioNoListado: 'Agregar lazo dorado',
       }),
-      e.usuarios.vendedora,
+      actor('vendedora'),
     );
     await e.pedidos.asignar(pedido.id, { encargadaId: e.usuarios.produccion });
     await expect(
@@ -348,7 +348,7 @@ describe('Flujo de pedido (integración, Postgres en memoria)', () => {
   it('permisos por transición: delivery no cancela, la vendedora no cancela un pedido listo', async () => {
     const pedido = await e.pedidos.crear(
       await pedidoBase(e, { talla: 'S' }),
-      e.usuarios.vendedora,
+      actor('vendedora'),
     );
     await expect(
       e.pedidos.transicion(
@@ -399,7 +399,7 @@ describe('Flujo de pedido (integración, Postgres en memoria)', () => {
         productoId: await e.productoId('box-de-lirios'),
         florId: lirio.id,
       }),
-      e.usuarios.vendedora,
+      actor('vendedora'),
     );
     expect(pedido.vehiculo).toBe('carro');
   });
@@ -522,6 +522,195 @@ describe('Compras (integración)', () => {
   });
 });
 
+describe('Venta en tienda: recojo, cobro en el momento y descuento', () => {
+  let e: EntornoDePrueba;
+  const actor = (rol: 'admin' | 'vendedora' | 'produccion' | 'delivery') => ({
+    sub: e.usuarios[rol],
+    rol,
+  });
+  beforeEach(async () => {
+    e = await crearEntornoDePrueba();
+  });
+  afterEach(async () => {
+    await e.cerrar();
+  });
+
+  /** Cliente de mostrador: sin distrito, dirección ni receptor. */
+  async function mostrador(
+    extra: Partial<PedidoInput> = {},
+  ): Promise<PedidoInput> {
+    const rosaRoja = await e.insumo('ROS-ROJ');
+    return {
+      canal: 'vendedora',
+      tipoEntrega: 'recojo',
+      cliente: {},
+      items: [
+        {
+          productoId: await e.productoId('ramo-clasico-de-rosas'),
+          talla: 'S',
+          florId: rosaRoja.id,
+        },
+      ],
+      fechaEntrega: '2026-11-10',
+      horaEntrega: '10:00',
+      porcentajeAdelanto: 100,
+      pagoAhora: { metodo: 'efectivo' },
+      ...extra,
+    };
+  }
+
+  it('se lo lleva y paga en efectivo: sin envío, pagado, y la vendedora lo entrega en el mostrador', async () => {
+    const pedido = await e.pedidos.crear(await mostrador(), actor('vendedora'));
+    expect(pedido).toMatchObject({
+      tipoEntrega: 'recojo',
+      distritoId: null,
+      direccion: null,
+      vehiculo: null,
+      costoEnvio: '0.00',
+      total: '89.00',
+      totalPagado: '89.00',
+    });
+    const pagos = await e.pagos.listPorPedido(pedido.id);
+    expect(pagos).toHaveLength(1);
+    expect(pagos[0]).toMatchObject({
+      metodo: 'efectivo',
+      estado: 'pagado',
+      linkUrl: null,
+    });
+
+    const [cliente] = await e.db
+      .select()
+      .from(schema.clientes)
+      .where(eq(schema.clientes.id, pedido.clienteId));
+    expect(cliente.nombre).toBe('Cliente de mostrador');
+
+    // Sin asignar: quien empieza a armar queda como encargada.
+    const enArmado = await e.pedidos.transicion(
+      pedido.id,
+      'en_armado',
+      undefined,
+      actor('produccion'),
+    );
+    expect(enArmado.encargadaId).toBe(e.usuarios.produccion);
+    await e.pedidos.confirmarConsumo(
+      pedido.id,
+      { lineas: [] as never },
+      e.usuarios.produccion,
+    );
+
+    // No se despacha: se entrega en tienda, sin foto ni repartidor.
+    await expect(
+      e.pedidos.transicion(
+        pedido.id,
+        'en_camino',
+        undefined,
+        actor('vendedora'),
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    const entregado = await e.pedidos.transicion(
+      pedido.id,
+      'entregado',
+      undefined,
+      actor('vendedora'),
+    );
+    expect(entregado.estado).toBe('entregado');
+
+    // No aparece en el tablero de delivery.
+    const tablero = await e.pedidos.tableroDelivery('2026-11-10');
+    expect(tablero.pedidos.find((p) => p.id === pedido.id)).toBeUndefined();
+  });
+
+  it('recoge mañana: deja 50 % con tarjeta y paga el resto al recoger', async () => {
+    const pedido = await e.pedidos.crear(
+      await mostrador({
+        cliente: { nombre: 'Rosa', telefono: '987654321' },
+        porcentajeAdelanto: 50,
+        pagoAhora: { metodo: 'tarjeta', referencia: 'POS 0042' },
+      }),
+      actor('vendedora'),
+    );
+    expect(Number(pedido.totalPagado)).toBe(44.5);
+    // Mismo teléfono con otro nombre: se reconoce al cliente y se actualiza el nombre.
+    const otra = await e.pedidos.crear(
+      await mostrador({
+        cliente: { nombre: 'Rosa Quispe', telefono: '987654321' },
+      }),
+      actor('vendedora'),
+    );
+    expect(otra.clienteId).toBe(pedido.clienteId);
+    const [c] = await e.db
+      .select()
+      .from(schema.clientes)
+      .where(eq(schema.clientes.id, otra.clienteId));
+    expect(c.nombre).toBe('Rosa Quispe');
+
+    const pago = await e.pagos.registrarManual(pedido.id, {
+      metodo: 'yape',
+      monto: 44.5,
+    });
+    expect(pago.tipo).toBe('saldo');
+    const [actual] = await e.db
+      .select()
+      .from(schema.pedidos)
+      .where(eq(schema.pedidos.id, pedido.id));
+    expect(actual.totalPagado).toBe('89.00');
+  });
+
+  it('descuento: la vendedora hasta 10 % con motivo; más, solo el admin', async () => {
+    await expect(
+      e.pedidos.crear(await mostrador({ descuento: 20 }), actor('vendedora')),
+    ).rejects.toThrow(/motivo/i);
+    await expect(
+      e.pedidos.crear(
+        await mostrador({
+          descuento: 20,
+          motivoDescuento: 'Cliente frecuente',
+        }),
+        actor('vendedora'),
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
+
+    const conDescuento = await e.pedidos.crear(
+      await mostrador({ descuento: 8.9, motivoDescuento: 'Cliente frecuente' }),
+      actor('vendedora'),
+    );
+    expect(conDescuento).toMatchObject({
+      descuento: '8.90',
+      total: '80.10',
+      totalPagado: '80.10',
+    });
+
+    const admin = await e.pedidos.crear(
+      await mostrador({ descuento: 20, motivoDescuento: 'Cortesía' }),
+      actor('admin'),
+    );
+    expect(admin.total).toBe('69.00');
+  });
+
+  it('registrar a mano el adelanto anula el link pendiente (no se cobra dos veces)', async () => {
+    const pedido = await e.pedidos.crear(
+      await mostrador({ porcentajeAdelanto: 50, pagoAhora: undefined }),
+      actor('vendedora'),
+    );
+    const [link] = await e.pagos.listPorPedido(pedido.id);
+    expect(link).toMatchObject({ metodo: 'link', estado: 'pendiente' });
+
+    await e.pagos.registrarManual(pedido.id, { metodo: 'yape', monto: 44.5 });
+    const pagos = await e.pagos.listPorPedido(pedido.id);
+    expect(pagos.find((p) => p.id === link.id)?.estado).toBe('anulado');
+    expect(pagos.filter((p) => p.estado === 'pendiente')).toHaveLength(0);
+  });
+
+  it('un delivery sigue exigiendo distrito, dirección y receptor', async () => {
+    await expect(
+      e.pedidos.crear(
+        await mostrador({ tipoEntrega: 'delivery' }),
+        actor('vendedora'),
+      ),
+    ).rejects.toThrow(/distrito/);
+  });
+});
+
 describe('Dashboard /hoy (integración)', () => {
   let e: EntornoDePrueba;
   beforeEach(async () => {
@@ -561,7 +750,7 @@ describe('Dashboard /hoy (integración)', () => {
         nombreReceptor: 'Luis',
         porcentajeAdelanto: 50,
       },
-      e.usuarios.vendedora,
+      { sub: e.usuarios.vendedora, rol: 'vendedora' },
     );
 
     const d = await dashboard.hoy();

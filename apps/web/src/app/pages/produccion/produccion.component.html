@@ -64,7 +64,15 @@
                 </div>
 
                 <!-- Cuerpo: quién recibe + qué lleva -->
-                <div class="mt-2 text-sm font-semibold text-[#2c2b2d]">{{ p.nombreReceptor }}</div>
+                <div class="mt-2 text-sm font-semibold text-[#2c2b2d]">
+                  @if (p.tipoEntrega === "recojo") {
+                    <span class="inline-flex items-center gap-1 rounded-full bg-oro-soft px-2 py-0.5 text-xs font-semibold text-oro-fg">
+                      <app-icon name="tienda" [size]="12" /> Recoge en tienda
+                    </span>
+                  } @else {
+                    {{ p.nombreReceptor }}
+                  }
+                </div>
                 @if (resumenItems(p); as resumen) {
                   <div class="mt-0.5 truncate text-xs text-[#475a7d]" [title]="resumen">{{ resumen }}</div>
                 }
@@ -113,7 +121,7 @@
         <div class="flex items-center justify-between border-b border-line pb-3">
           <div>
             <h2 class="panel-title text-base">Pedido {{ pedido.codigo }}</h2>
-            <p class="panel-subtitle">{{ cuando(pedido.fechaEntrega, pedido.horaEntrega) }} · {{ pedido.nombreReceptor }}</p>
+            <p class="panel-subtitle">{{ cuando(pedido.fechaEntrega, pedido.horaEntrega) }} · {{ pedido.tipoEntrega === "recojo" ? "recoge en tienda" : pedido.nombreReceptor }}</p>
           </div>
           <button type="button" class="btn-action" (click)="cerrar()" title="Cerrar" aria-label="Cerrar"><app-icon name="cerrar" [size]="18" /></button>
         </div>
@@ -151,11 +159,11 @@
                 [value]="encargadaSeleccionada()"
                 (change)="asignarEncargada($any($event.target).value)"
               >
-                <option value="">Sin asignar</option>
+                <option value="">Yo (quien empieza a armar)</option>
                 @for (u of encargadas(); track u.id) { <option [value]="u.id">{{ u.nombre }}</option> }
               </select>
             </div>
-            <button type="button" (click)="pasarAEnArmado()" class="btn-primary">Pasar a en armado</button>
+            <button type="button" (click)="pasarAEnArmado()" class="btn-primary">Empezar a armar</button>
           </div>
         }
 

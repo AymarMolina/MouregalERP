@@ -87,13 +87,15 @@ export interface EvaluacionCambio {
 @Injectable()
 export class ItemResolverService {
   async cargarContexto(exec: Exec): Promise<ContextoCatalogo> {
-    const todosInsumos = await exec.select().from(insumos);
-    const reglasActivas = await exec
-      .select()
-      .from(reglasCambio)
-      .where(eq(reglasCambio.activo, true));
-    const todosExtras = await exec.select().from(extras);
-    const permitidas = await exec.select().from(productoFloresPermitidas);
+    // En paralelo: con la base lejos (Neon), cuatro idas y vueltas seguidas
+    // se notaban en cada toque del cotizador.
+    const [todosInsumos, reglasActivas, todosExtras, permitidas] =
+      await Promise.all([
+        exec.select().from(insumos),
+        exec.select().from(reglasCambio).where(eq(reglasCambio.activo, true)),
+        exec.select().from(extras),
+        exec.select().from(productoFloresPermitidas),
+      ]);
 
     const floresPermitidas = new Map<string, Set<string>>();
     for (const p of permitidas) {

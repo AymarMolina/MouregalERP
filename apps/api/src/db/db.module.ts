@@ -12,7 +12,14 @@ export const DB = Symbol('DB');
       provide: DB,
       inject: [ConfigService],
       useFactory: (config: ConfigService): Db => {
-        const { db } = createDb(config.getOrThrow<string>('DATABASE_URL'));
+        // Un servidor que corre todo el tiempo (VPS, Railway) va mejor con la
+        // conexión directa: el pooler de Neon no guarda las consultas
+        // preparadas y cada consulta cuesta dos idas y vueltas en vez de una.
+        const directa = config.get<string>('DB_CONEXION_DIRECTA') === 'true';
+        const url = directa
+          ? config.getOrThrow<string>('DATABASE_URL_UNPOOLED')
+          : config.getOrThrow<string>('DATABASE_URL');
+        const { db } = createDb(url);
         return db;
       },
     },

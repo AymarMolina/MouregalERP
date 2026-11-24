@@ -1,4 +1,4 @@
-import type { Canal, EstadoConsulta, EstadoPedido, Talla, Vehiculo } from "@erp/shared";
+import type { Canal, EstadoConsulta, EstadoPedido, Talla, TipoEntrega, Vehiculo } from "@erp/shared";
 
 export interface OpcionCotizacion {
   insumoId: string;
@@ -92,18 +92,22 @@ export interface Pedido {
   estado: EstadoPedido;
   fechaEntrega: string;
   horaEntrega: string;
-  distritoId: string;
-  direccion: string;
+  /** recojo: sin distrito, dirección, receptor ni vehículo. */
+  tipoEntrega: TipoEntrega;
+  distritoId: string | null;
+  direccion: string | null;
   referencia: string | null;
   ubicacionUrl: string | null;
   ubicacionLat: number | null;
   ubicacionLng: number | null;
-  telefonoReceptor: string;
-  nombreReceptor: string;
+  telefonoReceptor: string | null;
+  nombreReceptor: string | null;
   dedicatoria: string | null;
-  vehiculo: Vehiculo;
+  vehiculo: Vehiculo | null;
   subtotalProductos: string;
   costoEnvio: string;
+  descuento: string;
+  motivoDescuento: string | null;
   total: string;
   totalPagado: string;
   encargadaId: string | null;
@@ -168,10 +172,11 @@ export interface PedidoDelDia {
   canal: Canal;
   fechaEntrega: string;
   horaEntrega: string;
-  nombreReceptor: string;
+  nombreReceptor: string | null;
   cliente: string;
-  distrito: string;
-  vehiculo: Vehiculo;
+  distrito: string | null;
+  vehiculo: Vehiculo | null;
+  tipoEntrega: TipoEntrega;
   total: string;
   totalPagado: string;
 }

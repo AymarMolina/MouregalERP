@@ -39,6 +39,13 @@ module.exports = {
           dark: "#14213d",
           darker: "#0b1530",
         },
+        // Marca dorada de la estructura NeuroLee: barra del ítem activo del menú
+        // y contadores. Es relleno, nunca color de texto sobre blanco.
+        oro: {
+          DEFAULT: "#f2c14e",
+          soft: "#fdf1cc",
+          fg: "#6b4e00",
+        },
         positivo: "#15803d",
         negativo: "#b91c1c",
         estado: {

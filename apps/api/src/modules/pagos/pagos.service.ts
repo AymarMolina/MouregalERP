@@ -69,11 +69,12 @@ export class PagosService {
         totalPagado: pedidos.totalPagado,
         clienteNombre: clientes.nombre,
         clienteTelefono: clientes.telefono,
+        tipoEntrega: pedidos.tipoEntrega,
         distrito: distritos.nombre,
       })
       .from(pedidos)
       .innerJoin(clientes, eq(pedidos.clienteId, clientes.id))
-      .innerJoin(distritos, eq(pedidos.distritoId, distritos.id))
+      .leftJoin(distritos, eq(pedidos.distritoId, distritos.id))
       .where(and(...condiciones))
       .orderBy(asc(pedidos.fechaEntrega), asc(pedidos.horaEntrega))
       .limit(500);
@@ -111,7 +112,10 @@ export class PagosService {
         .insert(pagos)
         .values({
           pedidoId,
-          tipo: input.tipo,
+          // Sin tipo: adelanto si es el primer cobro, si no saldo.
+          tipo:
+            input.tipo ??
+            (Number(pedido.totalPagado) > 0 ? 'saldo' : 'adelanto'),
           metodo: input.metodo,
           monto: String(input.monto),
           estado: 'pagado',
@@ -120,7 +124,19 @@ export class PagosService {
         })
         .returning();
 
-      await this.anularLinksSiQuedaSinSaldo(tx, pedido, input.monto);
+      // Lo cobrado a mano reemplaza a los links pendientes: si siguieran vivos,
+      // el cliente podría pagar dos veces lo mismo. Si aún queda saldo, se
+      // genera un link nuevo por lo que falta (Pagos o al despachar).
+      await tx
+        .update(pagos)
+        .set({ estado: 'anulado' })
+        .where(
+          and(
+            eq(pagos.pedidoId, pedidoId),
+            eq(pagos.estado, 'pendiente'),
+            ne(pagos.id, pago.id),
+          ),
+        );
       await this.recalcularTotalPagado(tx, pedidoId);
       await this.avisarPago(tx, pedido, input.monto);
       return pago;

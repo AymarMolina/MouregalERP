@@ -393,6 +393,8 @@ export class ReportesService {
       }
     >();
     for (const f of filas) {
+      // Los recojos en tienda no tienen viaje (ni distrito ni vehículo).
+      if (!f.vehiculo) continue;
       const k = `${f.distrito}:${f.vehiculo}`;
       const g = grupos.get(k) ?? {
         distrito: f.distrito,

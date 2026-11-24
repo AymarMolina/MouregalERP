@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calcularDisponible, calcularEnvio, calcularPrecio, calcularVehiculo, recetaEfectiva } from "./pricing";
+import { calcularDisponible, calcularEnvio, calcularPrecio, calcularVehiculo, recetaEfectiva, totalPedido, validarDescuento } from "./pricing";
 
 describe("recetaEfectiva", () => {
   const lineasBase = [
@@ -119,5 +119,22 @@ describe("calcularDisponible", () => {
   it("resta lo reservado del stock actual", () => {
     expect(calcularDisponible(480, 50)).toBe(430);
     expect(calcularDisponible(10, 15)).toBe(-5);
+  });
+});
+
+describe("validarDescuento y totalPedido", () => {
+  it("la vendedora descuenta hasta el 10 % de los productos", () => {
+    expect(validarDescuento({ descuento: 18.4, subtotalProductos: 184, rol: "vendedora" }).ok).toBe(true);
+    expect(validarDescuento({ descuento: 20, subtotalProductos: 184, rol: "vendedora" }).ok).toBe(false);
+  });
+
+  it("el admin no tiene tope, pero no puede pasar del subtotal", () => {
+    expect(validarDescuento({ descuento: 100, subtotalProductos: 184, rol: "admin" }).ok).toBe(true);
+    expect(validarDescuento({ descuento: 200, subtotalProductos: 184, rol: "admin" }).ok).toBe(false);
+  });
+
+  it("total = productos − descuento + envío", () => {
+    expect(totalPedido({ subtotalProductos: 184, descuento: 10, costoEnvio: 12 })).toBe(186);
+    expect(totalPedido({ subtotalProductos: 89, descuento: 0, costoEnvio: 0 })).toBe(89);
   });
 });

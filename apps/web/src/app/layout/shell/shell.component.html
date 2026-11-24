@@ -1,13 +1,32 @@
-<!-- Marco: fondo azul muy claro, menú a la izquierda y el contenido en un panel blanco redondeado. -->
-<div class="flex min-h-screen flex-col bg-brand-soft p-3 lg:p-4">
-  <!-- Barra superior: logo, buscador en píldora y acciones -->
-  <header class="flex shrink-0 items-center gap-4 pb-3 lg:pb-4">
-    <a routerLink="/" class="flex w-56 shrink-0 items-center px-3" title="Inicio">
-      <img src="logo-mouregal.png" alt="Mouregal · Flores y Detalles Deluxe" width="160" height="120" class="h-auto w-28" />
+<!--
+  Marco con la estructura de la Intranet de NeuroLee:
+  barra superior blanca a todo el ancho (logo, buscador, ayuda, usuario),
+  menú lateral oscuro con grupos y marca dorada en el ítem activo,
+  y el contenido sobre blanco con migas arriba.
+  Los colores son los de Mouregal (azul marino), no los de NeuroLee.
+-->
+<div class="min-h-screen bg-white">
+  <!-- Barra superior -->
+  <header class="sticky top-0 z-40 flex h-[56px] items-center gap-3 border-b border-brand-line bg-white px-3 sm:px-5">
+    <button
+      type="button"
+      class="flex h-9 w-9 items-center justify-center rounded-lg text-brand-dark hover:bg-brand-soft lg:hidden"
+      (click)="toggleMenu()"
+      [attr.aria-expanded]="menuAbierto()"
+      aria-controls="menu-lateral"
+      title="Menú"
+      aria-label="Abrir el menú"
+    >
+      <app-icon name="menu" [size]="20" />
+    </button>
+
+    <a routerLink="/" class="flex shrink-0 items-center gap-2.5" title="Inicio">
+      <img src="logo-mouregal.png" alt="Mouregal · Flores y Detalles Deluxe" width="160" height="120" class="h-10 w-auto" />
+      <span class="hidden font-display text-[15px] font-medium text-gray-500 sm:inline">ERP</span>
     </a>
 
-    <form class="relative hidden max-w-md flex-1 items-center md:flex" role="search" data-tour="buscador" (submit)="irA($event)">
-      <app-icon name="buscar" [size]="18" class="pointer-events-none absolute left-4 text-brand" />
+    <form class="search ml-6 hidden md:flex md:w-80 md:max-w-none md:flex-none" role="search" data-tour="buscador" (submit)="irA($event)">
+      <app-icon name="buscar" />
       <input
         #buscador
         type="search"
@@ -16,7 +35,7 @@
         (input)="busqueda.set(buscador.value)"
         placeholder="Buscar o escribe un comando…"
         aria-label="Ir a una pantalla"
-        class="h-11 w-full rounded-full border border-brand-line bg-white pl-11 pr-4 text-[14px] text-text placeholder:text-gray-400 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/15"
+        class="!rounded-full !bg-brand-band"
       />
       <datalist id="paginas-erp">
         @for (g of groups(); track g.label) {
@@ -27,18 +46,17 @@
       </datalist>
     </form>
 
-    <div class="ml-auto flex items-center gap-3">
-      <div class="hidden min-w-0 items-center gap-2 text-gray-500 xl:flex">
-        @if (seccionActual()) {
-          <span>{{ seccionActual() }}</span>
-          <span class="text-gray-300">/</span>
-        }
-        <span class="truncate font-medium text-gray-900">{{ paginaActual() }}</span>
-      </div>
+    <div class="ml-auto flex items-center gap-2">
+      @if (!conexion.enLinea()) {
+        <span class="badge-offline" title="Sin conexión con el servidor">
+          <app-icon name="sinConexion" [size]="14" /> Sin conexión
+        </span>
+      }
+
       @if (tour.disponible()) {
         <button
           type="button"
-          class="flex h-11 w-11 items-center justify-center rounded-full border border-brand-line bg-white text-brand-dark transition-colors hover:bg-brand-band"
+          class="flex h-9 w-9 items-center justify-center rounded-full bg-brand-soft text-brand-dark transition-colors hover:bg-brand-line"
           data-tour="ayuda"
           (click)="tour.verTutorial()"
           title="Ver el tutorial de esta pantalla"
@@ -47,37 +65,60 @@
           <app-icon name="ayuda" [size]="18" />
         </button>
       }
-      <div class="flex items-center gap-2.5 rounded-full border border-brand-line bg-white py-1 pl-1 pr-2" data-tour="usuario">
-        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-dark text-xs font-semibold text-white">
-          {{ iniciales() }}
-        </span>
-        <div class="hidden min-w-0 leading-tight sm:block">
-          <div class="max-w-[10rem] truncate font-medium text-gray-900">{{ user()?.nombre }}</div>
-          <div class="text-xs capitalize text-gray-500">{{ user()?.rol }}</div>
-        </div>
-        <button type="button" (click)="logout()" class="btn-action rounded-full" title="Cerrar sesión" aria-label="Cerrar sesión">
-          <app-icon name="salir" [size]="16" />
+
+      <div class="relative" data-menu-usuario data-tour="usuario">
+        <button
+          type="button"
+          class="flex items-center gap-2.5 rounded-full bg-brand-soft py-1 pl-1 pr-2.5 transition-colors hover:bg-brand-line"
+          (click)="menuUsuario.set(!menuUsuario())"
+          [attr.aria-expanded]="menuUsuario()"
+          aria-haspopup="menu"
+          aria-label="Menú del usuario"
+        >
+          <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white font-display text-xs font-semibold text-brand-dark">
+            {{ iniciales() }}
+          </span>
+          <span class="hidden min-w-0 text-left leading-tight sm:block">
+            <span class="block max-w-[10rem] truncate font-semibold text-gray-900">{{ user()?.nombre }}</span>
+            <span class="block text-xs capitalize text-gray-600">{{ user()?.rol }}</span>
+          </span>
+          <app-icon name="abajo" [size]="16" class="text-gray-600" />
         </button>
+
+        @if (menuUsuario()) {
+          <div role="menu" class="absolute right-0 top-[calc(100%+6px)] w-60 rounded-xl border border-brand-line bg-white p-1.5 shadow-pop">
+            <div class="px-3 pb-2 pt-1.5 text-xs text-gray-600">
+              <div class="truncate font-medium text-gray-900">{{ user()?.email }}</div>
+            </div>
+            <div class="my-1 border-t border-brand-line"></div>
+            <button type="button" role="menuitem" class="menu-item" (click)="logout()">
+              <app-icon name="salir" [size]="16" /> Cerrar sesión
+            </button>
+          </div>
+        }
       </div>
     </div>
   </header>
 
-  <div class="flex min-h-0 flex-1 gap-3 lg:gap-4">
-    <!-- Menú lateral sobre el fondo, sin caja -->
-    <aside class="w-56 shrink-0">
-      <nav class="sticky top-4 max-h-[calc(100vh-6rem)] overflow-y-auto pr-1" data-tour="nav">
+  <div class="flex">
+    <!-- Fondo oscuro detrás del menú en pantallas angostas -->
+    @if (menuAbierto()) {
+      <div class="fixed inset-0 top-[56px] z-30 bg-black/30 lg:hidden" (click)="menuAbierto.set(false)" aria-hidden="true"></div>
+    }
+
+    <!-- Menú lateral oscuro -->
+    <aside
+      id="menu-lateral"
+      class="fixed bottom-0 left-0 top-[56px] z-30 w-[240px] shrink-0 -translate-x-full bg-brand-dark transition-transform lg:sticky lg:h-[calc(100vh-56px)] lg:translate-x-0"
+      [class.!translate-x-0]="menuAbierto()"
+    >
+      <nav class="h-full overflow-y-auto px-3 py-4" data-tour="nav" aria-label="Menú principal">
         @for (group of groups(); track group.label) {
-          <div class="mb-5">
-            <div class="px-3 pb-1.5 text-[12px] font-medium text-gray-500">
-              {{ group.label }}
-            </div>
+          <div class="mb-4">
+            <div class="px-3 pb-1.5 text-[12px] font-semibold text-white/95">{{ group.label }}</div>
             @for (item of group.items; track item.path) {
-              <a
-                [routerLink]="item.path"
-                routerLinkActive="!bg-white !text-brand-dark font-semibold shadow-sm [&_app-icon]:!text-brand"
-                class="group mb-0.5 flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] text-gray-600 transition-colors hover:bg-white/60 hover:text-gray-900"
-              >
-                <app-icon [name]="item.icon" [size]="18" class="text-gray-400 group-hover:text-brand" />
+              <a [routerLink]="item.path" routerLinkActive="nav-item-activo" class="nav-item">
+                <app-icon [name]="item.icon" [size]="17" />
                 {{ item.label }}
               </a>
             }
@@ -86,8 +127,33 @@
       </nav>
     </aside>
 
-    <!-- Panel de trabajo blanco -->
-    <main class="min-w-0 flex-1 rounded-[28px] border border-brand-line bg-white">
+    <!-- Contenido -->
+    <main class="min-w-0 flex-1">
+      @if (!conexion.enLinea()) {
+        <div class="aviso-offline" role="status">
+          <app-icon name="sinConexion" [size]="18" class="mt-px shrink-0" />
+          <p>
+            <strong>Sin conexión.</strong>
+            @if (datosDe()) {
+              Estás viendo los datos guardados de {{ datosDe() }}.
+            } @else {
+              Se muestran los últimos datos guardados en este equipo.
+            }
+            Para crear, cobrar o cambiar estados hace falta internet. La pantalla se actualiza sola cuando vuelva.
+          </p>
+        </div>
+      }
+
+      @if (paginaActual()) {
+        <nav class="migas" aria-label="Ubicación">
+          @if (seccionActual()) {
+            <span>{{ seccionActual() }}</span>
+            <span aria-hidden="true">/</span>
+          }
+          <span class="font-medium text-gray-900">{{ paginaActual() }}</span>
+        </nav>
+      }
+
       <router-outlet></router-outlet>
     </main>
   </div>

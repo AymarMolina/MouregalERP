@@ -1,4 +1,5 @@
 import { HttpErrorResponse } from "@angular/common/http";
+import { esFallaDeRed } from "../offline/conexion.service";
 
 /**
  * Extrae el mensaje que devuelve la API (`{ code, message, details }`) para
@@ -6,7 +7,9 @@ import { HttpErrorResponse } from "@angular/common/http";
  */
 export function mensajeError(err: unknown, porDefecto: string): string {
   if (err instanceof HttpErrorResponse) {
-    if (err.status === 0) return "No hay conexión con el servidor.";
+    if (esFallaDeRed(err)) {
+      return "Sin conexión a internet. Esta acción necesita conexión: vuelve a intentarlo cuando regrese.";
+    }
     const message = (err.error as { message?: unknown } | null)?.message;
     if (typeof message === "string" && message.trim()) return message;
     if (Array.isArray(message) && message.length) return message.join(". ");

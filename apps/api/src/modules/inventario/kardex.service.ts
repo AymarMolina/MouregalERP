@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { and, desc, eq, gte, lte } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, inArray, lte, sql } from 'drizzle-orm';
 import {
   costoPromedioPonderado,
   errorCantidadPorUnidad,
@@ -116,6 +116,79 @@ export class KardexService {
       .where(eq(insumos.id, input.insumoId));
 
     return saldoResultante;
+  }
+
+  /**
+   * Varias salidas (consumo, merma) en lote: una sola consulta bloquea todos
+   * los insumos, una sola inserta los movimientos y una sola actualiza el
+   * stock. Mismas reglas que `registrarMovimiento` (fila bloqueada, unidades
+   * enteras, costo promedio vigente), pero sin una ida y vuelta por insumo:
+   * dentro de una transacción la base las atiende de a una y con 6 insumos
+   * eran ~18 viajes. Los movimientos de un mismo insumo se aplican en orden.
+   */
+  async registrarSalidas(
+    tx: Tx,
+    movimientos: (Omit<
+      RegistrarMovimientoInput,
+      'entrada' | 'costoUnitario'
+    > & {
+      salida: number;
+    })[],
+  ): Promise<void> {
+    const conSalida = movimientos.filter((m) => m.salida > 0);
+    if (!conSalida.length) return;
+
+    const ids = [...new Set(conSalida.map((m) => m.insumoId))].sort();
+    // Ordenados por id: dos transacciones que bloquean los mismos insumos lo
+    // hacen en el mismo orden y no se cruzan.
+    const filas = await tx
+      .select()
+      .from(insumos)
+      .where(inArray(insumos.id, ids))
+      .orderBy(asc(insumos.id))
+      .for('update');
+    const porId = new Map(filas.map((f) => [f.id, f]));
+    const saldo = new Map(filas.map((f) => [f.id, Number(f.stockActual)]));
+
+    const valores: (typeof kardexMovimientos.$inferInsert)[] = [];
+    for (const m of conSalida) {
+      const insumo = porId.get(m.insumoId);
+      if (!insumo) throw new NotFoundException('Insumo no encontrado');
+      const error = errorCantidadPorUnidad(
+        insumo.nombre,
+        insumo.unidadBase,
+        m.salida,
+      );
+      if (error) throw new BadRequestException(error);
+      const nuevo =
+        Math.round(
+          (saldo.get(m.insumoId)! - m.salida + Number.EPSILON) * 1000,
+        ) / 1000;
+      saldo.set(m.insumoId, nuevo);
+      valores.push({
+        insumoId: m.insumoId,
+        tipo: m.tipo,
+        entrada: '0',
+        salida: String(m.salida),
+        costoUnitario: String(Number(insumo.costoPromedio)),
+        saldoResultante: String(nuevo),
+        referenciaTipo: m.referenciaTipo,
+        referenciaId: m.referenciaId,
+        nota: m.nota,
+        usuarioId: m.usuarioId,
+      });
+    }
+    await tx.insert(kardexMovimientos).values(valores);
+
+    const nuevos = sql.join(
+      ids.map((id) => sql`(${id}::uuid, ${String(saldo.get(id))}::numeric)`),
+      sql`, `,
+    );
+    await tx.execute(
+      sql`update ${insumos} set stock_actual = v.stock, updated_at = now()
+          from (values ${nuevos}) as v(id, stock)
+          where ${insumos.id} = v.id`,
+    );
   }
 
   private async stockActualDe(tx: Tx, insumoId: string): Promise<number> {

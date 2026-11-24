@@ -8,7 +8,8 @@ const positivo = z.coerce.number().finite().positive();
 
 /** Registro manual de un pago ya cobrado (Yape, Plin, efectivo, transferencia...). */
 export const pagoManualInputSchema = z.object({
-  tipo: z.enum(TIPO_PAGO),
+  /** Opcional: si no llega, el API lo deduce (adelanto si aún no se pagó nada, si no saldo). */
+  tipo: z.enum(TIPO_PAGO).optional(),
   metodo: z.enum(METODO_PAGO).refine((m) => m !== "link" && m !== "shopify", {
     message: "Los pagos por link o Shopify se confirman, no se registran a mano",
   }),

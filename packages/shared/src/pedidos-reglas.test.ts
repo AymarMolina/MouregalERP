@@ -122,3 +122,21 @@ describe("sumarRecetas / faltantes", () => {
     expect(faltantes([{ insumoId: "x", cantidad: 5 }], () => 5)).toEqual([]);
   });
 });
+
+describe("validarTransicion · recojo en tienda", () => {
+  it("la vendedora entrega en el mostrador un pedido listo para recoger", () => {
+    expect(validarTransicion("vendedora", "listo", "entregado", "recojo").ok).toBe(true);
+    expect(validarTransicion("admin", "listo", "entregado", "recojo").ok).toBe(true);
+  });
+
+  it("un recojo no se despacha ni lo entrega el repartidor", () => {
+    expect(validarTransicion("vendedora", "listo", "en_camino", "recojo").ok).toBe(false);
+    expect(validarTransicion("delivery", "listo", "entregado", "recojo").ok).toBe(false);
+  });
+
+  it("un delivery no salta de listo a entregado, y la vendedora no marca su entrega", () => {
+    expect(validarTransicion("admin", "listo", "entregado", "delivery").ok).toBe(false);
+    expect(validarTransicion("vendedora", "en_camino", "entregado", "delivery").ok).toBe(false);
+    expect(validarTransicion("delivery", "en_camino", "entregado").ok).toBe(true);
+  });
+});

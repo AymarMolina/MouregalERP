@@ -48,17 +48,32 @@ export class DisponibilidadService {
     if (!items.length) return resultado;
 
     const tallaIds = [...new Set(items.map((i) => i.productoTallaId))];
-    const tallas = await exec
-      .select({ id: productoTallas.id, usaPapel: productos.usaPapel })
-      .from(productoTallas)
-      .innerJoin(productos, eq(productoTallas.productoId, productos.id))
-      .where(inArray(productoTallas.id, tallaIds));
+    // Las tres consultas son independientes: van en paralelo.
+    const [tallas, lineas, extrasDeItems] = await Promise.all([
+      exec
+        .select({ id: productoTallas.id, usaPapel: productos.usaPapel })
+        .from(productoTallas)
+        .innerJoin(productos, eq(productoTallas.productoId, productos.id))
+        .where(inArray(productoTallas.id, tallaIds)),
+      exec
+        .select()
+        .from(recetaLineas)
+        .where(inArray(recetaLineas.productoTallaId, tallaIds)),
+      exec
+        .select({
+          pedidoItemId: pedidoItemExtras.pedidoItemId,
+          insumoId: extras.insumoId,
+        })
+        .from(pedidoItemExtras)
+        .innerJoin(extras, eq(pedidoItemExtras.extraId, extras.id))
+        .where(
+          inArray(
+            pedidoItemExtras.pedidoItemId,
+            items.map((i) => i.id),
+          ),
+        ),
+    ]);
     const usaPapelPorTalla = new Map(tallas.map((t) => [t.id, t.usaPapel]));
-
-    const lineas = await exec
-      .select()
-      .from(recetaLineas)
-      .where(inArray(recetaLineas.productoTallaId, tallaIds));
     const lineasPorTalla = new Map<string, RecetaLineaBase[]>();
     for (const l of lineas) {
       const lista = lineasPorTalla.get(l.productoTallaId) ?? [];
@@ -70,19 +85,6 @@ export class DisponibilidadService {
       lineasPorTalla.set(l.productoTallaId, lista);
     }
 
-    const extrasDeItems = await exec
-      .select({
-        pedidoItemId: pedidoItemExtras.pedidoItemId,
-        insumoId: extras.insumoId,
-      })
-      .from(pedidoItemExtras)
-      .innerJoin(extras, eq(pedidoItemExtras.extraId, extras.id))
-      .where(
-        inArray(
-          pedidoItemExtras.pedidoItemId,
-          items.map((i) => i.id),
-        ),
-      );
     const extrasPorItem = new Map<string, string[]>();
     for (const e of extrasDeItems) {
       const lista = extrasPorItem.get(e.pedidoItemId) ?? [];

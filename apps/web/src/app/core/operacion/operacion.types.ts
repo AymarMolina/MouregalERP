@@ -28,7 +28,7 @@ export interface PedidoConSaldo {
   saldo: number;
   clienteNombre: string;
   clienteTelefono: string | null;
-  distrito: string;
+  distrito: string | null;
   pagos: Pago[];
 }
 

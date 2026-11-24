@@ -16,6 +16,7 @@ import {
   TIPO_PAGO,
   UNIDAD_BASE,
   VEHICULO,
+  TIPO_ENTREGA,
 } from '@erp/shared';
 
 export const rolUsuarioEnum = pgEnum('rol_usuario', ROL_USUARIO);
@@ -24,6 +25,7 @@ export const tallaEnum = pgEnum('talla', TALLA);
 export const canalEnum = pgEnum('canal', CANAL);
 export const estadoPedidoEnum = pgEnum('estado_pedido', ESTADO_PEDIDO);
 export const vehiculoEnum = pgEnum('vehiculo', VEHICULO);
+export const tipoEntregaEnum = pgEnum('tipo_entrega', TIPO_ENTREGA);
 export const tipoMovimientoEnum = pgEnum('tipo_movimiento', TIPO_MOVIMIENTO);
 export const tipoCambioEnum = pgEnum('tipo_cambio', TIPO_CAMBIO);
 export const estadoReglaEnum = pgEnum('estado_regla', ESTADO_REGLA);

@@ -12,8 +12,8 @@ const INTERVALO_MS = 150;
 
 /**
  * Tutorial interactivo por pantalla (driver.js): oscurece la página, ilumina
- * una sección y la explica. Se abre solo la primera vez que cada usuario entra
- * a una pantalla; después se vuelve a ver con el botón "?" de la barra superior.
+ * una sección y la explica. Solo el recorrido general se abre solo (una vez por
+ * usuario); el de cada pantalla se abre con el botón "?" de la barra superior.
  *
  * Lo ya visto se guarda en el navegador por usuario (`erp_tours_vistos:<id>`).
  */
@@ -44,13 +44,15 @@ export class TourService {
     if (tour) void this.iniciar(tour, false);
   }
 
-  /** Primera visita: abre el tutorial de la pantalla (y antes el general, si falta). */
+  /**
+   * Primera vez del usuario: solo el recorrido general (3 pasos). Los de cada
+   * pantalla ya no se abren solos — interrumpían cada pantalla nueva — y se
+   * ven con el botón "?".
+   */
   async abrirSiEsNuevo(): Promise<void> {
-    const tour = tourDeUrl(this.router.url);
-    if (!tour || !this.auth.user()) return;
-    const vistos = this.leerVistos();
-    if (vistos.has(tour.id)) return;
-    await this.iniciar(tour, !vistos.has(TOUR_GENERAL.id));
+    if (!tourDeUrl(this.router.url) || !this.auth.user()) return;
+    if (this.leerVistos().has(TOUR_GENERAL.id)) return;
+    await this.iniciar(TOUR_GENERAL, false);
   }
 
   cerrar(): void {

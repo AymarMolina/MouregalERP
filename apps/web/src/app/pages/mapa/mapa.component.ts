@@ -64,7 +64,7 @@ const PASOS: Paso[] = [
     <div class="p-6">
       <div class="page-header">
         <div>
-          <h1 class="panel-title">Mapa del flujo</h1>
+          <h1 class="page-title">Mapa del flujo</h1>
           <p class="panel-subtitle">Del pedido a la entrega en 7 partes. Entra a cada módulo desde aquí.</p>
         </div>
       </div>
