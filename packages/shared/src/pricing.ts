@@ -17,6 +17,8 @@ export interface ItemSeleccion {
   usaPapel: boolean;
   papelId?: string | null;
   extraInsumoIds: string[];
+  /** Adicionales que son insumos del inventario (cantidad por unidad del ítem). */
+  adicionalesInsumo?: LineaCantidad[];
   cantidad: number;
 }
 
@@ -41,6 +43,10 @@ export function recetaEfectiva(sel: ItemSeleccion): LineaCantidad[] {
     porInsumo.set(extraInsumoId, (porInsumo.get(extraInsumoId) ?? 0) + 1);
   }
 
+  for (const a of sel.adicionalesInsumo ?? []) {
+    porInsumo.set(a.insumoId, (porInsumo.get(a.insumoId) ?? 0) + a.cantidad);
+  }
+
   return [...porInsumo.entries()]
     .map(([insumoId, cantidadPorUnidad]) => ({ insumoId, cantidad: cantidadPorUnidad * sel.cantidad }))
     .filter((l) => l.cantidad > 0);
@@ -50,6 +56,9 @@ export interface AjusteAplicado {
   descripcion: string;
   ajuste: number;
   reglaId?: string;
+  /** Adicional que sale del inventario: insumo y cantidad por unidad del ítem. */
+  insumoId?: string;
+  cantidad?: number;
 }
 
 /**

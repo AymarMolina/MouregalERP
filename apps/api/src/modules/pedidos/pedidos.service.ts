@@ -894,6 +894,9 @@ export class PedidosService {
             reglaId: ajuste.reglaId ?? null,
             descripcion: ajuste.descripcion,
             ajuste: String(ajuste.ajuste),
+            insumoId: ajuste.insumoId ?? null,
+            cantidad:
+              ajuste.cantidad !== undefined ? String(ajuste.cantidad) : null,
           });
         }
 

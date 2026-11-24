@@ -124,6 +124,10 @@ export const pedidoItemCambios = pgTable('pedido_item_cambios', {
   reglaId: uuid('regla_id').references(() => reglasCambio.id),
   descripcion: text('descripcion').notNull(),
   ajuste: numeric('ajuste', { precision: 12, scale: 2 }).notNull(),
+  /** Adicional que sale del inventario: se reserva y se consume como la receta. */
+  insumoId: uuid('insumo_id').references(() => insumos.id),
+  /** Cantidad del insumo por unidad del ítem. */
+  cantidad: numeric('cantidad', { precision: 12, scale: 3 }),
 });
 
 export const pedidoConsumos = pgTable('pedido_consumos', {

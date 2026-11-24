@@ -23,6 +23,23 @@ describe("recetaEfectiva", () => {
     expect(r.find((l) => l.insumoId === "flor-roja")).toBeUndefined();
   });
 
+  it("suma los adicionales del inventario (mezcla de flores) por unidad del ítem", () => {
+    const r = recetaEfectiva({
+      lineasBase,
+      florId: "flor-roja",
+      usaPapel: true,
+      papelId: null,
+      extraInsumoIds: [],
+      adicionalesInsumo: [
+        { insumoId: "girasol", cantidad: 3 },
+        { insumoId: "flor-roja", cantidad: 2 },
+      ],
+      cantidad: 2,
+    });
+    expect(r).toContainEqual({ insumoId: "girasol", cantidad: 6 });
+    expect(r).toContainEqual({ insumoId: "flor-roja", cantidad: 28 });
+  });
+
   it("reemplaza el papel cuando se especifica uno distinto", () => {
     const r = recetaEfectiva({
       lineasBase,

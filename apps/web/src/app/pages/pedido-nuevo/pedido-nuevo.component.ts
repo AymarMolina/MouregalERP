@@ -7,9 +7,11 @@ import { Router } from "@angular/router";
 import type { AdicionalInput, Canal, Coordenadas, MetodoCobroDirecto, PedidoItemInput, Talla, TipoEntrega } from "@erp/shared";
 import { CANAL, DESCUENTO_MAX_VENDEDORA_PCT, TALLA } from "@erp/shared";
 import { AuthService } from "../../core/auth/auth.service";
-import type { Distrito, Producto } from "../../core/catalogo/catalogo.types";
+import type { Distrito, Insumo, Producto } from "../../core/catalogo/catalogo.types";
 import { DistritosService } from "../../core/catalogo/distritos.service";
 import { ProductosService } from "../../core/catalogo/productos.service";
+import { InsumosService } from "../../core/catalogo/insumos.service";
+import { usarPolling } from "../../core/util/polling";
 import { mensajeError } from "../../core/http/errores";
 import { CotizacionesService, PedidosService } from "../../core/pedidos/pedidos.service";
 import type { ResultadoCotizacion, ResultadoCotizacionPedido } from "../../core/pedidos/pedidos.types";
@@ -46,6 +48,7 @@ const CANAL_INFO: Record<Canal, { etiqueta: string; icono: NombreIcono }> = {
 export class PedidoNuevoComponent implements OnInit {
   private readonly productosService = inject(ProductosService);
   private readonly distritosService = inject(DistritosService);
+  private readonly insumosService = inject(InsumosService);
   private readonly cotizacionesService = inject(CotizacionesService);
   private readonly pedidosService = inject(PedidosService);
   private readonly fb = inject(FormBuilder);
@@ -190,7 +193,25 @@ export class PedidoNuevoComponent implements OnInit {
     cambioNoListado: [""],
     adicionalDescripcion: [""],
     adicionalPrecio: [null as number | null],
+    adicionalCantidad: [1],
   });
+  private readonly valoresItem = toSignal(this.itemForm.valueChanges, { initialValue: this.itemForm.getRawValue() });
+
+  /** Inventario activo, para reconocer adicionales que salen del stock. */
+  readonly insumos = signal<Insumo[]>([]);
+  /** Si lo escrito en el adicional es un insumo del inventario (se descuenta del stock). */
+  readonly insumoAdicional = computed(() => {
+    const texto = (this.valoresItem().adicionalDescripcion ?? "").trim().toLowerCase();
+    return texto ? (this.insumos().find((i) => i.nombre.toLowerCase() === texto) ?? null) : null;
+  });
+
+  readonly textoAdicional = computed(() => !!(this.valoresItem().adicionalDescripcion ?? "").trim());
+
+  constructor() {
+    // El stock lo comparten todas las vendedoras: se vuelve a cotizar solo,
+    // así lo que se ve (y el botón de confirmar) refleja lo vendido por otras.
+    usarPolling(() => this.refrescarStock(), 20_000);
+  }
 
   readonly form = this.fb.nonNullable.group({
     canal: ["vendedora" as Canal, Validators.required],
@@ -220,7 +241,12 @@ export class PedidoNuevoComponent implements OnInit {
     this.aplicarValidadores();
     this.loading.set(true);
     try {
-      const [productos, distritos] = await Promise.all([this.productosService.list(), this.distritosService.list()]);
+      const [productos, distritos, insumos] = await Promise.all([
+        this.productosService.list(),
+        this.distritosService.list(),
+        this.insumosService.list().catch(() => [] as Insumo[]),
+      ]);
+      this.insumos.set(insumos.filter((i) => i.activo).sort((a, b) => a.nombre.localeCompare(b.nombre)));
       // Primero los que ya se pueden vender (tienen precio); luego los que falta configurar.
       this.productos.set(
         productos
@@ -277,9 +303,16 @@ export class PedidoNuevoComponent implements OnInit {
       this.errorAdicional.set("Escribe qué es y su precio.");
       return;
     }
+    const insumo = this.insumoAdicional();
+    const cantidad = Number(v.adicionalCantidad) || 1;
     this.errorAdicional.set(null);
-    this.adicionales.update((l) => [...l, { descripcion, precio: r2(precio) }]);
-    this.itemForm.patchValue({ adicionalDescripcion: "", adicionalPrecio: null });
+    this.adicionales.update((l) => [
+      ...l,
+      insumo
+        ? { descripcion: insumo.nombre, precio: r2(precio), insumoId: insumo.id, cantidad }
+        : { descripcion, precio: r2(precio) },
+    ]);
+    this.itemForm.patchValue({ adicionalDescripcion: "", adicionalPrecio: null, adicionalCantidad: 1 });
     await this.actualizarCotizacion(false);
   }
 
@@ -289,6 +322,15 @@ export class PedidoNuevoComponent implements OnInit {
   }
 
   readonly errorAdicional = signal<string | null>(null);
+
+  /** Vuelve a pedir disponibilidad y totales al servidor (sin tocar lo elegido). */
+  private async refrescarStock(): Promise<void> {
+    if (this.enviando() || this.cotizando() || this.cotizandoResumen()) return;
+    await Promise.all([
+      this.cotizacion() ? this.actualizarCotizacion(false) : Promise.resolve(),
+      this.actualizarResumen(),
+    ]);
+  }
 
   private async actualizarCotizacion(
     reiniciarSeleccion: boolean,

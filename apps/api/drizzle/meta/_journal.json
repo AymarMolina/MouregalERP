@@ -50,6 +50,13 @@
       "when": 1795550778211,
       "tag": "0006_venta_mostrador",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1795558377155,
+      "tag": "0007_adicional_insumo",
+      "breakpoints": true
     }
   ]
 }

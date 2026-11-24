@@ -1160,12 +1160,15 @@
           <form [formGroup]="itemForm" (ngSubmit)="agregarAdicional()">
             <div class="etiqueta">
               <app-icon name="nuevo" [size]="13" /> ¿Le agrega algo que no está en la lista?
-              <span class="normal-case tracking-normal">(una planta, un chocolate… con su precio)</span>
+              <span class="normal-case tracking-normal">(más flores, una planta, un chocolate… con su precio)</span>
             </div>
             @if (adicionales().length) {
               <ul class="mb-2 flex flex-wrap gap-2">
                 @for (a of adicionales(); track $index; let i = $index) {
                   <li class="chip chip-sel py-1.5">
+                    @if (a.insumoId && a.cantidad && a.cantidad !== 1) {
+                      <span class="mr-1 tabular">{{ a.cantidad }}×</span>
+                    }
                     {{ a.descripcion }} <span class="ml-1.5 tabular">+{{ soles(a.precio) }}</span>
                     <button
                       type="button"
@@ -1184,9 +1187,27 @@
               <input
                 formControlName="adicionalDescripcion"
                 class="input min-w-[12rem] flex-1 py-2.5"
-                placeholder="Ej. suculenta pequeña"
+                placeholder="Ej. Girasol, suculenta pequeña"
                 aria-label="Qué se agrega"
+                list="insumos-adicionales"
+                autocomplete="off"
               />
+              <datalist id="insumos-adicionales">
+                @for (i of insumos(); track i.id) {
+                  <option [value]="i.nombre"></option>
+                }
+              </datalist>
+              @if (insumoAdicional()) {
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  formControlName="adicionalCantidad"
+                  class="input w-20 py-2.5 text-right tabular"
+                  aria-label="Cantidad"
+                  title="Cantidad"
+                />
+              }
               <div class="relative">
                 <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted">S/</span>
                 <input
@@ -1201,6 +1222,13 @@
               </div>
               <button type="submit" class="btn-secondary py-2.5" [disabled]="cotizando()">Agregar</button>
             </div>
+            @if (insumoAdicional(); as ins) {
+              <p class="mt-1.5 text-[13px] text-positivo">
+                Está en el inventario: se reserva y se descuenta del stock (en stock: {{ cantidad(+ins.stockActual) }} {{ ins.unidadBase }}).
+              </p>
+            } @else if (textoAdicional()) {
+              <p class="mt-1.5 text-[13px] text-muted">No está en el inventario: suma al precio, pero no descuenta stock.</p>
+            }
             @if (errorAdicional()) {
               <p class="mt-1.5 text-[13px] text-red-700">{{ errorAdicional() }}</p>
             }

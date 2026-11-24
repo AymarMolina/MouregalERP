@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, isNotNull } from 'drizzle-orm';
 import {
   calcularDisponible,
   recetaEfectiva,
@@ -11,6 +11,7 @@ import type { Db, Exec } from '../../db/client';
 import {
   extras,
   insumos,
+  pedidoItemCambios,
   pedidoItemExtras,
   pedidoItems,
   pedidos,
@@ -49,7 +50,8 @@ export class DisponibilidadService {
 
     const tallaIds = [...new Set(items.map((i) => i.productoTallaId))];
     // Las tres consultas son independientes: van en paralelo.
-    const [tallas, lineas, extrasDeItems] = await Promise.all([
+    const itemIds = items.map((i) => i.id);
+    const [tallas, lineas, extrasDeItems, adicionales] = await Promise.all([
       exec
         .select({ id: productoTallas.id, usaPapel: productos.usaPapel })
         .from(productoTallas)
@@ -66,13 +68,28 @@ export class DisponibilidadService {
         })
         .from(pedidoItemExtras)
         .innerJoin(extras, eq(pedidoItemExtras.extraId, extras.id))
+        .where(inArray(pedidoItemExtras.pedidoItemId, itemIds)),
+      // Adicionales que salen del inventario (pedido_item_cambios con insumo).
+      exec
+        .select({
+          pedidoItemId: pedidoItemCambios.pedidoItemId,
+          insumoId: pedidoItemCambios.insumoId,
+          cantidad: pedidoItemCambios.cantidad,
+        })
+        .from(pedidoItemCambios)
         .where(
-          inArray(
-            pedidoItemExtras.pedidoItemId,
-            items.map((i) => i.id),
+          and(
+            inArray(pedidoItemCambios.pedidoItemId, itemIds),
+            isNotNull(pedidoItemCambios.insumoId),
           ),
         ),
     ]);
+    const adicionalesPorItem = new Map<string, LineaCantidad[]>();
+    for (const a of adicionales) {
+      const lista = adicionalesPorItem.get(a.pedidoItemId) ?? [];
+      lista.push({ insumoId: a.insumoId!, cantidad: Number(a.cantidad ?? 1) });
+      adicionalesPorItem.set(a.pedidoItemId, lista);
+    }
     const usaPapelPorTalla = new Map(tallas.map((t) => [t.id, t.usaPapel]));
     const lineasPorTalla = new Map<string, RecetaLineaBase[]>();
     for (const l of lineas) {
@@ -101,6 +118,7 @@ export class DisponibilidadService {
           usaPapel: usaPapelPorTalla.get(item.productoTallaId) ?? false,
           papelId: item.papelId,
           extraInsumoIds: extrasPorItem.get(item.id) ?? [],
+          adicionalesInsumo: adicionalesPorItem.get(item.id) ?? [],
           cantidad: item.cantidad,
         }),
       );

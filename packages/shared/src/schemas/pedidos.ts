@@ -2,13 +2,17 @@ import { z } from "zod";
 import { CANAL, ESTADO_PEDIDO, METODOS_COBRO_DIRECTO, TALLA, TIPO_ENTREGA } from "../enums";
 
 /**
- * Algo que el cliente pide y no está en el catálogo de extras (una planta, un
- * chocolate de otra marca…): la vendedora lo describe y le pone precio. Suma
- * al precio del ítem y Producción lo ve en la comanda; no descuenta stock.
+ * Algo que el cliente pide y no está en el catálogo de extras (una planta, unos
+ * girasoles, un chocolate…): la vendedora lo describe y le pone precio. Suma al
+ * precio del ítem y Producción lo ve en la comanda. Si es un insumo del
+ * inventario (`insumoId`), se reserva y se descuenta del stock como el resto
+ * de la receta (`cantidad` por unidad del ítem). Sin insumo no toca stock.
  */
 export const adicionalInputSchema = z.object({
   descripcion: z.string().trim().min(1, "Describe el adicional").max(80),
   precio: z.coerce.number().positive("El precio del adicional debe ser mayor que 0").max(10000),
+  insumoId: z.string().uuid().optional(),
+  cantidad: z.coerce.number().positive().max(1000).optional(),
 });
 export type AdicionalInput = z.infer<typeof adicionalInputSchema>;
 

@@ -798,6 +798,64 @@ describe('Venta en tienda: recojo, cobro en el momento y descuento', () => {
     expect(consultas).toHaveLength(0);
   });
 
+  it('adicional del inventario (3 girasoles en un ramo de rosas): reserva, valida y descuenta stock', async () => {
+    const rosaRoja = await e.insumo('ROS-ROJ');
+    const girasol = await e.insumo('GIR-AMA'); // 58 tallos de apertura
+    const item = async (cantidad: number) => ({
+      productoId: await e.productoId('ramo-clasico-de-rosas'),
+      talla: 'S' as const,
+      florId: rosaRoja.id,
+      adicionales: [
+        {
+          descripcion: 'Girasoles',
+          precio: 4 * cantidad,
+          insumoId: girasol.id,
+          cantidad,
+        },
+      ],
+    });
+
+    // Más de lo que hay: no se puede vender (igual que la receta).
+    await expect(
+      e.pedidos.crear(
+        await mostrador({ items: [await item(60)], pagos: [] }),
+        actor('vendedora'),
+      ),
+    ).rejects.toBeInstanceOf(ConflictException);
+
+    const pedido = await e.pedidos.crear(
+      await mostrador({
+        items: [await item(3)],
+        pagos: [{ metodo: 'efectivo', monto: 101 }],
+      }),
+      actor('vendedora'),
+    );
+    expect(pedido.total).toBe('101.00');
+    const reservado = await e.disponibilidad.calcularReservados();
+    expect(reservado.get(girasol.id)).toBe(3);
+
+    await e.pedidos.transicion(
+      pedido.id,
+      'en_armado',
+      undefined,
+      actor('produccion'),
+    );
+    const receta = await e.pedidos.recetaEfectivaDelPedido(pedido.id);
+    expect(receta.find((l) => l.insumoId === girasol.id)?.cantidad).toBe(3);
+    await e.pedidos.confirmarConsumo(
+      pedido.id,
+      {
+        lineas: receta.map((l) => ({
+          insumoId: l.insumoId,
+          cantidadUsada: l.cantidad,
+        })),
+      },
+      e.usuarios.produccion,
+    );
+    const despues = await e.insumo('GIR-AMA');
+    expect(Number(despues.stockActual)).toBe(55);
+  });
+
   it('un delivery sigue exigiendo distrito, dirección y receptor', async () => {
     await expect(
       e.pedidos.crear(

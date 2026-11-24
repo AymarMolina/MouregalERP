@@ -7,6 +7,7 @@ import { and, eq } from 'drizzle-orm';
 import {
   calcularPrecio,
   calcularVehiculo,
+  errorCantidadPorUnidad,
   recetaEfectiva,
   type AjusteAplicado,
   type LineaCantidad,
@@ -50,7 +51,12 @@ export interface ItemSolicitado {
   papelId?: string | null;
   extraIds: string[];
   /** Lo que no está en el catálogo, con precio puesto por la vendedora. */
-  adicionales?: { descripcion: string; precio: number }[];
+  adicionales?: {
+    descripcion: string;
+    precio: number;
+    insumoId?: string;
+    cantidad?: number;
+  }[];
   cambioNoListado?: string;
 }
 
@@ -320,10 +326,31 @@ export class ItemResolverService {
 
     // Adicionales fuera de catálogo: suman al precio y quedan en la comanda
     // (pedido_item_cambios sin regla). No pasan por Producción: ya tienen precio.
+    // Si son un insumo del inventario, entran a la receta: se reservan, se
+    // valida el stock y se descuentan al confirmar el consumo.
+    const adicionalesInsumo: LineaCantidad[] = [];
     for (const a of solicitado.adicionales ?? []) {
+      let cantidad: number | undefined;
+      if (a.insumoId) {
+        const insumo = ctx.insumoPorId.get(a.insumoId);
+        if (!insumo || !insumo.activo)
+          throw new BadRequestException(
+            `El insumo de "${a.descripcion}" no existe o no está activo`,
+          );
+        cantidad = a.cantidad ?? 1;
+        const error = errorCantidadPorUnidad(
+          insumo.nombre,
+          insumo.unidadBase,
+          cantidad,
+        );
+        if (error) throw new BadRequestException(error);
+        adicionalesInsumo.push({ insumoId: a.insumoId, cantidad });
+      }
       ajustes.push({
-        descripcion: `Adicional: ${a.descripcion.trim()}`,
+        descripcion: `Adicional: ${a.descripcion.trim()}${cantidad && cantidad !== 1 ? ` ×${cantidad}` : ''}`,
         ajuste: a.precio,
+        insumoId: a.insumoId,
+        cantidad,
       });
     }
 
@@ -344,6 +371,7 @@ export class ItemResolverService {
       usaPapel: producto.usaPapel,
       papelId,
       extraInsumoIds: extrasSel.map((e) => e.insumoId),
+      adicionalesInsumo,
       cantidad: solicitado.cantidad,
     });
 
