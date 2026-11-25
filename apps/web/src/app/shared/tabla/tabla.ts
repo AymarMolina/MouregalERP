@@ -1,4 +1,4 @@
-import { descargarExcel, type FilaExcel } from "./excel";
+import { descargarExcel, titulo, type FilaExcel, type FormatoColumna, type MetaReporte } from "./excel";
 import { computed, signal } from "@angular/core";
 
 export interface OpcionesTabla<T> {
@@ -10,6 +10,12 @@ export interface OpcionesTabla<T> {
   csv?: (fila: T) => Record<string, string | number | null | undefined>;
   /** Nombre del archivo Excel, sin extensión ni fecha. */
   nombreCsv?: string;
+  /** Título del documento (Excel / PDF); por defecto sale de `nombreCsv`. */
+  titulo?: string;
+  /** Columnas que se suman en la fila de totales del Excel y del PDF. */
+  totales?: string[];
+  /** Formato de columnas que el nombre no deja deducir (ej. un saldo en unidades). */
+  formatos?: Record<string, FormatoColumna>;
 }
 
 /**
@@ -96,8 +102,19 @@ export class Tabla<T> {
   }
 
   /** Descarga a Excel las filas seleccionadas o, si no hay selección, todas las filtradas. */
-  exportarExcel(): void {
-    descargarExcel(this.opciones.nombreCsv ?? "export", this.filasExportables());
+  exportarExcel(meta: MetaReporte = {}): void {
+    void descargarExcel(this.opciones.nombreCsv ?? "export", this.filasExportables(), { ...this.meta, ...meta });
+  }
+
+  /** Título del documento: el configurado o el del nombre del archivo. */
+  get tituloDocumento(): string {
+    return this.opciones.titulo ?? titulo(this.opciones.nombreCsv ?? "Reporte");
+  }
+
+  /** Título, totales y formatos configurados para esta tabla. */
+  get meta(): MetaReporte {
+    const { titulo, totales, formatos } = this.opciones;
+    return { titulo, totales, formatos };
   }
 
   /** Lo que se exporta (selección o todo lo filtrado), ya mapeado a columnas. Lo usa la vista previa. */

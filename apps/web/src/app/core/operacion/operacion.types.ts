@@ -131,6 +131,39 @@ export interface Rango {
   hasta: string;
 }
 
+export interface ResumenPeriodo {
+  ventas: number;
+  pedidos: number;
+  ticketPromedio: number;
+  cobrado: number;
+}
+
+export interface GrupoVentas {
+  clave: string;
+  pedidos: number;
+  ventas: number;
+}
+
+export interface ReporteVentas {
+  rango: Rango;
+  agrupacion: 'dia' | 'mes';
+  kpis: ResumenPeriodo & {
+    porCobrar: number;
+    descuentos: number;
+    unidades: number;
+    cancelados: number;
+    montoCancelado: number;
+  };
+  anterior: ResumenPeriodo & Rango;
+  serie: { fecha: string; ventas: number; pedidos: number; cobrado: number }[];
+  porCanal: GrupoVentas[];
+  porEntrega: GrupoVentas[];
+  porDistrito: GrupoVentas[];
+  porDiaSemana: { dia: number; pedidos: number; ventas: number }[];
+  porMetodo: { metodo: string; cobros: number; monto: number }[];
+  topProductos: { producto: string; unidades: number; ingresos: number }[];
+}
+
 export interface ReporteMargen {
   rango: Rango;
   filas: {

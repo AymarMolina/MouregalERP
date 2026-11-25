@@ -22,6 +22,11 @@ function rango(desde?: string, hasta?: string): RangoFechas {
 export class ReportesController {
   constructor(private readonly reportes: ReportesService) {}
 
+  @Get('ventas')
+  ventas(@Query('desde') desde?: string, @Query('hasta') hasta?: string) {
+    return this.reportes.ventas(rango(desde, hasta));
+  }
+
   @Get('margen')
   margen(@Query('desde') desde?: string, @Query('hasta') hasta?: string) {
     return this.reportes.margen(rango(desde, hasta));

@@ -42,7 +42,7 @@ export class ProduccionComponent implements OnInit {
   /** Hoja de producción en Excel: un renglón por producto de cada pedido del tablero. */
   exportarExcel(): void {
     const pedidos = [...this.pendientes(), ...this.enArmado(), ...this.listos()];
-    descargarExcel(
+    void descargarExcel(
       "produccion",
       pedidos.flatMap((p) =>
         p.items.map((i) => ({
@@ -60,7 +60,7 @@ export class ProduccionComponent implements OnInit {
           dedicatoria: p.dedicatoria,
         })),
       ),
-      "Producción",
+      { titulo: "Hoja de producción" },
     );
   }
   readonly pendientes = signal<PedidoDetalle[]>([]);

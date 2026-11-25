@@ -33,6 +33,8 @@ export class ConfigReglasComponent implements OnInit {
     id: (r) => r.id,
     porPagina: 10,
     nombreCsv: "reglas-cambio",
+    titulo: "Reglas de cambio",
+    formatos: { ajuste: "cantidad" },
     csv: (r) => ({
       tipo: r.tipo,
       producto: this.nombreProducto(r.productoId),

@@ -198,6 +198,38 @@ describe('API por HTTP (e2e)', () => {
       .auth(admin, { type: 'bearer' })
       .expect(200);
     expect(cobros.body.totales.cobros).toBeGreaterThan(0);
+
+    // Resumen de ventas: KPIs, serie diaria con huecos, desgloses y período anterior.
+    const ventas = await request(http)
+      .get(`/api/reportes/ventas?desde=${hoy}&hasta=${hoy}`)
+      .auth(admin, { type: 'bearer' })
+      .expect(200);
+    expect(ventas.body.agrupacion).toBe('dia');
+    expect(ventas.body.kpis.pedidos).toBeGreaterThan(0);
+    expect(ventas.body.kpis.ventas).toBeGreaterThan(0);
+    expect(ventas.body.kpis.cobrado).toBe(cobros.body.totales.monto);
+    expect(ventas.body.kpis.ticketPromedio).toBeCloseTo(
+      ventas.body.kpis.ventas / ventas.body.kpis.pedidos,
+      1,
+    );
+    expect(ventas.body.serie).toHaveLength(1);
+    expect(ventas.body.serie[0]).toMatchObject({
+      fecha: hoy,
+      ventas: ventas.body.kpis.ventas,
+    });
+    expect(ventas.body.porDiaSemana).toHaveLength(7);
+    expect(ventas.body.topProductos.length).toBeGreaterThan(0);
+    expect(ventas.body.anterior).toMatchObject({ ventas: 0, pedidos: 0 });
+    const trimestre = await request(http)
+      .get('/api/reportes/ventas?desde=2026-01-01&hasta=2026-03-31')
+      .auth(admin, { type: 'bearer' })
+      .expect(200);
+    expect(trimestre.body.agrupacion).toBe('mes');
+    expect(trimestre.body.serie.map((s: { fecha: string }) => s.fecha)).toEqual([
+      '2026-01',
+      '2026-02',
+      '2026-03',
+    ]);
     if (hoy !== '2026-11-12') {
       const programada = await request(http)
         .get('/api/reportes/envios?desde=2026-11-12&hasta=2026-11-12')

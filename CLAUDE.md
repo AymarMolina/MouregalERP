@@ -105,6 +105,12 @@ Todo cálculo de negocio está en el backend o en `packages/shared` como funcion
   - Más vendidos: por `pedidos.created_at`.
   - Merma: por la fecha del movimiento de Kardex.
   - Un pedido para el 19 que se arma y despacha hoy cuenta hoy.
+  - Resumen de ventas (`GET /reportes/ventas`): pedidos por `created_at` sin cancelados y cobros por `pagado_at`; compara con el período anterior de igual duración; serie por día hasta 62 días y por mes si es más largo.
+- **PDF:** se genera con el diálogo de impresión del navegador ("Guardar como PDF"), no en el servidor. `shared/tabla/imprimir.ts` copia el documento a un iframe, convierte los `canvas` de Chart.js en imágenes y pone A4 horizontal, colores exactos y pie con marca y "Página X de Y". Membrete común en `shared/tabla/membrete.component.ts`.
+  - Reportes → «Resumen de ventas»: documento de 2 páginas con gráficos (`pages/reportes/reporte-ventas.component.ts`). Botones «Descargar PDF» y «Excel».
+  - Cualquier `Tabla` con `csv`: botón «PDF» junto a «Excel» que abre la vista previa con membrete. Las clases `print:` fijan el diseño impreso (los breakpoints de pantalla no aplican al ancho de la hoja).
+  - Gráficos categóricos: paleta de marca validada para daltonismo en `reporte-ventas.component.ts` (orden fijo; más de 5 categorías se agrupan en «Otros»).
+- **Excel con marca:** logo incrustado, membrete, cifras en tarjetas, cabecera morada, formatos S/ y %, fila de totales con `SUBTOTAL` (opciones `titulo`, `totales` y `formatos` de `Tabla`), listo para imprimir.
 - **Exportar a Excel:** `.xlsx` real generado sin dependencias en `shared/tabla/excel.ts`. Cada `Tabla` con `csv` muestra el botón "Excel" junto a la paginación (exporta lo seleccionado o, si no hay selección, todo lo filtrado). Delivery, Producción y Compras sugeridas tienen su propio botón.
 - **Venta en tienda** (2026-11-24, migración `0006_venta_mostrador`):
   - `pedidos.tipo_entrega`: `delivery` (por defecto) o `recojo`. En recojo no hay distrito, dirección, receptor ni vehículo, el envío es 0 y no aparece en Delivery ni en el reporte de envíos. El cliente puede ir vacío ("Cliente de mostrador").

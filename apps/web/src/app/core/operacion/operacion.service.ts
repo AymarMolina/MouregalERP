@@ -24,6 +24,7 @@ import type {
   ReporteMargen,
   ReporteMasVendidos,
   ReporteMerma,
+  ReporteVentas,
   TableroDelivery,
 } from "./operacion.types";
 
@@ -130,6 +131,10 @@ export class ComprasApi {
 @Injectable({ providedIn: "root" })
 export class ReportesApi {
   private readonly http = inject(HttpClient);
+
+  ventas(r: Partial<Rango>): Promise<ReporteVentas> {
+    return firstValueFrom(this.http.get<ReporteVentas>(`${api}/reportes/ventas${query(r)}`));
+  }
 
   margen(r: Partial<Rango>): Promise<ReporteMargen> {
     return firstValueFrom(this.http.get<ReporteMargen>(`${api}/reportes/margen${query(r)}`));

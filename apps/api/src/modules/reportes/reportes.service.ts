@@ -29,6 +29,13 @@ function limitesLima(r: RangoFechas) {
   };
 }
 
+const DIA_MS = 24 * 3600 * 1000;
+
+/** AAAA-MM-DD de un instante en hora de Lima. */
+function fechaLima(d: Date): string {
+  return d.toLocaleDateString('en-CA', { timeZone: 'America/Lima' });
+}
+
 const r2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
 const r3 = (n: number) => Math.round((n + Number.EPSILON) * 1000) / 1000;
 
@@ -429,6 +436,206 @@ export class ReportesService {
         costo: r2(lista.reduce((a, f) => a + f.costo, 0)),
         diferencia: r2(lista.reduce((a, f) => a + f.diferencia, 0)),
       },
+    };
+  }
+
+  /**
+   * Resumen de ventas del rango: pedidos vendidos (creados, sin cancelar) y
+   * cobros confirmados, con la comparación contra el período anterior de la
+   * misma duración. La serie va por día hasta 62 días y por mes si el rango
+   * es más largo; los días o meses sin ventas salen en 0.
+   */
+  async ventas(r: RangoFechas) {
+    const { desde, hasta } = limitesLima(r);
+    const dias = Math.round((hasta.getTime() - desde.getTime()) / DIA_MS);
+    const desdeAnterior = new Date(desde.getTime() - dias * DIA_MS);
+
+    const [pedidosRango, cobrosRango] = await Promise.all([
+      this.db
+        .select({
+          id: pedidos.id,
+          createdAt: pedidos.createdAt,
+          estado: pedidos.estado,
+          canal: pedidos.canal,
+          tipoEntrega: pedidos.tipoEntrega,
+          total: pedidos.total,
+          totalPagado: pedidos.totalPagado,
+          descuento: pedidos.descuento,
+          distrito: distritos.nombre,
+        })
+        .from(pedidos)
+        .leftJoin(distritos, eq(pedidos.distritoId, distritos.id))
+        .where(
+          and(
+            gte(pedidos.createdAt, desdeAnterior),
+            lte(pedidos.createdAt, hasta),
+          ),
+        ),
+      this.db
+        .select({
+          pagadoAt: pagos.pagadoAt,
+          metodo: pagos.metodo,
+          monto: pagos.monto,
+        })
+        .from(pagos)
+        .where(
+          and(
+            eq(pagos.estado, 'pagado'),
+            gte(pagos.pagadoAt, desdeAnterior),
+            lte(pagos.pagadoAt, hasta),
+          ),
+        ),
+    ]);
+
+    type FilaPedido = (typeof pedidosRango)[number];
+    type FilaCobro = (typeof cobrosRango)[number];
+    const enRango = (d: Date | null) => !!d && d >= desde && d <= hasta;
+    const vendido = (e: EstadoPedido) => e !== 'cancelado';
+    const actuales = pedidosRango.filter((p) => enRango(p.createdAt));
+    const vendidos = actuales.filter((p) => vendido(p.estado));
+    const vendidosAnt = pedidosRango.filter(
+      (p) => !enRango(p.createdAt) && vendido(p.estado),
+    );
+    const cobros = cobrosRango.filter((c) => enRango(c.pagadoAt));
+    const cobrosAnt = cobrosRango.filter((c) => !enRango(c.pagadoAt));
+
+    const suma = <T>(xs: T[], f: (x: T) => number) =>
+      r2(xs.reduce((a, x) => a + f(x), 0));
+    const resumen = (ps: FilaPedido[], cs: FilaCobro[]) => {
+      const ventas = suma(ps, (p) => Number(p.total));
+      return {
+        ventas,
+        pedidos: ps.length,
+        ticketPromedio: ps.length ? r2(ventas / ps.length) : 0,
+        cobrado: suma(cs, (c) => Number(c.monto)),
+      };
+    };
+
+    // Serie: por día (AAAA-MM-DD) o por mes (AAAA-MM), con los huecos en 0.
+    const porMes = dias > 62;
+    const clave = (d: Date) => {
+      const f = fechaLima(d);
+      return porMes ? f.slice(0, 7) : f;
+    };
+    const serie = new Map<
+      string,
+      { fecha: string; ventas: number; pedidos: number; cobrado: number }
+    >();
+    for (
+      let d = new Date(desde.getTime() + 12 * 3600_000);
+      d <= hasta;
+      d = new Date(d.getTime() + DIA_MS)
+    ) {
+      const k = clave(d);
+      if (!serie.has(k))
+        serie.set(k, { fecha: k, ventas: 0, pedidos: 0, cobrado: 0 });
+    }
+    for (const p of vendidos) {
+      const g = serie.get(clave(p.createdAt));
+      if (!g) continue;
+      g.ventas += Number(p.total);
+      g.pedidos += 1;
+    }
+    for (const c of cobros) {
+      const g = serie.get(clave(c.pagadoAt!));
+      if (g) g.cobrado += Number(c.monto);
+    }
+
+    const agrupar = (ps: FilaPedido[], k: (p: FilaPedido) => string | null) => {
+      const m = new Map<string, { pedidos: number; ventas: number }>();
+      for (const p of ps) {
+        const key = k(p);
+        if (key === null) continue;
+        const g = m.get(key) ?? { pedidos: 0, ventas: 0 };
+        g.pedidos += 1;
+        g.ventas += Number(p.total);
+        m.set(key, g);
+      }
+      return [...m.entries()]
+        .map(([key, g]) => ({
+          clave: key,
+          pedidos: g.pedidos,
+          ventas: r2(g.ventas),
+        }))
+        .sort((a, b) => b.ventas - a.ventas);
+    };
+
+    const porDiaSemana = Array.from({ length: 7 }, (_, dia) => ({
+      dia,
+      pedidos: 0,
+      ventas: 0,
+    }));
+    for (const p of vendidos) {
+      const dia = new Date(`${fechaLima(p.createdAt)}T12:00:00Z`).getUTCDay();
+      porDiaSemana[dia].pedidos += 1;
+      porDiaSemana[dia].ventas += Number(p.total);
+    }
+
+    const metodos = new Map<string, { cobros: number; monto: number }>();
+    for (const c of cobros) {
+      const g = metodos.get(c.metodo) ?? { cobros: 0, monto: 0 };
+      g.cobros += 1;
+      g.monto += Number(c.monto);
+      metodos.set(c.metodo, g);
+    }
+
+    const items = await this.itemsDePedidos(vendidos.map((p) => p.id));
+    const productosMap = new Map<
+      string,
+      { producto: string; unidades: number; ingresos: number }
+    >();
+    for (const i of items) {
+      const g = productosMap.get(i.productoId) ?? {
+        producto: i.producto,
+        unidades: 0,
+        ingresos: 0,
+      };
+      g.unidades += i.cantidad;
+      g.ingresos += Number(i.subtotal);
+      productosMap.set(i.productoId, g);
+    }
+
+    const cancelados = actuales.filter((p) => p.estado === 'cancelado');
+    return {
+      rango: r,
+      agrupacion: porMes ? ('mes' as const) : ('dia' as const),
+      kpis: {
+        ...resumen(vendidos, cobros),
+        porCobrar: suma(vendidos, (p) =>
+          Math.max(0, Number(p.total) - Number(p.totalPagado)),
+        ),
+        descuentos: suma(vendidos, (p) => Number(p.descuento)),
+        unidades: items.reduce((a, i) => a + i.cantidad, 0),
+        cancelados: cancelados.length,
+        montoCancelado: suma(cancelados, (p) => Number(p.total)),
+      },
+      anterior: {
+        desde: fechaLima(desdeAnterior),
+        hasta: fechaLima(new Date(desde.getTime() - 1)),
+        ...resumen(vendidosAnt, cobrosAnt),
+      },
+      serie: [...serie.values()].map((g) => ({
+        ...g,
+        ventas: r2(g.ventas),
+        cobrado: r2(g.cobrado),
+      })),
+      porCanal: agrupar(vendidos, (p) => p.canal),
+      porEntrega: agrupar(vendidos, (p) => p.tipoEntrega),
+      porDistrito: agrupar(vendidos, (p) =>
+        p.tipoEntrega === 'delivery' ? p.distrito : null,
+      ).slice(0, 8),
+      porDiaSemana: porDiaSemana.map((g) => ({ ...g, ventas: r2(g.ventas) })),
+      porMetodo: [...metodos.entries()]
+        .map(([metodo, g]) => ({
+          metodo,
+          cobros: g.cobros,
+          monto: r2(g.monto),
+        }))
+        .sort((a, b) => b.monto - a.monto),
+      topProductos: [...productosMap.values()]
+        .map((g) => ({ ...g, ingresos: r2(g.ingresos) }))
+        .sort((a, b) => b.ingresos - a.ingresos || b.unidades - a.unidades)
+        .slice(0, 8),
     };
   }
 

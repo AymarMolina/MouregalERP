@@ -66,7 +66,7 @@ export class ComprasComponent implements OnInit {
 
   /** Lista sugerida visible en Excel (mismo orden y filtro que la pantalla). */
   exportarSugeridas(): void {
-    descargarExcel(
+    void descargarExcel(
       "compras-sugeridas",
       this.filasVisibles().map((f) => ({
         codigo: f.sugerida.codigo,
@@ -84,7 +84,7 @@ export class ComprasComponent implements OnInit {
         unidadesPorPaquete: f.unidadesPorPaquete,
         costoTotal: f.costoTotal,
       })),
-      "Compras sugeridas",
+      { titulo: "Lista de compras sugeridas", totales: ["costoTotal"] },
     );
   }
   readonly error = signal<string | null>(null);
@@ -114,6 +114,8 @@ export class ComprasComponent implements OnInit {
     id: (o) => o.id,
     porPagina: 10,
     nombreCsv: "ordenes-compra",
+    titulo: "Órdenes de compra",
+    totales: ["total"],
     csv: (o) => ({
       orden: o.numero,
       proveedor: o.proveedor,
@@ -130,6 +132,7 @@ export class ComprasComponent implements OnInit {
     id: (p) => p.id,
     porPagina: 10,
     nombreCsv: "proveedores",
+    titulo: "Proveedores",
     csv: (p) => ({
       nombre: p.nombre,
       tipo_identidad: TIPO_IDENTIDAD_ETIQUETA[p.tipoIdentidad],

@@ -22,6 +22,8 @@ Chart.register(LineController, LineElement, PointElement, BarController, BarElem
 
 Chart.defaults.font.family = "Roboto, ui-sans-serif, system-ui, sans-serif";
 Chart.defaults.font.size = 11;
+// Nitidez al imprimir o guardar en PDF (el gráfico se copia como imagen).
+Chart.defaults.devicePixelRatio = Math.max(2, typeof window === "undefined" ? 1 : window.devicePixelRatio || 1);
 Chart.defaults.color = "#475a7d";
 
 export const TOKENS = {

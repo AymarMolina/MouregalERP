@@ -41,7 +41,7 @@ export class DeliveryComponent implements OnInit {
 
   exportarExcel(): void {
     const pedidos = this.tablero()?.pedidos ?? [];
-    descargarExcel(
+    void descargarExcel(
       "delivery",
       pedidos.map((p) => ({
         pedido: p.codigo,
@@ -61,7 +61,7 @@ export class DeliveryComponent implements OnInit {
         pagado: Number(p.totalPagado),
         saldo: p.saldo,
       })),
-      "Delivery",
+      { titulo: "Hoja de reparto" },
     );
   }
 

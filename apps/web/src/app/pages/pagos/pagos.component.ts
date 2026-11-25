@@ -60,6 +60,8 @@ export class PagosComponent implements OnInit {
     id: (f) => f.id,
     porPagina: 12,
     nombreCsv: "pagos-saldos",
+    titulo: "Pagos y saldos pendientes",
+    totales: ["total", "pagado", "saldo"],
     csv: (f) => ({
       pedido: f.codigo,
       cliente: f.clienteNombre,

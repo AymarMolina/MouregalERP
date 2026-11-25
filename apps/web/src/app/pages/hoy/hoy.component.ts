@@ -146,6 +146,8 @@ export class HoyComponent implements OnInit {
     id: (p) => p.id,
     porPagina: 10,
     nombreCsv: "pedidos-hoy",
+    titulo: "Pedidos del día",
+    totales: ["total", "saldo"],
     csv: (p) => ({
       pedido: p.codigo,
       hora: hora(p.horaEntrega),

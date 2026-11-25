@@ -1,11 +1,12 @@
-import { ChangeDetectionStrategy, Component, Input } from "@angular/core";
+import { ChangeDetectionStrategy, Component, Input, signal } from "@angular/core";
 import { IconComponent } from "../icon/icon.component";
 import type { Tabla } from "./tabla";
+import { VistaPreviaComponent } from "./vista-previa.component";
 
 /** "Página 1 de 4" con flechas, para la esquina superior derecha de la tabla. */
 @Component({
   selector: "app-paginacion",
-  imports: [IconComponent],
+  imports: [IconComponent, VistaPreviaComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: "ml-auto flex items-center gap-2 text-[12px] text-gray-500" },
   template: `
@@ -19,6 +20,18 @@ import type { Tabla } from "./tabla";
       >
         <app-icon name="excel" [size]="14" class="text-green-700" /> Excel
       </button>
+      <button
+        type="button"
+        class="btn-secondary mr-1 px-2.5 py-1 text-[12px] shadow-none"
+        (click)="previa.set(true)"
+        [disabled]="tabla.total() === 0"
+        [title]="tabla.cantidadSeleccionada() ? 'Ver e imprimir en PDF las filas seleccionadas' : 'Ver e imprimir en PDF todas las filas'"
+      >
+        <app-icon name="descargar" [size]="14" class="text-[#9b73a1]" /> PDF
+      </button>
+      @if (previa()) {
+        <app-vista-previa [tabla]="tabla" [titulo]="tabla.tituloDocumento" (cerrar)="previa.set(false)" />
+      }
     }
     <span class="tabular">{{ rango() }}</span>
     <span class="hidden text-gray-300 sm:inline">·</span>
@@ -49,6 +62,8 @@ import type { Tabla } from "./tabla";
 })
 export class PaginacionComponent {
   @Input({ required: true }) tabla!: Tabla<any>;
+  /** Vista previa del documento (PDF / Excel con formato). */
+  readonly previa = signal(false);
 
   rango(): string {
     const total = this.tabla.total();

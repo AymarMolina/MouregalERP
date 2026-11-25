@@ -21,6 +21,8 @@
         <button type="button" class="tab" [class.tab-active]="atajo() === a.dias" (click)="usarAtajo(a.dias)">{{ a.label }}</button>
       }
       <button type="button" class="tab" [class.tab-active]="atajo() === 'mes'" (click)="mesActual()">Este mes</button>
+      <button type="button" class="tab" [class.tab-active]="atajo() === 'mesPasado'" (click)="mesPasado()">Mes pasado</button>
+      <button type="button" class="tab" [class.tab-active]="atajo() === 'anio'" (click)="anioActual()">Este año</button>
     </nav>
     <p class="ml-auto max-w-sm pb-2 text-right text-xs text-muted">Cada reporte usa la fecha real: cobros por fecha de pago, margen por fecha de armado, envíos por fecha de salida y más vendidos por fecha de venta.</p>
   </div>
@@ -33,9 +35,20 @@
         </button>
       }
     </nav>
-    <button type="button" class="btn-secondary mb-1" data-tour="rep-previa" [disabled]="loading()" (click)="mostrarPrevia.set(true)" title="Ver el reporte como documento y descargarlo en Excel o PDF">
-      <app-icon name="ticket" [size]="15" /> Vista previa
-    </button>
+    @if (pestana() === "resumen") {
+      <div class="mb-1 flex items-center gap-2" data-tour="rep-previa">
+        <button type="button" class="btn-secondary" [disabled]="loading() || !ventas()" (click)="reporteVentas()?.descargarExcel()" title="Ventas por día o mes en Excel, con el resumen arriba">
+          <app-icon name="excel" [size]="15" class="text-green-700" /> Excel
+        </button>
+        <button type="button" class="btn-primary" [disabled]="loading() || !ventas()" (click)="reporteVentas()?.imprimir()" title="Imprimir o guardar en PDF el reporte con gráficos">
+          <app-icon name="descargar" [size]="15" /> Descargar PDF
+        </button>
+      </div>
+    } @else {
+      <button type="button" class="btn-secondary mb-1" data-tour="rep-previa" [disabled]="loading()" (click)="mostrarPrevia.set(true)" title="Ver el reporte como documento y descargarlo en Excel o PDF">
+        <app-icon name="ticket" [size]="15" /> Vista previa
+      </button>
+    }
   </div>
 
   @if (mostrarPrevia()) {
@@ -55,6 +68,11 @@
       }
     </div>
   } @else {
+    <!-- RESUMEN DE VENTAS (con gráficos, es el mismo documento que se imprime) -->
+    @if (pestana() === "resumen" && ventas(); as v) {
+      <app-reporte-ventas [datos]="v" [titulo]="tituloVentas()" [periodo]="periodoTexto()" />
+    }
+
     <!-- COBROS -->
     @if (pestana() === "cobros" && cobros(); as c) {
       <div data-tour="rep-cobros-kpis" class="mb-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

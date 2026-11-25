@@ -31,6 +31,8 @@ export class ConfigRecetasComponent implements OnInit {
     id: (p) => p.id,
     porPagina: 10,
     nombreCsv: "productos",
+    titulo: "Productos y precios",
+    formatos: { margenS: "cantidad", margenM: "cantidad", margenL: "cantidad" },
     csv: (p) => ({
       producto: p.nombre,
       precioS: this.tallaDe(p, "S")?.precioBase,
