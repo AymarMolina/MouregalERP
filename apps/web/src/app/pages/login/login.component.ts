@@ -1,4 +1,4 @@
-import { Component, inject, signal } from "@angular/core";
+import { Component, ElementRef, afterNextRender, inject, signal, viewChild } from "@angular/core";
 import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms";
 import { Router } from "@angular/router";
 import { AuthService } from "../../core/auth/auth.service";
@@ -31,6 +31,20 @@ export class LoginComponent {
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
   readonly aviso = signal<string | null>(null);
+
+  private readonly fondo = viewChild<ElementRef<HTMLVideoElement>>("fondo");
+
+  constructor() {
+    // Angular no pone el atributo `muted` a tiempo y los navegadores bloquean
+    // el autoplay con sonido: se fuerza el silencio y se arranca a mano.
+    afterNextRender(() => {
+      const video = this.fondo()?.nativeElement;
+      if (!video) return;
+      video.muted = true;
+      video.defaultMuted = true;
+      void video.play().catch(() => undefined);
+    });
+  }
 
   async submit(): Promise<void> {
     if (this.form.invalid) {

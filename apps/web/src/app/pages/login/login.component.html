@@ -8,11 +8,12 @@
 <div class="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#2c2b2d] px-4 py-10">
   <!-- Fondo: video en bucle + velo para que la tarjeta mantenga contraste -->
   <video
+    #fondo
     class="pointer-events-none absolute inset-0 h-full w-full object-cover"
     src="videos/fondo%20logo%20erp.mp4"
     autoplay
     loop
-    [muted]="true"
+    muted
     playsinline
     preload="auto"
     aria-hidden="true"
