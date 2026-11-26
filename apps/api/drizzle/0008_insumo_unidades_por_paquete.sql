@@ -1,0 +1,1 @@
+ALTER TABLE "insumos" ADD COLUMN "unidades_por_paquete" numeric(12, 3) DEFAULT '1' NOT NULL;

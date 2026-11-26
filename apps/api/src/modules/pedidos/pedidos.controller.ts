@@ -53,8 +53,10 @@ export class PedidosController {
     @Query('estado') estado?: EstadoPedido,
     @Query('canal') canal?: Canal,
     @Query('q') q?: string,
+    @Query('desde') desde?: string,
+    @Query('hasta') hasta?: string,
   ) {
-    return this.pedidos.list({ fecha, estado, canal, q });
+    return this.pedidos.list({ fecha, desde, hasta, estado, canal, q });
   }
 
   @Roles('admin', 'vendedora', 'produccion', 'delivery')

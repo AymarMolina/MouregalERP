@@ -84,7 +84,7 @@
                 </td>
                 <td class="text-right text-muted">{{ cantidad(f.sugerida.stockMinimo) }}</td>
                 <td class="text-right">{{ cantidad(f.sugerida.reservado) }}</td>
-                <td class="text-right">{{ cantidad(f.sugerida.demanda) }}</td>
+                <td class="text-right" [title]="'Exacto: ' + cantidad(f.sugerida.demanda)">{{ cantidad(techo(f.sugerida.demanda)) }}</td>
                 <td class="text-right text-muted">{{ cantidad(f.sugerida.pendienteEnOrdenes) }}</td>
                 <td class="text-right font-semibold">{{ cantidad(f.sugerida.aComprar) }}</td>
                 <td><input type="number" min="0" step="any" class="input px-2 py-1 text-right" [(ngModel)]="f.paquetes" (ngModelChange)="refrescarFilas()" [disabled]="!f.marcada" /></td>

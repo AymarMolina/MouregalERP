@@ -35,6 +35,13 @@ export const insumos = pgTable('insumos', {
   esFlor: boolean('es_flor').notNull().default(false),
   // Caja: el pedido que la lleve sale en carro (5.5).
   esCaja: boolean('es_caja').notNull().default(false),
+  // Cuántas unidades base trae el paquete del proveedor (atado de 25 tallos, bolsa de 500 g).
+  unidadesPorPaquete: numeric('unidades_por_paquete', {
+    precision: 12,
+    scale: 3,
+  })
+    .notNull()
+    .default('1'),
   activo: boolean('activo').notNull().default(true),
   createdAt: timestamp('created_at', { withTimezone: true })
     .notNull()

@@ -6,7 +6,7 @@ import { AuthService } from "../../core/auth/auth.service";
 import { mensajeError } from "../../core/http/errores";
 import { DashboardService } from "../../core/pedidos/pedidos.service";
 import type { DashboardHoy, PedidoDelDia } from "../../core/pedidos/pedidos.types";
-import { CLASE_ESTADO_PEDIDO, ETIQUETA_ESTADO_PEDIDO, cantidad, hora, soles } from "../../core/util/formato";
+import { CLASE_ESTADO_PEDIDO, ETIQUETA_ESTADO_PEDIDO, cantidad, hora, hoyLima, soles } from "../../core/util/formato";
 import { usarPolling } from "../../core/util/polling";
 import { AreaChartComponent } from "../../shared/charts/area-chart.component";
 import { BarChartComponent } from "../../shared/charts/bar-chart.component";
@@ -50,6 +50,11 @@ export class HoyComponent implements OnInit {
   readonly etiquetaEstado = ETIQUETA_ESTADO_PEDIDO;
   readonly estadosDia = ESTADOS_DIA;
   readonly formatoSoles = (v: number) => soles(v);
+  readonly fechaCorta = (f: string) => fechaCorta.format(deFecha(f));
+  diasAtraso(fecha: string): string {
+    const dias = Math.round((deFecha(hoyLima()).getTime() - deFecha(fecha).getTime()) / 86_400_000);
+    return `Atrasado ${dias} ${dias === 1 ? "día" : "días"}`;
+  }
   readonly formatoPedidos = (v: number) => `${v} ${v === 1 ? "pedido" : "pedidos"}`;
 
   readonly data = signal<DashboardHoy | null>(null);
@@ -77,7 +82,7 @@ export class HoyComponent implements OnInit {
     const k = this.data()?.kpis;
     if (!k) return [];
     return [
-      { icono: "pedido", etiqueta: "Pedidos del día", valor: String(k.pedidosHoy), variacion: k.pedidosVariacion },
+      { icono: "pedido", etiqueta: "Entregas de hoy", valor: String(k.pedidosHoy), variacion: k.pedidosVariacion },
       { icono: "ventas", etiqueta: "Ventas del día", valor: soles(k.ventasHoy), variacion: k.ventasVariacion },
       { icono: "ticket", etiqueta: "Ticket promedio", valor: soles(k.ticketPromedio), variacion: k.ticketVariacion },
       {

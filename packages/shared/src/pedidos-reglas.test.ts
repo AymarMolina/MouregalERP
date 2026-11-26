@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { desglosarConsumo, faltantes, repartirUsado, sumarRecetas, validarTransicion } from "./pedidos-reglas";
+import { desglosarConsumo, faltantes, nombrePropio, repartirUsado, sumarRecetas, validarTransicion } from "./pedidos-reglas";
 
 describe("validarTransicion", () => {
   it("producción pasa un pedido pendiente a en_armado", () => {
@@ -138,5 +138,17 @@ describe("validarTransicion · recojo en tienda", () => {
     expect(validarTransicion("admin", "listo", "entregado", "delivery").ok).toBe(false);
     expect(validarTransicion("vendedora", "en_camino", "entregado", "delivery").ok).toBe(false);
     expect(validarTransicion("delivery", "en_camino", "entregado").ok).toBe(true);
+  });
+});
+
+describe("nombrePropio", () => {
+  it("pone mayúscula inicial a un nombre escrito en minúscula, sin tocar los conectores", () => {
+    expect(nombrePropio("maría de la cruz")).toBe("María de la Cruz");
+    expect(nombrePropio("pedro")).toBe("Pedro");
+  });
+  it("respeta lo que ya trae mayúsculas y lo vacío", () => {
+    expect(nombrePropio("McDonald")).toBe("McDonald");
+    expect(nombrePropio("JUAN")).toBe("JUAN");
+    expect(nombrePropio(undefined)).toBeUndefined();
   });
 });

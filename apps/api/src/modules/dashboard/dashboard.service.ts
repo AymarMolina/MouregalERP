@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, asc, eq, gte, lt, lte, ne, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, lt, ne, sql } from 'drizzle-orm';
 import { DB } from '../../db/db.module';
 import type { Db } from '../../db/client';
 import {
@@ -62,25 +62,36 @@ export class DashboardService {
       .where(eq(pedidos.fechaEntrega, hoy))
       .orderBy(asc(pedidos.horaEntrega));
 
-    // Ventas y pedidos por día (fecha de entrega), sin cancelados.
-    const porDia = await this.db
-      .select({
-        fecha: pedidos.fechaEntrega,
-        pedidos: sql<number>`count(*)::int`,
-        ventas: sql<string>`coalesce(sum(${pedidos.total}), 0)`,
-      })
-      .from(pedidos)
-      .where(
-        and(
-          gte(
-            pedidos.fechaEntrega,
-            inicioSerie > semanaPasada ? semanaPasada : inicioSerie,
+    // Ventas por día de venta (created_at en Lima), sin cancelados: el mismo criterio
+    // que Reportes, para que las dos pantallas den la misma cifra.
+    const diaVenta = sql<string>`to_char(${pedidos.createdAt} at time zone 'America/Lima', 'YYYY-MM-DD')`;
+    const inicio = inicioSerie > semanaPasada ? semanaPasada : inicioSerie;
+    const [porDia, entregasSemanaPasada] = await Promise.all([
+      this.db
+        .select({
+          fecha: diaVenta,
+          pedidos: sql<number>`count(*)::int`,
+          ventas: sql<string>`coalesce(sum(${pedidos.total}), 0)`,
+        })
+        .from(pedidos)
+        .where(
+          and(
+            sql`${diaVenta} >= ${inicio}`,
+            sql`${diaVenta} <= ${hoy}`,
+            ne(pedidos.estado, 'cancelado'),
           ),
-          lte(pedidos.fechaEntrega, hoy),
-          ne(pedidos.estado, 'cancelado'),
+        )
+        .groupBy(diaVenta),
+      this.db
+        .select({ n: sql<number>`count(*)::int` })
+        .from(pedidos)
+        .where(
+          and(
+            eq(pedidos.fechaEntrega, semanaPasada),
+            ne(pedidos.estado, 'cancelado'),
+          ),
         ),
-      )
-      .groupBy(pedidos.fechaEntrega);
+    ]);
     const dia = new Map(
       porDia.map((d) => [
         d.fecha,
@@ -96,9 +107,12 @@ export class DashboardService {
     });
 
     const activosHoy = pedidosHoy.filter((p) => p.estado !== 'cancelado');
-    const ventasHoy = r2(activosHoy.reduce((a, p) => a + Number(p.total), 0));
+    const vendidoHoy = dia.get(hoy) ?? vacio;
+    const ventasHoy = r2(vendidoHoy.ventas);
     const anterior = dia.get(semanaPasada) ?? vacio;
-    const ticketHoy = activosHoy.length ? r2(ventasHoy / activosHoy.length) : 0;
+    const ticketHoy = vendidoHoy.pedidos
+      ? r2(ventasHoy / vendidoHoy.pedidos)
+      : 0;
     const ticketAnterior = anterior.pedidos
       ? r2(anterior.ventas / anterior.pedidos)
       : 0;
@@ -136,6 +150,36 @@ export class DashboardService {
         pedidos: horas.get(desde + i) ?? 0,
       }),
     );
+
+    // Atrasados: la fecha de entrega ya pasó y siguen sin entregar.
+    const atrasados = await this.db
+      .select({
+        id: pedidos.id,
+        codigo: pedidos.codigo,
+        estado: pedidos.estado,
+        fechaEntrega: pedidos.fechaEntrega,
+        horaEntrega: pedidos.horaEntrega,
+        tipoEntrega: pedidos.tipoEntrega,
+        total: pedidos.total,
+        totalPagado: pedidos.totalPagado,
+        cliente: clientes.nombre,
+        distrito: distritos.nombre,
+      })
+      .from(pedidos)
+      .leftJoin(distritos, eq(pedidos.distritoId, distritos.id))
+      .innerJoin(clientes, eq(pedidos.clienteId, clientes.id))
+      .where(
+        and(
+          lt(pedidos.fechaEntrega, hoy),
+          inArray(pedidos.estado, [
+            'pendiente',
+            'en_armado',
+            'listo',
+            'en_camino',
+          ]),
+        ),
+      )
+      .orderBy(asc(pedidos.fechaEntrega), asc(pedidos.horaEntrega));
 
     const consultasAbiertas = await this.db
       .select({
@@ -176,7 +220,10 @@ export class DashboardService {
       comparadoCon: semanaPasada,
       kpis: {
         pedidosHoy: activosHoy.length,
-        pedidosVariacion: variacion(activosHoy.length, anterior.pedidos),
+        pedidosVariacion: variacion(
+          activosHoy.length,
+          entregasSemanaPasada[0]?.n ?? 0,
+        ),
         ventasHoy,
         ventasVariacion: variacion(ventasHoy, anterior.ventas),
         ticketPromedio: ticketHoy,
@@ -192,6 +239,7 @@ export class DashboardService {
       serieVentas,
       pedidosPorHora,
       pedidos: pedidosHoy,
+      atrasados,
       consultasAbiertas,
       stockBajo,
     };

@@ -181,6 +181,26 @@ export interface PedidoDelDia {
   totalPagado: string;
 }
 
+/** Fila de GET /pedidos: el pedido con el nombre del cliente y el distrito. */
+export interface PedidoListado extends Pedido {
+  clienteNombre: string;
+  clienteTelefono: string | null;
+  distrito: string | null;
+}
+
+export interface PedidoAtrasado {
+  id: string;
+  codigo: string;
+  estado: EstadoPedido;
+  fechaEntrega: string;
+  horaEntrega: string;
+  tipoEntrega: TipoEntrega;
+  total: string;
+  totalPagado: string;
+  cliente: string;
+  distrito: string | null;
+}
+
 export interface DashboardHoy {
   fecha: string;
   /** Día contra el que se comparan las variaciones (mismo día de la semana pasada). */
@@ -201,6 +221,8 @@ export interface DashboardHoy {
   serieVentas: { fecha: string; ventas: number; pedidos: number }[];
   pedidosPorHora: { hora: number; pedidos: number }[];
   pedidos: PedidoDelDia[];
+  /** Fecha de entrega ya pasada y sin entregar. */
+  atrasados: PedidoAtrasado[];
   consultasAbiertas: { id: string; pedidoId: string; numero: number; codigo: string; descripcion: string; createdAt: string }[];
   stockBajo: StockBajoItem[];
 }

@@ -44,7 +44,7 @@
   } @else if (data()) {
     @let d = data()!;
     <!-- KPIs -->
-    <div class="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4" data-tour="hoy-kpis">
+    <div class="mb-6 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4" data-tour="hoy-kpis">
       @for (k of kpis(); track k.etiqueta) {
         <div class="kpi">
           <span class="kpi-icon"><app-icon [name]="k.icono" [size]="18" /></span>
@@ -78,7 +78,7 @@
           <div class="mb-3 flex items-start justify-between gap-3">
             <div>
               <h2 class="panel-title">Ventas · 14 días</h2>
-              <p class="panel-subtitle text-xs">Por fecha de entrega, sin cancelados</p>
+              <p class="panel-subtitle text-xs">Por fecha de venta, sin cancelados</p>
             </div>
             <div class="rounded-full bg-brand-soft px-3 py-1 text-right">
               <div class="font-display text-[15px] font-semibold text-brand-dark">{{ soles(totalSerie()) }}</div>
@@ -170,50 +170,35 @@
         </section>
       </div>
 
-      <!-- Columna derecha: pedidos del día en tarjetas. En xl toma el alto de los paneles
-           de la izquierda ([contain:size] no la deja empujar la fila) y la lista hace scroll. -->
-      <section class="flex flex-col rounded-2xl bg-brand-band p-4 xl:[contain:size]">
+      <!-- Columna derecha: pedidos atrasados (entrega ya pasada y sin entregar). En xl toma el
+           alto de los paneles de la izquierda ([contain:size] no la deja empujar la fila). -->
+      <section class="flex flex-col rounded-2xl p-4 xl:[contain:size]" [class.bg-red-50]="d.atrasados.length" [class.bg-brand-band]="!d.atrasados.length" data-tour="hoy-atrasados">
         <div class="mb-3 flex items-center justify-between px-1">
-          <h2 class="panel-title">Pedidos de hoy</h2>
-          <button type="button" class="text-xs font-medium text-brand-dark underline underline-offset-2 hover:text-brand" (click)="tablaPedidos.scrollIntoView({ behavior: 'smooth' })">
-            Ver todos
-          </button>
+          <h2 class="panel-title">Atrasados</h2>
+          @if (d.atrasados.length) {
+            <span class="badge bg-white text-negativo">{{ d.atrasados.length }}</span>
+          }
         </div>
         <div class="-mr-2 min-h-0 flex-1 space-y-3 overflow-y-auto pr-2">
-          @for (p of d.pedidos; track p.id; let primero = $first) {
-            <a
-              [routerLink]="['/pedidos', p.id]"
-              class="block rounded-2xl border bg-white p-4 transition-colors hover:border-brand"
-              [class.border-brand-dark]="primero"
-              [class.border-transparent]="!primero"
-            >
-              <div class="mb-2 flex items-center justify-between text-xs text-muted">
-                <span>Pedido <span class="font-semibold text-gray-700">{{ p.codigo }}</span></span>
-                <span class="tabular-nums">Hoy, {{ hora(p.horaEntrega) }}</span>
+          @for (p of d.atrasados; track p.id) {
+            <a [routerLink]="['/pedidos', p.id]" class="block rounded-2xl border border-transparent bg-white p-4 transition-colors hover:border-brand">
+              <div class="mb-2 flex items-center justify-between text-xs">
+                <span class="text-muted">Pedido <span class="font-semibold text-gray-700">{{ p.codigo }}</span></span>
+                <span class="font-medium text-negativo">{{ diasAtraso(p.fechaEntrega) }}</span>
               </div>
               <div class="mb-1 flex items-center justify-between gap-2">
                 <span class="truncate font-display text-[16px] font-medium text-gray-900">{{ p.cliente }}</span>
                 <span [class]="'badge ' + claseEstado[p.estado]">{{ etiquetaEstado[p.estado] }}</span>
               </div>
-              <div class="mb-3 text-xs text-muted">
-                @if (p.tipoEntrega === "recojo") {
-                  Recoge en tienda
-                } @else {
-                  Recibe {{ p.nombreReceptor }} · {{ p.distrito }}
-                }
-              </div>
-              <div class="flex items-center justify-end gap-1.5 text-[13px] text-gray-600">
-                @if (saldo(p) > 0) {
-                  <span class="mr-auto text-xs font-medium text-negativo">Saldo {{ soles(saldo(p)) }}</span>
-                }
-                Total
-                <span class="font-display text-[16px] font-semibold text-gray-900">{{ soles(p.total) }}</span>
+              <div class="text-xs text-muted">
+                Era para el {{ fechaCorta(p.fechaEntrega) }}, {{ hora(p.horaEntrega) }} ·
+                {{ p.tipoEntrega === "recojo" ? "Recoge en tienda" : p.distrito }}
               </div>
             </a>
           } @empty {
             <div class="flex h-full min-h-[10rem] flex-col items-center justify-center gap-3 rounded-2xl bg-white px-4 py-8 text-center text-muted">
-              <span class="flex h-12 w-12 items-center justify-center rounded-full bg-brand-soft text-brand"><app-icon name="flor" [size]="22" /></span>
-              No hay pedidos con entrega para hoy.
+              <span class="flex h-12 w-12 items-center justify-center rounded-full bg-brand-soft text-positivo"><app-icon name="check" [size]="22" /></span>
+              Ningún pedido atrasado.
             </div>
           }
         </div>

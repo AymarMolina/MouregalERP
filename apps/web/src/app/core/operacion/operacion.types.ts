@@ -87,6 +87,8 @@ export interface CompraSugerida {
   stockActual: number;
   stockMinimo: number;
   costoPromedio: number;
+  /** Unidades base por paquete del proveedor (configurado en el insumo). */
+  unidadesPorPaquete: number;
   reservado: number;
   demanda: number;
   sugerido: number;

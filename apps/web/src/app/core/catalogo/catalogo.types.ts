@@ -19,6 +19,8 @@ export interface Insumo {
   costoPromedio: string;
   esFlor: boolean;
   esCaja: boolean;
+  /** Unidades base por paquete del proveedor. */
+  unidadesPorPaquete: string;
   activo: boolean;
 }
 

@@ -117,7 +117,7 @@
           <div class="mb-4">
             <div class="px-3 pb-1.5 text-[12px] font-semibold text-white/95">{{ group.label }}</div>
             @for (item of group.items; track item.path) {
-              <a [routerLink]="item.path" routerLinkActive="nav-item-activo" class="nav-item">
+              <a [routerLink]="item.path" routerLinkActive="nav-item-activo" [routerLinkActiveOptions]="{ exact: true }" class="nav-item">
                 <app-icon [name]="item.icon" [size]="17" />
                 {{ item.label }}
               </a>

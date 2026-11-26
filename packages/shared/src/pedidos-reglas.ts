@@ -149,3 +149,19 @@ export function faltantes(receta: LineaCantidad[], disponibleDe: (insumoId: stri
 function round3(n: number): number {
   return Math.round((n + Number.EPSILON) * 1000) / 1000;
 }
+
+const CONECTORES = new Set(["de", "del", "la", "las", "los", "y", "e"]);
+
+/**
+ * "maria de la cruz" → "Maria de la Cruz". Solo toca nombres escritos todo en
+ * minúscula: si alguien ya usó mayúsculas ("McDonald", "MARÍA"), se respeta.
+ */
+export function nombrePropio(nombre: string): string;
+export function nombrePropio(nombre: string | null | undefined): string | null | undefined;
+export function nombrePropio(nombre: string | null | undefined): string | null | undefined {
+  if (!nombre || nombre !== nombre.toLocaleLowerCase("es-PE")) return nombre;
+  return nombre
+    .split(/(\s+)/)
+    .map((p, i) => (i > 0 && CONECTORES.has(p) ? p : p.charAt(0).toLocaleUpperCase("es-PE") + p.slice(1)))
+    .join("");
+}

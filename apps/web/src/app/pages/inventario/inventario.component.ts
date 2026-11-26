@@ -41,6 +41,8 @@ export class InventarioComponent implements OnInit {
   readonly kardexMovimientos = signal<KardexMovimiento[]>([]);
   readonly cargandoKardex = signal(false);
 
+  readonly Number = Number;
+
   readonly form = this.fb.nonNullable.group({
     codigo: ["", Validators.required],
     nombre: ["", Validators.required],
@@ -49,11 +51,13 @@ export class InventarioComponent implements OnInit {
     stockMinimo: [0, [Validators.required, Validators.min(0)]],
     esFlor: [false],
     esCaja: [false],
+    unidadesPorPaquete: [1, [Validators.required, Validators.min(0.001)]],
   });
 
   readonly editForm = this.fb.nonNullable.group({
     nombre: ["", Validators.required],
     stockMinimo: [0, [Validators.required, Validators.min(0)]],
+    unidadesPorPaquete: [1, [Validators.required, Validators.min(0.001)]],
     activo: [true],
   });
 
@@ -186,7 +190,7 @@ export class InventarioComponent implements OnInit {
   async crear(): Promise<void> {
     if (this.form.invalid) return;
     await this.insumosService.create(this.form.getRawValue());
-    this.form.reset({ categoria: "flor", unidadBase: "tallo", stockMinimo: 0, esFlor: false, esCaja: false });
+    this.form.reset({ categoria: "flor", unidadBase: "tallo", stockMinimo: 0, esFlor: false, esCaja: false, unidadesPorPaquete: 1 });
     this.mostrarForm.set(false);
     await this.cargar();
   }
@@ -196,6 +200,7 @@ export class InventarioComponent implements OnInit {
     this.editForm.setValue({
       nombre: insumo.nombre,
       stockMinimo: Number(insumo.stockMinimo),
+      unidadesPorPaquete: Number(insumo.unidadesPorPaquete),
       activo: insumo.activo,
     });
   }

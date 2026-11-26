@@ -6,7 +6,19 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { and, asc, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  getTableColumns,
+  gte,
+  ilike,
+  inArray,
+  lte,
+  or,
+  sql,
+} from 'drizzle-orm';
 import {
   calcularEnvio,
   calcularSaldo,
@@ -21,6 +33,7 @@ import {
   validarDescuento,
   totalPedido,
   FOTOS_PEDIDO,
+  nombrePropio,
   type ConsumoInput,
   type DespacharInput,
   type EstadoPedido,
@@ -108,13 +121,22 @@ export class PedidosService {
 
   async list(filtros: {
     fecha?: string;
+    desde?: string;
+    hasta?: string;
     estado?: EstadoPedido;
     canal?: Canal;
     q?: string;
   }) {
+    for (const f of [filtros.fecha, filtros.desde, filtros.hasta])
+      if (f && !/^\d{4}-\d{2}-\d{2}$/.test(f))
+        throw new BadRequestException('Fecha inválida (AAAA-MM-DD)');
     const condiciones = [];
     if (filtros.fecha)
       condiciones.push(eq(pedidos.fechaEntrega, filtros.fecha));
+    if (filtros.desde)
+      condiciones.push(gte(pedidos.fechaEntrega, filtros.desde));
+    if (filtros.hasta)
+      condiciones.push(lte(pedidos.fechaEntrega, filtros.hasta));
     if (filtros.estado) condiciones.push(eq(pedidos.estado, filtros.estado));
     if (filtros.canal) condiciones.push(eq(pedidos.canal, filtros.canal));
     const q = filtros.q?.trim();
@@ -137,10 +159,18 @@ export class PedidosService {
     }
 
     return this.db
-      .select()
+      .select({
+        ...getTableColumns(pedidos),
+        clienteNombre: clientes.nombre,
+        clienteTelefono: clientes.telefono,
+        distrito: distritos.nombre,
+      })
       .from(pedidos)
+      .innerJoin(clientes, eq(pedidos.clienteId, clientes.id))
+      .leftJoin(distritos, eq(pedidos.distritoId, distritos.id))
       .where(condiciones.length ? and(...condiciones) : undefined)
-      .orderBy(desc(pedidos.createdAt));
+      .orderBy(desc(pedidos.createdAt))
+      .limit(1000);
   }
 
   async findOne(id: string, exec: Exec = this.db) {
@@ -854,7 +884,7 @@ export class PedidosService {
           ubicacionLat: ubicacion?.lat ?? null,
           ubicacionLng: ubicacion?.lng ?? null,
           telefonoReceptor: esRecojo ? null : input.telefonoReceptor,
-          nombreReceptor: esRecojo ? null : input.nombreReceptor,
+          nombreReceptor: esRecojo ? null : nombrePropio(input.nombreReceptor),
           dedicatoria: input.dedicatoria,
           vehiculo,
           subtotalProductos: String(subtotalProductos),
@@ -983,7 +1013,8 @@ export class PedidosService {
     return this.findOne(pedidoId);
   }
 
-  private async resolverCliente(tx: Tx, cliente: PedidoInput['cliente']) {
+  private async resolverCliente(tx: Tx, entrada: PedidoInput['cliente']) {
+    const cliente = { ...entrada, nombre: nombrePropio(entrada.nombre) };
     const nombre = cliente.nombre ?? 'Cliente de mostrador';
     if (cliente.telefono) {
       const [existente] = await tx

@@ -32,7 +32,7 @@ export const TOUR_HOY: Tour = {
       elemento: "hoy-kpis",
       titulo: "Indicadores del día",
       texto:
-        "<p>Pedidos, ventas, ticket promedio y saldo por cobrar. La flecha compara contra el mismo día de la semana pasada (verde sube, rojo baja).</p>" +
+        "<p>Entregas de hoy, ventas del día (lo vendido hoy, para cualquier fecha de entrega), ticket promedio y saldo por cobrar. La flecha compara contra el mismo día de la semana pasada (verde sube, rojo baja).</p>" +
         "<p>El saldo por cobrar indica cuántos pedidos aún deben dinero.</p>",
       lado: "bottom",
     },
@@ -40,8 +40,15 @@ export const TOUR_HOY: Tour = {
       elemento: "hoy-ventas",
       titulo: "Ventas de 14 días",
       texto:
-        "<p>Ventas por fecha de entrega, sin pedidos cancelados. Pasa el cursor por la línea para ver el monto de cada día.</p>",
+        "<p>Ventas por fecha de venta, sin pedidos cancelados: el mismo criterio que Reportes. Pasa el cursor por la línea para ver el monto de cada día.</p>",
       lado: "top",
+    },
+    {
+      elemento: "hoy-atrasados",
+      titulo: "Atrasados",
+      texto:
+        "<p>Pedidos cuya fecha de entrega ya pasó y que todavía no se entregan. Ábrelos para ver en qué etapa se quedaron. Si un pedido ya se entregó, márcalo como entregado para que salga de aquí.</p>",
+      lado: "left",
     },
     {
       elemento: "hoy-estados",

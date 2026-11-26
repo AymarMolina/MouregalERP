@@ -58,6 +58,8 @@ export class ComprasComponent implements OnInit {
 
   readonly soles = soles;
   readonly cantidad = cantidad;
+  /** La demanda se muestra entera hacia arriba: no se compra medio tallo y "1.929" se leía como mil. */
+  readonly techo = Math.ceil;
   readonly claseOc = CLASE_ESTADO_OC;
   readonly etiquetaOc = ETIQUETA_OC;
   readonly estadosOc = Object.keys(ETIQUETA_OC) as EstadoOc[];
@@ -200,13 +202,18 @@ export class ComprasComponent implements OnInit {
     try {
       const lista = await this.api.sugeridas(this.dias());
       this.filasCompra.set(
-        lista.map((s) => ({
-          sugerida: s,
-          marcada: false,
-          paquetes: s.aComprar,
-          unidadesPorPaquete: 1,
-          costoTotal: Math.round(s.aComprar * s.costoPromedio * 100) / 100,
-        })),
+        lista.map((s) => {
+          // Se compra en paquetes enteros del proveedor (atado de 25, bolsa de 500 g).
+          const porPaquete = s.unidadesPorPaquete > 0 ? s.unidadesPorPaquete : 1;
+          const paquetes = Math.ceil(s.aComprar / porPaquete);
+          return {
+            sugerida: s,
+            marcada: false,
+            paquetes,
+            unidadesPorPaquete: porPaquete,
+            costoTotal: Math.round(paquetes * porPaquete * s.costoPromedio * 100) / 100,
+          };
+        }),
       );
     } catch (err) {
       this.error.set(mensajeError(err, "No se pudo calcular la lista sugerida."));

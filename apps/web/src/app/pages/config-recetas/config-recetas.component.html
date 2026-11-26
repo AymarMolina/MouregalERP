@@ -96,11 +96,26 @@
               <td class="col-check"><app-check-fila [tabla]="tabla" [fila]="p" [etiqueta]="'Seleccionar ' + p.nombre" /></td>
               <td class="font-medium text-gray-900">{{ p.nombre }}</td>
               <td class="text-right">{{ tallaDe(p, "S")?.precioBase }}</td>
-              <td class="text-right text-muted">{{ tallaDe(p, "S")?.margen }}</td>
+              <td class="text-right text-muted">
+                {{ tallaDe(p, "S")?.margen }}
+                @if (pctMargen(tallaDe(p, "S")); as pct) {
+                  <div class="text-xs">{{ pct }}</div>
+                }
+              </td>
               <td class="text-right">{{ tallaDe(p, "M")?.precioBase }}</td>
-              <td class="text-right text-muted">{{ tallaDe(p, "M")?.margen }}</td>
+              <td class="text-right text-muted">
+                {{ tallaDe(p, "M")?.margen }}
+                @if (pctMargen(tallaDe(p, "M")); as pct) {
+                  <div class="text-xs">{{ pct }}</div>
+                }
+              </td>
               <td class="text-right">{{ tallaDe(p, "L")?.precioBase }}</td>
-              <td class="text-right text-muted">{{ tallaDe(p, "L")?.margen }}</td>
+              <td class="text-right text-muted">
+                {{ tallaDe(p, "L")?.margen }}
+                @if (pctMargen(tallaDe(p, "L")); as pct) {
+                  <div class="text-xs">{{ pct }}</div>
+                }
+              </td>
               <td>
                 <app-row-menu [etiqueta]="'Acciones de ' + p.nombre">
                   <button type="button" class="btn-action" (click)="seleccionar(p)" title="Editar producto y receta" aria-label="Editar producto y receta"><app-icon name="editar" [size]="16" /></button>

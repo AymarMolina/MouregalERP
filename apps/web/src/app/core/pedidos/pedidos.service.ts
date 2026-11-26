@@ -8,6 +8,7 @@ import type {
   DashboardHoy,
   HistorialEstado,
   PedidoDetalle,
+  PedidoListado,
   ResultadoCotizacion,
   ResultadoCotizacionPedido,
 } from "./pedidos.types";
@@ -32,11 +33,13 @@ export class PedidosService {
   private readonly http = inject(HttpClient);
   private readonly base = `${environment.apiUrl}/pedidos`;
 
-  list(filtros: { fecha?: string; estado?: string; canal?: string; q?: string } = {}): Promise<PedidoDetalle[]> {
+  list(
+    filtros: { fecha?: string; desde?: string; hasta?: string; estado?: string; canal?: string; q?: string } = {},
+  ): Promise<(PedidoDetalle & PedidoListado)[]> {
     const params = new URLSearchParams();
     for (const [k, v] of Object.entries(filtros)) if (v) params.set(k, v);
     const qs = params.toString();
-    return firstValueFrom(this.http.get<PedidoDetalle[]>(`${this.base}${qs ? `?${qs}` : ""}`));
+    return firstValueFrom(this.http.get<(PedidoDetalle & PedidoListado)[]>(`${this.base}${qs ? `?${qs}` : ""}`));
   }
 
   get(id: string): Promise<PedidoDetalle> {

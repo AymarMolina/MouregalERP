@@ -1,0 +1,97 @@
+<div class="p-6">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Pedidos</h1>
+      <p class="panel-subtitle">Todos los pedidos por fecha de entrega: busca uno, revisa su estado o exporta la lista.</p>
+    </div>
+    <a routerLink="/pedidos/nuevo" class="btn-primary"><app-icon name="nuevo" [size]="16" /> Nuevo pedido</a>
+  </div>
+
+  <div class="card mb-4 flex flex-wrap items-end gap-4 p-4" data-tour="pedidos-filtros">
+    <div class="min-w-[14rem] flex-1">
+      <label class="field-label" for="pl-buscar">Buscar</label>
+      <input id="pl-buscar" class="input" placeholder="#pedido, cliente, teléfono, receptor o distrito" [ngModel]="busqueda()" (ngModelChange)="busqueda.set($event)" />
+    </div>
+    <div>
+      <label class="field-label" for="pl-desde">Entrega desde</label>
+      <input id="pl-desde" type="date" class="input" [ngModel]="desde()" (ngModelChange)="desde.set($event); cargar()" />
+    </div>
+    <div>
+      <label class="field-label" for="pl-hasta">Hasta</label>
+      <input id="pl-hasta" type="date" class="input" [ngModel]="hasta()" (ngModelChange)="hasta.set($event); cargar()" />
+    </div>
+  </div>
+
+  @if (error()) {
+    <p class="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-red-800">{{ error() }}</p>
+  }
+
+  <div class="table-wrap" data-tour="pedidos-tabla">
+    <div class="px-4 pt-4">
+      <nav class="tabs" aria-label="Filtrar por estado">
+        <button type="button" class="tab" [class.tab-active]="filtroEstado() === null" (click)="filtroEstado.set(null)">
+          Todos <span class="tab-count">{{ conteo(null) }}</span>
+        </button>
+        @for (e of estados; track e) {
+          <button type="button" class="tab" [class.tab-active]="filtroEstado() === e" (click)="filtroEstado.set(e)">
+            {{ etiquetaEstado[e] }} <span class="tab-count">{{ conteo(e) }}</span>
+          </button>
+        }
+      </nav>
+    </div>
+    <div class="table-head">
+      <h2 class="table-title">Pedidos</h2>
+      <app-paginacion [tabla]="tabla" />
+    </div>
+    <app-seleccion-bar [tabla]="tabla" />
+    @if (loading()) {
+      <div class="space-y-3 p-4">
+        @for (i of [1, 2, 3, 4, 5]; track i) {
+          <div class="skeleton h-9"></div>
+        }
+      </div>
+    } @else {
+      <div class="overflow-x-auto">
+        <table class="table">
+          <thead>
+            <tr>
+              <th class="col-check"><app-check-todos [tabla]="tabla" /></th>
+              <th>Pedido</th>
+              <th>Entrega</th>
+              <th>Cliente</th>
+              <th>Destino</th>
+              <th>Canal</th>
+              <th>Estado</th>
+              <th class="text-right">Total</th>
+              <th class="text-right">Saldo</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (p of tabla.filas(); track p.id) {
+              <tr [class.fila-sel]="tabla.marcado(p)">
+                <td class="col-check"><app-check-fila [tabla]="tabla" [fila]="p" [etiqueta]="'Seleccionar pedido ' + p.codigo" /></td>
+                <td class="font-semibold text-gray-900">
+                  <a [routerLink]="['/pedidos', p.id]" class="hover:underline">{{ p.codigo }}</a>
+                </td>
+                <td class="whitespace-nowrap tabular-nums">{{ cuando(p.fechaEntrega, p.horaEntrega) }}</td>
+                <td>
+                  <div class="text-gray-900">{{ p.clienteNombre }}</div>
+                  <div class="text-xs text-muted">{{ p.clienteTelefono ?? "—" }}</div>
+                </td>
+                <td>{{ p.tipoEntrega === "recojo" ? "Recoge en tienda" : p.distrito }}</td>
+                <td>{{ canal[p.canal] }}</td>
+                <td><span [class]="'badge ' + claseEstado[p.estado]">{{ etiquetaEstado[p.estado] }}</span></td>
+                <td class="text-right tabular-nums">{{ soles(p.total) }}</td>
+                <td class="text-right tabular-nums" [class.font-semibold]="saldo(p) > 0" [class.text-negativo]="saldo(p) > 0">{{ soles(saldo(p)) }}</td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="9" class="py-10 text-center text-muted">No hay pedidos que coincidan.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+</div>

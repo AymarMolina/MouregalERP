@@ -77,6 +77,10 @@
                     <a [href]="abrirMaps(p.ubicacionLat, p.ubicacionLng)" target="_blank" rel="noopener" class="btn-secondary mt-2 px-3 py-1.5">
                       <app-icon name="mapa" [size]="15" /> Abrir en Google Maps
                     </a>
+                  } @else if (p.direccion) {
+                    <a [href]="buscarEnMaps(p)" target="_blank" rel="noopener" class="btn-secondary mt-2 px-3 py-1.5">
+                      <app-icon name="mapa" [size]="15" /> Buscar en Google Maps
+                    </a>
                   }
                 </div>
 
@@ -113,7 +117,7 @@
 
                 @if (p.estado === "listo" || p.estado === "en_camino") {
                   <div class="border-t border-line pt-3">
-                    <app-fotos-pedido [pedidoId]="p.id" />
+                    <app-fotos-pedido [pedidoId]="p.id" [editable]="puedeSubirFoto() && p.estado === 'listo'" (cantidad)="fotosCambiaron(p.id, $event)" />
                   </div>
                 }
 
@@ -135,7 +139,7 @@
                       {{ trabajando() === p.id ? "Despachando..." : p.saldo > 0 && !p.linkSaldo ? "Enviar link y despachar" : "Despachar" }}
                     </button>
                     @if (p.fotos === 0) {
-                      <p class="w-full text-negativo">Falta la foto del arreglo: Producción debe subirla antes de despachar.</p>
+                      <p class="w-full text-negativo">Falta la foto del arreglo: {{ puedeSubirFoto() ? "súbela arriba o pídesela a Producción" : "Producción debe subirla" }} antes de despachar.</p>
                     }
                   </div>
                 }

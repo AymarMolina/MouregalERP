@@ -37,6 +37,7 @@ export class InsumosService {
         stockMinimo: String(input.stockMinimo),
         esFlor: input.esFlor,
         esCaja: input.esCaja,
+        unidadesPorPaquete: String(input.unidadesPorPaquete),
       })
       .returning();
   }
@@ -55,6 +56,9 @@ export class InsumosService {
         }),
         ...(input.esFlor !== undefined && { esFlor: input.esFlor }),
         ...(input.esCaja !== undefined && { esCaja: input.esCaja }),
+        ...(input.unidadesPorPaquete !== undefined && {
+          unidadesPorPaquete: String(input.unidadesPorPaquete),
+        }),
         ...(input.activo !== undefined && { activo: input.activo }),
         updatedAt: new Date(),
       })

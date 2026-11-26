@@ -7,6 +7,7 @@ import { TOUR_MAPA } from "./mapa";
 import { TOUR_PAGOS } from "./pagos";
 import { TOUR_PEDIDO_DETALLE } from "./pedido-detalle";
 import { TOUR_PEDIDO_NUEVO } from "./pedido-nuevo";
+import { TOUR_PEDIDOS } from "./pedidos";
 import { TOUR_PRODUCCION } from "./produccion";
 import { TOUR_RECETAS } from "./recetas";
 import { TOUR_REGLAS } from "./reglas";
@@ -19,6 +20,7 @@ export { TOUR_GENERAL } from "./general";
 const POR_RUTA: Record<string, Tour> = {
   "/mapa": TOUR_MAPA,
   "/hoy": TOUR_HOY,
+  "/pedidos": TOUR_PEDIDOS,
   "/pedidos/nuevo": TOUR_PEDIDO_NUEVO,
   "/produccion": TOUR_PRODUCCION,
   "/delivery": TOUR_DELIVERY,

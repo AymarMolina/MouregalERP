@@ -67,6 +67,13 @@ export class DeliveryComponent implements OnInit {
 
   readonly esRepartidor = computed(() => this.auth.user()?.rol === "delivery");
   readonly puedeEntregar = computed(() => ["admin", "delivery"].includes(this.auth.user()?.rol ?? ""));
+  /** El admin puede subir la foto aquí mismo si Producción no la subió (el API se lo permite). */
+  readonly puedeSubirFoto = computed(() => this.auth.user()?.rol === "admin");
+
+  /** Al subir o borrar una foto, actualiza el conteo sin esperar al siguiente refresco. */
+  fotosCambiaron(id: string, n: number): void {
+    this.tablero.update((t) => (t ? { ...t, pedidos: t.pedidos.map((p) => (p.id === id ? { ...p, fotos: n } : p)) } : t));
+  }
 
   readonly columnas = computed<Columna[]>(() => {
     const t = this.tablero();
@@ -157,6 +164,12 @@ export class DeliveryComponent implements OnInit {
     } catch {
       this.aviso.set(url);
     }
+  }
+
+  /** Sin coordenadas, busca la dirección escrita en Google Maps. */
+  buscarEnMaps(p: PedidoDelivery): string {
+    const texto = [p.direccion, p.distrito, "Lima"].filter(Boolean).join(", ");
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(texto)}`;
   }
 
   /** Abre la ubicación en la app de Google Maps del celular. */

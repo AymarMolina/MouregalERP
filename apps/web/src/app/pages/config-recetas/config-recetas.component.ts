@@ -124,6 +124,13 @@ export class ConfigRecetasComponent implements OnInit {
     return this.insumos().find((i) => i.id === id)?.nombre ?? "—";
   }
 
+  /** Margen sobre el precio, en %: es lo que se compara entre productos. */
+  pctMargen(t: { precioBase: string; margen: string } | undefined): string | null {
+    const precio = Number(t?.precioBase);
+    if (!t || !precio) return null;
+    return `${Math.round((Number(t.margen) / precio) * 1000) / 10} %`;
+  }
+
   tallaDe(producto: Producto, talla: Talla) {
     return producto.tallas.find((t) => t.talla === talla);
   }

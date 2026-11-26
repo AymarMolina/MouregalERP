@@ -57,6 +57,13 @@
       "when": 1795558377155,
       "tag": "0007_adicional_insumo",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1795709290688,
+      "tag": "0008_insumo_unidades_por_paquete",
+      "breakpoints": true
     }
   ]
 }

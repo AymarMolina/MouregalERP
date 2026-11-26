@@ -13,6 +13,8 @@ export const insumoInputSchema = z.object({
   esFlor: z.boolean().default(false),
   /** Insumo de tipo caja: el pedido que lo lleve sale en carro (5.5). */
   esCaja: z.boolean().default(false),
+  /** Unidades base por paquete del proveedor: la compra sugerida se redondea a paquetes enteros. */
+  unidadesPorPaquete: z.coerce.number().finite().positive().default(1),
   activo: z.boolean().optional(),
 });
 export type InsumoInput = z.infer<typeof insumoInputSchema>;

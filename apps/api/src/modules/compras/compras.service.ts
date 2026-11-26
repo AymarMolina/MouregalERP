@@ -170,6 +170,7 @@ export class ComprasService {
         stockActual,
         stockMinimo: Number(i.stockMinimo),
         costoPromedio: Number(i.costoPromedio),
+        unidadesPorPaquete: Number(i.unidadesPorPaquete),
         reservado,
         demanda,
         sugerido,

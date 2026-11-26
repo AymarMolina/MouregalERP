@@ -30,7 +30,7 @@
   }
 
   @if (mostrarForm()) {
-    <form [formGroup]="form" (ngSubmit)="crear()" class="card mb-6 grid grid-cols-6 gap-4 items-end">
+    <form [formGroup]="form" (ngSubmit)="crear()" class="card mb-6 grid grid-cols-7 gap-4 items-end">
       <div>
         <label class="field-label">Código</label>
         <input formControlName="codigo" class="input" placeholder="ROS-ROJ" />
@@ -59,7 +59,11 @@
         <label class="field-label">Stock mínimo</label>
         <input type="number" formControlName="stockMinimo" class="input" />
       </div>
-      <div class="col-span-6 flex items-center justify-between border-t border-line pt-4">
+      <div>
+        <label class="field-label" title="Cuántas unidades trae lo que vende el proveedor: atado de 25 tallos, bolsa de 500 g">Unidades por paquete</label>
+        <input type="number" min="0.001" step="any" formControlName="unidadesPorPaquete" class="input" />
+      </div>
+      <div class="col-span-7 flex items-center justify-between border-t border-line pt-4">
         <div class="flex flex-wrap items-center gap-6">
           <label class="flex items-center gap-2 text-text">
             <input type="checkbox" formControlName="esFlor" class="checkbox" />
@@ -175,7 +179,13 @@
                 <td class="text-muted">{{ i.codigo }}</td>
                 <td><input formControlName="nombre" class="input py-1" /></td>
                 <td class="text-muted">{{ i.categoria }}</td>
-                <td class="text-muted">{{ i.unidadBase }}</td>
+                <td class="text-muted">
+                  {{ i.unidadBase }}
+                  <label class="mt-1 flex items-center gap-1 text-xs">
+                    paquete de
+                    <input type="number" min="0.001" step="any" formControlName="unidadesPorPaquete" class="input w-20 py-1 text-right" aria-label="Unidades por paquete del proveedor" />
+                  </label>
+                </td>
                 <td class="text-right"><input type="number" formControlName="stockMinimo" class="input w-24 py-1 text-right" /></td>
                 <td class="text-right text-muted tabular">{{ cantidad(i.stockActual) }}</td>
                 <td class="text-right text-muted tabular">{{ costo(i.costoPromedio) }}</td>
@@ -195,7 +205,12 @@
                   <button type="button" class="text-left text-gray-900 hover:text-brand hover:underline" (click)="verKardex(i)" [title]="'Ver Kardex de ' + i.nombre">{{ i.nombre }}</button>
                 </td>
                 <td class="text-muted">{{ i.categoria }}</td>
-                <td class="text-muted">{{ i.unidadBase }}</td>
+                <td class="text-muted">
+                  {{ i.unidadBase }}
+                  @if (Number(i.unidadesPorPaquete) !== 1) {
+                    <div class="text-xs">paquete de {{ cantidad(i.unidadesPorPaquete) }}</div>
+                  }
+                </td>
                 <td class="text-right text-muted tabular">{{ cantidad(i.stockMinimo) }}</td>
                 <td class="text-right font-medium tabular">
                   @if (stockBajo(i)) {
