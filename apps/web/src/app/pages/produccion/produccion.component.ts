@@ -1,3 +1,4 @@
+import { revisarFormulario } from "../../core/formularios/faltantes";
 import { AvisosService } from "../../core/avisos/avisos.service";
 import { Component, HostListener, OnInit, computed, inject, signal } from "@angular/core";
 import { FotosPedidoComponent } from "../../shared/fotos/fotos-pedido.component";
@@ -277,7 +278,8 @@ export class ProduccionComponent implements OnInit {
 
   async confirmarConsumo(): Promise<void> {
     const pedido = this.seleccionado();
-    if (!pedido || this.consumoForm.invalid) return;
+    if (!pedido) return;
+    if (!revisarFormulario(this.consumoForm, this.avisosFlotantes)) return;
     this.guardando.set(true);
     this.error.set(null);
     try {
@@ -320,7 +322,8 @@ export class ProduccionComponent implements OnInit {
 
   async resolverConsulta(estado: "aprobada" | "rechazada"): Promise<void> {
     const consulta = this.consultaAbierta();
-    if (!consulta || this.resolverForm.invalid) return;
+    if (!consulta) return;
+    if (!revisarFormulario(this.resolverForm, this.avisosFlotantes)) return;
     this.error.set(null);
     try {
       await this.consultasService.resolver(consulta.id, { estado, respuesta: this.resolverForm.value.respuesta! });

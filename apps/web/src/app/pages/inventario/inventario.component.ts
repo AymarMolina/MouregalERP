@@ -1,3 +1,5 @@
+import { revisarFormulario } from "../../core/formularios/faltantes";
+import { AvisosService } from "../../core/avisos/avisos.service";
 import { AjusteConteoComponent } from "./ajuste-conteo.component";
 import { RegistrarMermaComponent } from "../../shared/merma/registrar-merma.component";
 import { DatePipe } from "@angular/common";
@@ -21,6 +23,7 @@ import { InsumosService, type KardexMovimiento } from "../../core/catalogo/insum
 })
 export class InventarioComponent implements OnInit {
   private readonly insumosService = inject(InsumosService);
+  private readonly avisosForm = inject(AvisosService);
   private readonly fb = inject(FormBuilder);
 
   readonly categorias: InsumoCategoria[] = [...INSUMO_CATEGORIA];
@@ -190,7 +193,7 @@ export class InventarioComponent implements OnInit {
   }
 
   async crear(): Promise<void> {
-    if (this.form.invalid) return;
+    if (!revisarFormulario(this.form, this.avisosForm)) return;
     await this.insumosService.create(this.form.getRawValue());
     this.form.reset({ categoria: "flor", unidadBase: "tallo", stockMinimo: 0, esFlor: false, esCaja: false });
     this.mostrarForm.set(false);
@@ -211,7 +214,7 @@ export class InventarioComponent implements OnInit {
   }
 
   async guardarEdicion(id: string): Promise<void> {
-    if (this.editForm.invalid) return;
+    if (!revisarFormulario(this.editForm, this.avisosForm)) return;
     await this.insumosService.update(id, this.editForm.getRawValue());
     this.editingId.set(null);
     await this.cargar();

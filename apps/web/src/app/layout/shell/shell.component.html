@@ -38,7 +38,7 @@
         <div class="mb-5">
           <div class="px-2.5 pb-1.5 text-[12px] text-nav-muted">{{ group.label }}</div>
           @for (item of group.items; track item.path) {
-            <a [routerLink]="item.path" routerLinkActive="nav-item-activo" class="nav-item">
+            <a [routerLink]="item.path" routerLinkActive="nav-item-activo" [routerLinkActiveOptions]="{ exact: item.path === '/pedidos' }" class="nav-item">
               {{ item.label }}
             </a>
           }

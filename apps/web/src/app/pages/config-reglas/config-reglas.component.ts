@@ -1,3 +1,5 @@
+import { revisarFormulario } from "../../core/formularios/faltantes";
+import { AvisosService } from "../../core/avisos/avisos.service";
 import { Component, OnInit, inject, signal } from "@angular/core";
 import { IconComponent } from "../../shared/icon/icon.component";
 import { RowMenuComponent } from "../../shared/tabla/row-menu.component";
@@ -18,6 +20,7 @@ import { ReglasCambioService } from "../../core/catalogo/reglas-cambio.service";
 })
 export class ConfigReglasComponent implements OnInit {
   private readonly reglasService = inject(ReglasCambioService);
+  private readonly avisosForm = inject(AvisosService);
   private readonly productosService = inject(ProductosService);
   private readonly insumosService = inject(InsumosService);
   private readonly fb = inject(FormBuilder);
@@ -84,7 +87,7 @@ export class ConfigReglasComponent implements OnInit {
   }
 
   async crear(): Promise<void> {
-    if (this.form.invalid) return;
+    if (!revisarFormulario(this.form, this.avisosForm)) return;
     const raw = this.form.getRawValue();
     await this.reglasService.create({
       ...raw,

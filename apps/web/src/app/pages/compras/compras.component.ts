@@ -1,3 +1,4 @@
+import { revisarFormulario } from "../../core/formularios/faltantes";
 import { DialogoService } from "../../core/dialogo/dialogo.service";
 import { AvisosService } from "../../core/avisos/avisos.service";
 import { descargarExcel } from "../../shared/tabla/excel";
@@ -354,7 +355,7 @@ export class ComprasComponent implements OnInit {
   }
 
   async crearProveedor(): Promise<void> {
-    if (this.proveedorForm.invalid) return;
+    if (!revisarFormulario(this.proveedorForm, this.avisosFlotantes)) return;
     const v = this.proveedorForm.getRawValue();
     const p = await this.ejecutar(
       () => this.api.crearProveedor({

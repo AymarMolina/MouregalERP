@@ -1,3 +1,5 @@
+import { revisarFormulario } from "../../core/formularios/faltantes";
+import { AvisosService } from "../../core/avisos/avisos.service";
 import { Component, OnInit, inject, signal } from "@angular/core";
 import { IconComponent } from "../../shared/icon/icon.component";
 import { RowMenuComponent } from "../../shared/tabla/row-menu.component";
@@ -14,6 +16,7 @@ import { CostosVehiculoService, DistritosService } from "../../core/catalogo/dis
 })
 export class ConfigTarifarioComponent implements OnInit {
   private readonly distritosService = inject(DistritosService);
+  private readonly avisosForm = inject(AvisosService);
   private readonly costosService = inject(CostosVehiculoService);
   private readonly fb = inject(FormBuilder);
 
@@ -60,7 +63,7 @@ export class ConfigTarifarioComponent implements OnInit {
   }
 
   async crear(): Promise<void> {
-    if (this.form.invalid) return;
+    if (!revisarFormulario(this.form, this.avisosForm)) return;
     await this.distritosService.create(this.form.getRawValue());
     this.form.reset({ tarifaMoto: 0, tarifaCarro: 0 });
     this.mostrarForm.set(false);
@@ -81,7 +84,7 @@ export class ConfigTarifarioComponent implements OnInit {
   }
 
   async guardarEdicion(id: string): Promise<void> {
-    if (this.editForm.invalid) return;
+    if (!revisarFormulario(this.editForm, this.avisosForm)) return;
     await this.distritosService.update(id, this.editForm.getRawValue());
     this.editingId.set(null);
     this.distritos.set(await this.distritosService.list());
@@ -93,7 +96,7 @@ export class ConfigTarifarioComponent implements OnInit {
   }
 
   async guardarCostos(): Promise<void> {
-    if (this.costosForm.invalid) return;
+    if (!revisarFormulario(this.costosForm, this.avisosForm)) return;
     await this.costosService.update(this.costosForm.getRawValue());
     this.costoMensaje.set("Costos por viaje actualizados.");
     setTimeout(() => this.costoMensaje.set(null), 3000);

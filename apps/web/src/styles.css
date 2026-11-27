@@ -446,3 +446,12 @@ input[type="number"] {
 @media (prefers-reduced-motion: reduce) {
   .panel-lateral { animation: none; }
 }
+
+/* Campo obligatorio que quedó vacío al intentar guardar: borde rojo en todo el sistema. */
+.input.ng-invalid.ng-touched,
+input.ng-invalid.ng-touched:not([type="checkbox"]):not([type="radio"]),
+select.ng-invalid.ng-touched,
+textarea.ng-invalid.ng-touched {
+  border-color: theme("colors.error");
+  box-shadow: 0 0 0 3px rgba(179, 38, 30, 0.12);
+}

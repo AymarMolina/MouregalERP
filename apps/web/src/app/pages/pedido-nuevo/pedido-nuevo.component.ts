@@ -1,4 +1,5 @@
 import { AvisosService } from "../../core/avisos/avisos.service";
+import { revisarFormulario } from "../../core/formularios/faltantes";
 import { Component, HostListener, OnInit, computed, inject, signal } from "@angular/core";
 import { toSignal } from "@angular/core/rxjs-interop";
 import { IconComponent } from "../../shared/icon/icon.component";
@@ -39,6 +40,21 @@ const CANAL_INFO: Record<Canal, { etiqueta: string; icono: NombreIcono }> = {
   vendedora: { etiqueta: "En tienda", icono: "tienda" },
   whatsapp: { etiqueta: "WhatsApp", icono: "whatsapp" },
   shopify: { etiqueta: "Web (Shopify)", icono: "bolsa" },
+};
+
+/** Nombres de los campos para el aviso de "Faltan datos". */
+const ETIQUETAS_CAMPOS: Record<string, string> = {
+  clienteNombre: "Nombre del cliente",
+  clienteTelefono: "Teléfono del cliente",
+  nombreReceptor: "Quién recibe",
+  telefonoReceptor: "Teléfono de quien recibe",
+  direccion: "Dirección",
+  distritoId: "Distrito",
+  fechaEntrega: "Fecha de entrega",
+  horaEntrega: "Hora de entrega",
+  motivoDescuento: "Motivo del descuento",
+  descuento: "Descuento",
+  montoOtro: "Monto a cobrar",
 };
 
 @Component({
@@ -441,9 +457,37 @@ export class PedidoNuevoComponent implements OnInit {
 
   async confirmarPedido(): Promise<void> {
     const r = this.resumen();
-    if (!r || !r.disponible || this.form.invalid || !this.carrito().length || this.errorDescuento() || this.errorPago()) {
-      this.form.markAllAsTouched();
-      if (this.errorDescuento()) this.mostrarDescuento.set(true);
+    // Cada motivo por el que no se puede crear se avisa: nunca un clic sin respuesta.
+    if (!this.carrito().length) {
+      this.avisosFlotantes.error("Falta elegir productos", "Agrega al menos un producto al pedido.");
+      this.irAPaso(2);
+      return;
+    }
+    if (!this.esRecojo() && this.form.controls.distritoId.invalid) {
+      this.avisosFlotantes.error("Falta el distrito", "Elige el distrito de entrega.");
+      this.irAPaso(1);
+      return;
+    }
+    if (!revisarFormulario(this.form, this.avisosFlotantes, { etiquetas: ETIQUETAS_CAMPOS })) {
+      if (this.form.controls.motivoDescuento.invalid) this.mostrarDescuento.set(true);
+      return;
+    }
+    if (this.errorDescuento()) {
+      this.mostrarDescuento.set(true);
+      this.avisosFlotantes.error("Revisa el descuento", this.errorDescuento()!);
+      return;
+    }
+    if (this.errorPago()) {
+      this.avisosFlotantes.error("Revisa el pago", this.errorPago()!);
+      return;
+    }
+    if (!r) {
+      this.avisosFlotantes.error("Todavía se está calculando el total", "Espera un segundo e intenta de nuevo.");
+      return;
+    }
+    if (!r.disponible) {
+      const que = r.faltantes.map((f) => f.nombre).join(", ");
+      this.avisosFlotantes.error("No hay stock suficiente", `Falta ${que}. Cambia la flor, la talla o la cantidad.`);
       return;
     }
     const v = this.form.getRawValue();

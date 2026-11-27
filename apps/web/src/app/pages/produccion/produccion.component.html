@@ -313,7 +313,7 @@
         }
       }
       @if (pedido.estado === "en_armado") {
-        <button type="button" (click)="confirmarConsumo()" [disabled]="guardando() || consumoForm.invalid || cargandoDetalle()" class="btn-primary !min-h-[48px]">
+        <button type="button" (click)="confirmarConsumo()" [disabled]="guardando() || cargandoDetalle()" class="btn-primary !min-h-[48px]">
           {{ guardando() ? "Guardando..." : "Terminé: confirmar consumo" }}
         </button>
       }

@@ -870,14 +870,7 @@
                 type="button"
                 class="btn-primary w-full py-3.5 text-[16px]"
                 data-tour="nuevo-confirmar"
-                [disabled]="
-                  enviando() ||
-                  cotizandoResumen() ||
-                  !resumen() ||
-                  !resumen()!.disponible ||
-                  !!errorDescuento() ||
-                  !!errorPago()
-                "
+                [disabled]="enviando()"
                 (click)="confirmarPedido()"
               >
                 @if (enviando()) {

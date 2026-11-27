@@ -1,3 +1,5 @@
+import { revisarFormulario } from "../../core/formularios/faltantes";
+import { AvisosService } from "../../core/avisos/avisos.service";
 import { Component, OnInit, computed, inject, signal } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { IconComponent } from "../../shared/icon/icon.component";
@@ -19,6 +21,7 @@ import { ProductosService } from "../../core/catalogo/productos.service";
 })
 export class ConfigRecetasComponent implements OnInit {
   private readonly productosService = inject(ProductosService);
+  private readonly avisosForm = inject(AvisosService);
   private readonly insumosService = inject(InsumosService);
   private readonly auth = inject(AuthService);
   private readonly fb = inject(FormBuilder);
@@ -162,7 +165,7 @@ export class ConfigRecetasComponent implements OnInit {
   }
 
   async crearProducto(): Promise<void> {
-    if (this.nuevoForm.invalid) return;
+    if (!revisarFormulario(this.nuevoForm, this.avisosForm)) return;
     const v = this.nuevoForm.getRawValue();
     await this.productosService.create({
       nombre: v.nombre,
@@ -212,7 +215,8 @@ export class ConfigRecetasComponent implements OnInit {
 
   async guardarDetalle(): Promise<void> {
     const producto = this.seleccionado();
-    if (!producto || this.detalleForm.invalid) return;
+    if (!producto) return;
+    if (!revisarFormulario(this.detalleForm, this.avisosForm)) return;
     const v = this.detalleForm.getRawValue();
     const actualizado = await this.productosService.update(producto.id, {
       nombre: v.nombre,
@@ -267,7 +271,8 @@ export class ConfigRecetasComponent implements OnInit {
 
   async guardarReceta(): Promise<void> {
     const producto = this.seleccionado();
-    if (!producto || this.recetaForm.invalid) return;
+    if (!producto) return;
+    if (!revisarFormulario(this.recetaForm, this.avisosForm)) return;
     this.guardandoReceta.set(true);
     try {
       await this.productosService.replaceReceta(
