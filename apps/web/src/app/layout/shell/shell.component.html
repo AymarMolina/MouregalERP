@@ -33,7 +33,7 @@
   >
     <a routerLink="/" class="hidden px-7 pb-2 pt-7 font-marca text-[24px] font-bold text-white lg:block" title="Inicio">Mouregal</a>
 
-    <nav class="min-h-0 flex-1 overflow-y-auto px-[18px] py-4" data-tour="nav" aria-label="Menú principal">
+    <nav class="nav-scroll min-h-0 flex-1 overflow-y-auto px-[18px] py-4" data-tour="nav" aria-label="Menú principal">
       @for (group of groups(); track group.label) {
         <div class="mb-5">
           <div class="px-2.5 pb-1.5 text-[12px] text-nav-muted">{{ group.label }}</div>
