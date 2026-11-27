@@ -1,4 +1,5 @@
 import { Component, OnInit, computed, inject, signal } from "@angular/core";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { IconComponent } from "../../shared/icon/icon.component";
 import { RowMenuComponent } from "../../shared/tabla/row-menu.component";
 import { Tabla } from "../../shared/tabla/tabla";
@@ -94,6 +95,38 @@ export class ConfigRecetasComponent implements OnInit {
     return this.recetaForm.get("lineas") as FormArray<FormGroup>;
   }
 
+  /** true cuando el admin escribió el slug a mano: desde ahí el nombre ya no lo pisa. */
+  readonly slugManual = signal(false);
+
+  constructor() {
+    // El slug se sugiere desde el nombre mientras no lo hayan editado a mano.
+    this.nuevoForm.controls.nombre.valueChanges.pipe(takeUntilDestroyed()).subscribe((nombre) => {
+      if (!this.slugManual()) this.nuevoForm.controls.slug.setValue(this.sugerirSlug(nombre));
+    });
+  }
+
+  /** "Ramo Clásico de Rosas" → "ramo-clasico-de-rosas"; si ya existe, agrega -2, -3… */
+  sugerirSlug(nombre: string): string {
+    const base = nombre
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/ñ/g, "n")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+    if (!base) return "";
+    const usados = new Set(this.productos().map((p) => p.slug));
+    let slug = base;
+    for (let n = 2; usados.has(slug); n++) slug = `${base}-${n}`;
+    return slug;
+  }
+
+  editarSlug(valor: string): void {
+    // Si lo dejan vacío, vuelve a sugerirse desde el nombre.
+    this.slugManual.set(valor.trim() !== "");
+    if (!valor.trim()) this.nuevoForm.controls.slug.setValue(this.sugerirSlug(this.nuevoForm.controls.nombre.value));
+  }
+
   async ngOnInit(): Promise<void> {
     this.loading.set(true);
     await this.cargarProductos();
@@ -145,6 +178,7 @@ export class ConfigRecetasComponent implements OnInit {
       ],
     });
     this.nuevoForm.reset({ usaPapel: true, precioS: 0, precioM: 0, precioL: 0 });
+    this.slugManual.set(false);
     this.mostrarFormNuevo.set(false);
     await this.cargarProductos();
   }

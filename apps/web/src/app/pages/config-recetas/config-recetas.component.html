@@ -12,14 +12,15 @@
   </div>
 
   @if (mostrarFormNuevo() && esAdmin()) {
-    <form [formGroup]="nuevoForm" (ngSubmit)="crearProducto()" class="card mb-6 grid grid-cols-4 gap-4 items-end">
+    <form [formGroup]="nuevoForm" (ngSubmit)="crearProducto()" class="card mb-6 grid grid-cols-4 gap-4 items-start">
       <div>
         <label class="field-label">Nombre</label>
         <input formControlName="nombre" class="input" />
       </div>
       <div>
-        <label class="field-label">Slug</label>
-        <input formControlName="slug" class="input" placeholder="ramo-ejemplo" />
+        <label class="field-label" for="nuevo-slug">Slug (dirección web)</label>
+        <input id="nuevo-slug" formControlName="slug" class="input" placeholder="Se completa con el nombre" (input)="editarSlug($any($event.target).value)" />
+        <p class="mt-1 text-[12px] text-muted">{{ slugManual() ? "Editado a mano. Bórralo para volver a la sugerencia." : "Sugerido desde el nombre. Puedes cambiarlo." }}</p>
       </div>
       <div class="col-span-2">
         <label class="field-label">Descripción</label>
