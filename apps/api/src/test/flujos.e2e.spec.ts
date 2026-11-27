@@ -132,6 +132,13 @@ describe('Flujos de negocio por HTTP (e2e)', () => {
   /** Producción asigna, arma y confirma el consumo según receta → listo. */
   async function armarYConsumir(id: string) {
     const rosaRoja = await e.insumo('ROS-ROJ');
+    // Pendiente: todavía no hay arreglo que fotografiar, pero sí se consulta la receta con el stock.
+    await como('produccion').foto(id).expect(400);
+    const receta = await como('produccion')
+      .get(`/api/pedidos/${id}/receta-efectiva`)
+      .expect(200);
+    expect(receta.body.length).toBeGreaterThan(0);
+    expect(receta.body[0]).toHaveProperty('stock');
     await como('produccion')
       .patch(`/api/pedidos/${id}/asignar`, {
         encargadaId: e.usuarios.produccion,
@@ -140,8 +147,8 @@ describe('Flujos de negocio por HTTP (e2e)', () => {
     await como('produccion')
       .post(`/api/pedidos/${id}/transicion`, { a: 'en_armado' })
       .expect(201);
-    // En armado todavía no se suben fotos: solo con el pedido listo.
-    await como('produccion').foto(id).expect(400);
+    // En armado ya se sube la foto: se toma al terminar, antes de confirmar el consumo.
+    await como('produccion').foto(id).expect(201);
     await como('produccion')
       .post(`/api/pedidos/${id}/consumo`, {
         lineas: [{ insumoId: rosaRoja.id, cantidadUsada: 12 }],

@@ -74,6 +74,9 @@ export class ProduccionComponent implements OnInit {
   readonly cargandoDetalle = signal(false);
   readonly consultaAbierta = signal<Consulta | null>(null);
   readonly lineasConsumo = signal<LineaConsumo[]>([]);
+  /** Insumos que pide el pedido pendiente, con lo que hay en almacén (solo consulta). */
+  readonly recetaPendiente = signal<{ insumoId: string; nombre: string; unidadBase: string; cantidad: number; stock: number }[] | null>(null);
+  readonly faltaStock = computed(() => (this.recetaPendiente() ?? []).some((l) => l.stock < l.cantidad));
   readonly guardando = signal(false);
   readonly error = signal<string | null>(null);
   readonly resolverForm = this.fb.nonNullable.group({ respuesta: ["", Validators.required] });
@@ -177,6 +180,7 @@ export class ProduccionComponent implements OnInit {
     if (this.seleccionado()?.id !== pedido.id) {
       this.seleccionado.set({ ...pedido, items: pedido.items ?? [] });
       this.consultaAbierta.set(null);
+      this.recetaPendiente.set(null);
     }
     this.cargandoDetalle.set(true);
     const detalle = await this.pedidosService.get(pedido.id).finally(() => this.cargandoDetalle.set(false));
@@ -185,6 +189,11 @@ export class ProduccionComponent implements OnInit {
 
     const abiertas = await this.consultasService.list("abierta");
     this.consultaAbierta.set(abiertas.find((c) => c.pedidoId === detalle.id) ?? null);
+
+    if (detalle.estado === "pendiente") {
+      const lineas = await this.pedidosService.recetaEfectiva(detalle.id);
+      if (this.seleccionado()?.id === detalle.id) this.recetaPendiente.set(lineas);
+    }
 
     if (detalle.estado === "en_armado") {
       const lineas = await this.pedidosService.recetaEfectiva(detalle.id);

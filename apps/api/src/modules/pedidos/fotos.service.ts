@@ -14,7 +14,8 @@ import type { Db, Exec, Tx } from '../../db/client';
 import { pedidoFotos, pedidos } from '../../db/schema';
 
 /** Las fotos se suben o quitan solo con el arreglo terminado (listo). */
-const ESTADOS_EDITABLES = ['listo'];
+// En armado: la foto se toma al terminar, antes de confirmar el consumo.
+const ESTADOS_EDITABLES = ['en_armado', 'listo'];
 export const FOTO_MAX_BYTES = 5 * 1024 * 1024;
 
 /** Reconoce JPEG, PNG y WebP por sus primeros bytes (no confía en el nombre ni en el mimetype). */
@@ -156,7 +157,7 @@ export class FotosService {
     if (!p) throw new NotFoundException('Pedido no encontrado');
     if (!ESTADOS_EDITABLES.includes(p.estado))
       throw new BadRequestException(
-        `Las fotos se suben con el pedido listo (está en "${p.estado}")`,
+        `Las fotos se suben con el pedido en armado o listo (está en "${p.estado}")`,
       );
   }
 }

@@ -77,7 +77,7 @@ async function comprimir(archivo: File): Promise<Blob> {
             [class.opacity-50]="ocupado()"
           >
             <app-icon name="foto" [size]="20" />
-            <span>{{ ocupado() ? "Subiendo..." : "Agregar" }}</span>
+            <span class="text-center leading-tight">{{ ocupado() ? "Subiendo..." : "Tomar o subir" }}</span>
             <input type="file" accept="image/*" multiple class="sr-only" [disabled]="ocupado()" (change)="elegir($event)" aria-label="Agregar fotos del arreglo" />
           </label>
         }

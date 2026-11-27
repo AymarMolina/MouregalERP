@@ -196,6 +196,53 @@
       }
 
       @if (pedido.estado === "pendiente") {
+        <section aria-labelledby="stock-titulo">
+          <div class="mb-2 flex items-baseline justify-between gap-3">
+            <h3 id="stock-titulo" class="text-[15px] font-semibold text-muted">Lo que vas a usar</h3>
+            @if (recetaPendiente(); as r) {
+              @if (faltaStock()) {
+                <span class="badge bg-[#FBE4E2] text-[#9B1C15]">Falta stock</span>
+              } @else if (r.length) {
+                <span class="badge bg-[#E3F4EA] text-exito">Hay todo en almacén</span>
+              }
+            }
+          </div>
+          @if (recetaPendiente(); as r) {
+            <div class="overflow-hidden rounded-[12px] border border-brand-line">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Insumo</th>
+                    <th class="text-right">Necesita</th>
+                    <th class="text-right">En almacén</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (l of r; track l.insumoId) {
+                    <tr>
+                      <td>{{ l.nombre }}</td>
+                      <td class="text-right tabular-nums">{{ cantidad(l.cantidad) }} {{ l.unidadBase }}</td>
+                      <td class="text-right tabular-nums font-semibold" [class.text-error]="l.stock < l.cantidad">
+                        {{ cantidad(l.stock) }}
+                        @if (l.stock < l.cantidad) {
+                          <div class="text-[12px] font-semibold">Faltan {{ cantidad(l.cantidad - l.stock) }}</div>
+                        }
+                      </td>
+                    </tr>
+                  } @empty {
+                    <tr><td colspan="3" class="text-muted">Este pedido no tiene receta cargada.</td></tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            @if (faltaStock()) {
+              <p class="mt-2 text-[13px] text-muted">Avisa a Almacén o a la vendedora antes de empezar.</p>
+            }
+          } @else {
+            <div class="skeleton h-24" aria-label="Cargando el stock"></div>
+          }
+        </section>
+
         <label class="flex flex-col gap-1.5 text-[14px] font-semibold">
           Quién lo arma
           <select class="input" [value]="encargadaSeleccionada()" (change)="asignarEncargada($any($event.target).value)">
@@ -241,8 +288,10 @@
         </section>
       }
 
-      @if (pedido.estado === "listo") {
-        <app-fotos-pedido [pedidoId]="pedido.id" [editable]="true" (cantidad)="cantidadFotos.set($event)" />
+      @if (pedido.estado === "en_armado" || pedido.estado === "listo") {
+        <section aria-label="Foto del arreglo">
+          <app-fotos-pedido [pedidoId]="pedido.id" [editable]="true" (cantidad)="cantidadFotos.set($event)" />
+        </section>
       }
     </div>
 

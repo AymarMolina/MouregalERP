@@ -629,8 +629,11 @@ export class PedidosService {
     }[]
   > {
     const pedido = await this.findOne(id);
-    if (pedido.estado !== 'en_armado') {
-      throw new BadRequestException('Solo aplica a pedidos en_armado');
+    // En pendiente es solo de consulta: Producción ve qué va a usar y si hay en almacén.
+    if (pedido.estado !== 'en_armado' && pedido.estado !== 'pendiente') {
+      throw new BadRequestException(
+        'La receta se consulta con el pedido pendiente o en armado',
+      );
     }
 
     const recetas = await this.disponibilidad.recetasDeItems(
