@@ -48,6 +48,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { path: "/config/recetas", label: "Recetas", icon: "recetas", roles: ["admin", "produccion", "almacen"] },
       { path: "/config/reglas", label: "Reglas de cambio", icon: "reglas", roles: ["admin"] },
       { path: "/config/tarifario", label: "Tarifario", icon: "tarifario", roles: ["admin"] },
+      { path: "/config/usuarios", label: "Usuarios y permisos", icon: "usuario", roles: ["admin"] },
       { path: "/config/integraciones", label: "Integraciones", icon: "integraciones", roles: ["admin"] },
     ],
   },

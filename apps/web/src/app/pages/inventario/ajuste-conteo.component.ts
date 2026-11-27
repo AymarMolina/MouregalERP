@@ -24,7 +24,7 @@ const MOTIVOS = ["Flores marchitas", "Rotura o daño", "Error de registro", "Otr
         <div class="modal-cuerpo">
           <label class="flex flex-col gap-1.5 text-[14px] font-semibold">
             Insumo
-            <select class="input" [ngModel]="insumoId()" (ngModelChange)="insumoId.set($event); contado.set('')">
+            <select class="input" [ngModel]="insumo()?.id" (ngModelChange)="insumoId.set($event); contado.set('')">
               @for (i of insumos; track i.id) {
                 <option [value]="i.id">{{ i.nombre }}</option>
               }
@@ -91,7 +91,7 @@ export class AjusteConteoComponent {
   readonly error = signal<string | null>(null);
   readonly guardando = signal(false);
 
-  readonly insumo = computed(() => this.insumos.find((i) => i.id === this.insumoId()) ?? this.insumos[0] ?? null);
+  readonly insumo = computed<Insumo | null>(() => this.insumos.find((i) => i.id === this.insumoId()) ?? this.insumos[0] ?? null);
   readonly diferencia = computed(() => {
     const i = this.insumo();
     const c = this.contado();

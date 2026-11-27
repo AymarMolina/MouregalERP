@@ -108,6 +108,12 @@ export const routes: Routes = [
         data: { roles: ["admin"] },
       },
       {
+        path: "config/usuarios",
+        loadComponent: () => import("./pages/config-usuarios/config-usuarios.component").then((m) => m.ConfigUsuariosComponent),
+        canActivate: [roleGuard],
+        data: { roles: ["admin"] },
+      },
+      {
         path: "config/integraciones",
         loadComponent: () => import("./pages/placeholder/placeholder.component").then((m) => m.PlaceholderComponent),
         canActivate: [roleGuard],

@@ -1,0 +1,151 @@
+<div class="px-4 pb-14 pt-6 sm:px-10">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Usuarios y permisos</h1>
+      <p class="page-subtitle">Quién entra al sistema y qué puede hacer cada rol.</p>
+    </div>
+    <button type="button" class="btn-primary" (click)="formAbierto.set(true)"><app-icon name="nuevo" [size]="16" /> Nuevo usuario</button>
+  </div>
+
+  @if (error()) {
+    <p class="mb-4 rounded-[10px] bg-[#FBE4E2] px-3.5 py-2.5 text-[14px] text-[#9B1C15]" role="alert">{{ error() }}</p>
+  }
+
+  <section class="table-wrap mb-8" aria-label="Usuarios">
+    <div class="overflow-x-auto">
+      <table class="table min-w-[760px]">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Correo</th>
+            <th>Rol</th>
+            <th>Estado</th>
+            <th class="text-right">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (u of usuarios(); track u.id) {
+            <tr [class.opacity-60]="!u.activo">
+              <td class="font-semibold">{{ u.nombre }} @if (esYo(u)) { <span class="text-[13px] font-normal text-muted">(tú)</span> }</td>
+              <td class="text-muted">{{ u.email }}</td>
+              <td>
+                <select class="input !min-h-[36px] !w-auto !py-1" [ngModel]="u.rol" (ngModelChange)="cambiarRol(u, $event)" [disabled]="esYo(u) || trabajando() === u.id" [attr.aria-label]="'Rol de ' + u.nombre">
+                  @for (r of roles; track r) {
+                    <option [value]="r">{{ etiquetaRol[r] }}</option>
+                  }
+                </select>
+              </td>
+              <td>
+                @if (u.activo) {
+                  <span class="font-semibold text-positivo">Activo</span>
+                } @else {
+                  <span class="font-semibold text-muted">Inactivo</span>
+                }
+              </td>
+              <td>
+                <div class="flex justify-end gap-2">
+                  <button type="button" class="btn-text" (click)="resetear(u)" [disabled]="trabajando() === u.id">Nueva contraseña</button>
+                  @if (!esYo(u)) {
+                    <button type="button" class="btn-text" [class.!text-error]="u.activo" (click)="alternarActivo(u)" [disabled]="trabajando() === u.id">{{ u.activo ? "Desactivar" : "Activar" }}</button>
+                  }
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="5" class="py-10 text-center text-muted">{{ cargando() ? "Cargando..." : "No hay usuarios." }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="permisos-titulo">
+    <h2 id="permisos-titulo" class="panel-title">Qué puede hacer cada rol</h2>
+    <p class="mb-3 mt-1 text-[14px] text-muted">Son las reglas del sistema: se aplican en el servidor, no solo en pantalla.</p>
+    <div class="table-wrap">
+      <div class="overflow-x-auto">
+        <table class="table min-w-[860px]">
+          <thead>
+            <tr>
+              <th>Acción</th>
+              @for (r of roles; track r) {
+                <th class="text-center">{{ etiquetaRol[r] }}</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (p of permisos; track p.accion) {
+              <tr>
+                <td><div class="font-semibold">{{ p.accion }}</div><div class="text-[13px] text-muted">{{ p.detalle }}</div></td>
+                @for (r of roles; track r) {
+                  <td class="text-center">
+                    @if (p.roles[r]; as v) {
+                      <span class="font-semibold" [class.text-positivo]="v === 'Sí'" [class.text-text]="v !== 'Sí'">{{ v }}</span>
+                    } @else {
+                      <span class="text-muted" aria-label="No">—</span>
+                    }
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</div>
+
+@if (formAbierto()) {
+  <div class="modal-fondo" (click)="$event.target === $event.currentTarget && formAbierto.set(false)">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="nuevo-usuario">
+      <div class="modal-cabecera">
+        <div>
+          <h2 id="nuevo-usuario" class="text-[22px] font-bold text-brand-darker">Nuevo usuario</h2>
+          <p class="mt-1 text-[14px] text-muted">El sistema genera la contraseña y te la muestra una vez.</p>
+        </div>
+        <button type="button" class="flex h-11 w-11 items-center justify-center rounded-[10px] hover:bg-brand-soft" (click)="formAbierto.set(false)" aria-label="Cerrar" title="Cerrar"><app-icon name="cerrar" [size]="20" /></button>
+      </div>
+      <div class="modal-cuerpo">
+        <label class="flex flex-col gap-1.5 text-[14px] font-semibold">Nombre<input class="input" [ngModel]="nuevoNombre()" (ngModelChange)="nuevoNombre.set($event)" /></label>
+        <label class="flex flex-col gap-1.5 text-[14px] font-semibold">Correo<input class="input" type="email" [ngModel]="nuevoEmail()" (ngModelChange)="nuevoEmail.set($event)" placeholder="nombre@mouregal.pe" /></label>
+        <fieldset class="flex flex-col gap-2">
+          <legend class="pb-2 text-[14px] font-semibold">Rol</legend>
+          <div class="flex flex-wrap gap-2">
+            @for (r of roles; track r) {
+              <button type="button" class="chip" [class.chip-sel]="nuevoRol() === r" [attr.aria-pressed]="nuevoRol() === r" (click)="nuevoRol.set(r)">{{ etiquetaRol[r] }}</button>
+            }
+          </div>
+        </fieldset>
+        @if (errorForm()) {
+          <p class="text-[14px] font-semibold text-error" role="alert">{{ errorForm() }}</p>
+        }
+      </div>
+      <div class="modal-pie">
+        <button type="button" class="btn-secondary" (click)="formAbierto.set(false)">Cancelar</button>
+        <button type="button" class="btn-primary" (click)="crear()" [disabled]="trabajando() === 'nuevo'">Crear usuario</button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (claveNueva(); as c) {
+  <div class="modal-fondo">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="clave-titulo">
+      <div class="modal-cabecera">
+        <div>
+          <h2 id="clave-titulo" class="text-[22px] font-bold text-brand-darker">Contraseña de {{ c.nombre }}</h2>
+          <p class="mt-1 text-[14px] text-muted">Entra con {{ c.email }}. Guárdala ahora: no se vuelve a mostrar.</p>
+        </div>
+      </div>
+      <div class="modal-cuerpo">
+        <div class="flex items-center gap-3 rounded-[12px] bg-brand-soft px-4 py-3">
+          <code class="flex-1 select-all text-[20px] font-bold tracking-wide text-brand-darker">{{ c.password }}</code>
+          <button type="button" class="btn-secondary" (click)="copiar(c.password)">Copiar</button>
+        </div>
+      </div>
+      <div class="modal-pie">
+        <button type="button" class="btn-primary" (click)="claveNueva.set(null)">Listo, ya la guardé</button>
+      </div>
+    </div>
+  </div>
+}

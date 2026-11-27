@@ -213,9 +213,8 @@ Todo cálculo de negocio está en el backend o en `packages/shared` como funcion
 ## Pendientes conocidos
 
 1. **Fase 6:** webhooks de Shopify (HMAC + `integraciones_log` idempotente), stock por variante, fulfillments, API para el chatbot de WhatsApp y la pantalla `/config/integraciones` (hoy es un placeholder).
-2. **Pantallas sin construir:** ajustes manuales de stock (el API `POST /inventario/ajustes` existe, falta la UI) y administración de usuarios.
-3. Revisar en Excel de escritorio los `.xlsx` exportados (se validó la estructura del ZIP y el XML, pero no se abrieron en Excel).
-4. **Producción:** la UI de resolver consultas no tiene campo para `ajustePrecio` (el API sí lo acepta).
-5. **Rate limit en memoria** (pasar a Redis si hay varias instancias) y **notificaciones reales** (hoy son stub).
-6. **Imágenes del catálogo:** las fotos de producto que usa la web son `.webp` optimizados en `apps/web/public/productos/`. Los originales (`FOTOS/`, ~1 GB de .DNG/.MOV) **no están en git**: un archivo pasa el límite de 100 MB de GitHub. Se guardan fuera del repo (Drive o disco).
-7. **Diseño Mouregal, pantallas nuevas** (ver `docs/diseno/DISENO_MOUREGAL.md`, sección 4): Todos los pedidos (`/pedidos`), Clientes, Caja por vendedora, Venta rápida, Usuarios y permisos, comprobantes SUNAT e Integraciones. Necesitan endpoints nuevos en el API.
+2. Revisar en Excel de escritorio los `.xlsx` exportados (se validó la estructura del ZIP y el XML, pero no se abrieron en Excel).
+3. **Producción:** la UI de resolver consultas no tiene campo para `ajustePrecio` (el API sí lo acepta).
+4. **Rate limit en memoria** (pasar a Redis si hay varias instancias) y **notificaciones reales** (hoy son stub).
+5. **Imágenes del catálogo:** las fotos de producto que usa la web son `.webp` optimizados en `apps/web/public/productos/`. Los originales (`FOTOS/`, ~1 GB de .DNG/.MOV) **no están en git**: un archivo pasa el límite de 100 MB de GitHub. Se guardan fuera del repo (Drive o disco).
+6. **Diseño Mouregal, pantallas nuevas** (ver `docs/diseno/DISENO_MOUREGAL.md`, sección 4): ya están Todos los pedidos (`/pedidos`), ajuste por conteo (Inventario) y Usuarios y permisos (`/config/usuarios`, endpoints `GET /usuarios/todos`, `POST /usuarios`, `PATCH /usuarios/:id`, `POST /usuarios/:id/clave`). Faltan Clientes, Caja por vendedora, Venta rápida, comprobantes SUNAT e Integraciones; necesitan endpoints nuevos.
