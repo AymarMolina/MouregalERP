@@ -1,3 +1,4 @@
+import { DialogoService } from "../../core/dialogo/dialogo.service";
 import { AvisosService } from "../../core/avisos/avisos.service";
 import { linkAbrirMaps } from "@erp/shared";
 import { Component, OnInit, computed, inject, signal } from "@angular/core";
@@ -21,6 +22,7 @@ type Columna = { titulo: string; vacio: string; pedidos: PedidoDelivery[] };
   templateUrl: "./delivery.component.html",
 })
 export class DeliveryComponent implements OnInit {
+  private readonly dialogo = inject(DialogoService);
   private readonly avisosFlotantes = inject(AvisosService);
   private readonly api = inject(DeliveryApi);
   private readonly auth = inject(AuthService);
@@ -137,7 +139,16 @@ export class DeliveryComponent implements OnInit {
   }
 
   async entregar(p: PedidoDelivery): Promise<void> {
-    if (p.saldo > 0 && !confirm(`El pedido ${p.codigo} aún debe ${soles(p.saldo)}. ¿Marcar entregado igual?`)) return;
+    if (
+      p.saldo > 0 &&
+      !(await this.dialogo.confirmar({
+        titulo: `${p.codigo} aún debe ${soles(p.saldo)}`,
+        detalle: "Si lo entregas así, el saldo queda pendiente en Pagos.",
+        aceptar: "Entregar con saldo",
+        cancelar: "Volver a cobrar",
+      }))
+    )
+      return;
     this.trabajando.set(p.id);
     this.error.set(null);
     this.aviso.set(null);

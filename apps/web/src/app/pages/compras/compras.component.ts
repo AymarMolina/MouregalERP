@@ -1,3 +1,4 @@
+import { DialogoService } from "../../core/dialogo/dialogo.service";
 import { AvisosService } from "../../core/avisos/avisos.service";
 import { descargarExcel } from "../../shared/tabla/excel";
 import { Component, OnInit, computed, inject, signal } from "@angular/core";
@@ -54,6 +55,7 @@ const ETIQUETA_OC: Record<EstadoOc, string> = {
   templateUrl: "./compras.component.html",
 })
 export class ComprasComponent implements OnInit {
+  private readonly dialogo = inject(DialogoService);
   private readonly avisosFlotantes = inject(AvisosService);
   private readonly api = inject(ComprasApi);
   private readonly fb = inject(FormBuilder);
@@ -291,7 +293,16 @@ export class ComprasComponent implements OnInit {
   async cambiarEstadoOrden(estado: EstadoOc): Promise<void> {
     const o = this.orden();
     if (!o) return;
-    if (estado === "anulada" && !confirm(`¿Anular la orden #${o.numero}?`)) return;
+    if (
+      estado === "anulada" &&
+      !(await this.dialogo.confirmar({
+        titulo: `Anular la orden #${o.numero}`,
+        detalle: "La orden deja de contar como pedida en la lista sugerida. Esto no se puede deshacer.",
+        aceptar: "Anular orden",
+        peligro: true,
+      }))
+    )
+      return;
     const actualizada = await this.ejecutar(
       () => this.api.actualizarOrden(o.id, { estado }),
       "No se pudo cambiar el estado.",

@@ -1,3 +1,4 @@
+import { DialogoService } from "../../core/dialogo/dialogo.service";
 import { AvisosService } from "../../core/avisos/avisos.service";
 import { Component, OnInit, computed, inject, signal } from "@angular/core";
 import { toSignal } from "@angular/core/rxjs-interop";
@@ -25,6 +26,7 @@ import {
   templateUrl: "./pagos.component.html",
 })
 export class PagosComponent implements OnInit {
+  private readonly dialogo = inject(DialogoService);
   private readonly avisosFlotantes = inject(AvisosService);
   private readonly api = inject(PagosApi);
   private readonly fb = inject(FormBuilder);
@@ -156,8 +158,14 @@ export class PagosComponent implements OnInit {
     );
   }
 
-  confirmar(p: Pago): Promise<void> {
-    const ref = prompt("Referencia u operación del pago (opcional):") ?? undefined;
+  async confirmar(p: Pago): Promise<void> {
+    const ref = await this.dialogo.pedirTexto({
+      titulo: `Confirmar pago de ${soles(p.monto)}`,
+      detalle: "Marca el cobro como pagado.",
+      aceptar: "Confirmar pago",
+      campo: { etiqueta: "N° de operación o referencia", placeholder: "Opcional", opcional: true },
+    });
+    if (ref === null) return;
     return this.ejecutar(
       () => this.api.confirmar(p.id, ref || undefined),
       `Pago de ${soles(p.monto)} confirmado.`,
@@ -165,8 +173,14 @@ export class PagosComponent implements OnInit {
     );
   }
 
-  anular(p: Pago): Promise<void> {
-    if (!confirm(`¿Anular el cobro pendiente de ${soles(p.monto)}?`)) return Promise.resolve();
+  async anular(p: Pago): Promise<void> {
+    const ok = await this.dialogo.confirmar({
+      titulo: `Anular el cobro de ${soles(p.monto)}`,
+      detalle: "El link de pago deja de funcionar. Esto no se puede deshacer.",
+      aceptar: "Anular cobro",
+      peligro: true,
+    });
+    if (!ok) return;
     return this.ejecutar(() => this.api.anular(p.id), "Cobro anulado.", "No se pudo anular el cobro.");
   }
 

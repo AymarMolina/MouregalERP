@@ -1,3 +1,4 @@
+import { DialogoService } from "../../core/dialogo/dialogo.service";
 import { DatePipe } from "@angular/common";
 import { MapaComponent } from "../../shared/mapa/mapa.component";
 import { Component, Input, OnInit, computed, inject, signal } from "@angular/core";
@@ -18,6 +19,7 @@ import { CLASE_ESTADO_PAGO, CLASE_ESTADO_PEDIDO, ETIQUETA_ESTADO_PEDIDO, hora, s
   templateUrl: "./pedido-detalle.component.html",
 })
 export class PedidoDetalleComponent implements OnInit {
+  private readonly dialogo = inject(DialogoService);
   private readonly pedidosService = inject(PedidosService);
   private readonly pagosApi = inject(PagosApi);
   private readonly auth = inject(AuthService);
@@ -92,7 +94,19 @@ export class PedidoDetalleComponent implements OnInit {
   async cancelar(): Promise<void> {
     const p = this.pedido();
     if (!p) return;
-    const motivo = prompt(`¿Cancelar el pedido ${p.codigo}? Escribe el motivo:`);
+    const pagado = Number(p.totalPagado);
+    const motivo = await this.dialogo.pedirTexto({
+      titulo: `Cancelar ${p.codigo}`,
+      detalle: "El pedido deja de contar en ventas. Esto no se puede deshacer.",
+      aviso: pagado > 0 ? `El cliente ya pagó ${soles(pagado)}. Registra aparte la devolución o el saldo a favor.` : undefined,
+      aceptar: "Cancelar pedido",
+      peligro: true,
+      campo: {
+        etiqueta: "¿Por qué se cancela?",
+        opciones: ["El cliente se arrepintió", "No se pudo entregar", "Faltan flores o insumos", "Pedido duplicado o de prueba", "Otro motivo"],
+        placeholder: "Escribe el motivo",
+      },
+    });
     if (motivo === null) return;
     this.cancelando.set(true);
     this.errorAccion.set(null);
