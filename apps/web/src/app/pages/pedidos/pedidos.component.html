@@ -1,0 +1,142 @@
+<div class="px-4 pb-14 pt-6 sm:px-10">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Todos los pedidos</h1>
+      <p class="page-subtitle">
+        {{ filtrados().length }} {{ filtrados().length === 1 ? "pedido" : "pedidos" }}{{ porCobrar() > 0 ? ", " : "." }}
+        @if (porCobrar() > 0) {
+          <span class="font-semibold text-saldo-fg">{{ soles(porCobrar()) }} por cobrar.</span>
+        }
+      </p>
+    </div>
+    <a routerLink="/pedidos/nuevo" class="btn-primary"><app-icon name="nuevo" [size]="16" /> Nuevo pedido</a>
+  </div>
+
+  @if (error()) {
+    <p class="mb-4 rounded-[10px] bg-[#FBE4E2] px-3.5 py-2.5 text-[14px] text-[#9B1C15]" role="alert">{{ error() }}</p>
+  }
+
+  <!-- Filtros -->
+  <div class="mb-4 flex flex-wrap items-end gap-3" data-tour="pedidos-filtros">
+    <label class="search !max-w-none flex-[2_1_280px]">
+      <app-icon name="buscar" [size]="16" class="pointer-events-none absolute left-3 text-muted" />
+      <input type="search" [ngModel]="q()" (ngModelChange)="q.set($event)" placeholder="Número, cliente, quien recibe o teléfono" aria-label="Buscar pedidos" class="!h-11 !pl-9" />
+    </label>
+    <label class="flex flex-[1_1_160px] flex-col gap-1 text-[13px] text-muted">
+      Fecha de entrega
+      <select class="input" [ngModel]="rango()" (ngModelChange)="cambiar(rango, $event)">
+        @for (r of rangos; track r.valor) {
+          <option [value]="r.valor">{{ r.etiqueta }}</option>
+        }
+      </select>
+    </label>
+    <label class="flex flex-[1_1_150px] flex-col gap-1 text-[13px] text-muted">
+      Canal
+      <select class="input" [ngModel]="canal()" (ngModelChange)="cambiar(canal, $event)">
+        <option value="">Todos los canales</option>
+        @for (c of listaCanales; track c[0]) {
+          <option [value]="c[0]">{{ c[1] }}</option>
+        }
+      </select>
+    </label>
+    <label class="flex flex-[1_1_150px] flex-col gap-1 text-[13px] text-muted">
+      Vendedora
+      <select class="input" [ngModel]="vendedora()" (ngModelChange)="cambiar(vendedora, $event)">
+        <option value="">Todas</option>
+        @for (v of vendedoras(); track v.id) {
+          <option [value]="v.id">{{ v.nombre }}</option>
+        }
+      </select>
+    </label>
+  </div>
+
+  <section class="table-wrap" data-tour="pedidos-tabla">
+    <div class="px-4 pt-3">
+      <nav class="tabs" aria-label="Filtrar por estado">
+        <button type="button" class="tab" [class.tab-active]="estado() === null" (click)="estado.set(null)">Todos <span class="tab-count">{{ conteo(null) }}</span></button>
+        @for (e of estados; track e) {
+          <button type="button" class="tab" [class.tab-active]="estado() === e" (click)="estado.set(e)">{{ etiquetaEstado[e] }} <span class="tab-count">{{ conteo(e) }}</span></button>
+        }
+      </nav>
+    </div>
+    <div class="table-head">
+      <span class="table-title">Pedidos</span>
+      <app-paginacion [tabla]="tabla" />
+    </div>
+    <app-seleccion-bar [tabla]="tabla" />
+    <div class="overflow-x-auto">
+      <table class="table min-w-[980px]">
+        <thead>
+          <tr>
+            <th class="col-check"><app-check-todos [tabla]="tabla" /></th>
+            <th>Pedido</th>
+            <th>Cliente</th>
+            <th>Arreglo</th>
+            <th>Entrega</th>
+            <th>Canal</th>
+            <th>Estado</th>
+            <th class="text-right">Total</th>
+            <th class="text-right">Debe</th>
+            <th class="w-10"><span class="sr-only">Acciones</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (cargando() && !pedidos().length) {
+            @for (i of [1, 2, 3, 4]; track i) {
+              <tr><td colspan="10"><div class="skeleton h-6"></div></td></tr>
+            }
+          }
+          @for (p of tabla.filas(); track p.id) {
+            <tr [class.fila-sel]="tabla.marcado(p)">
+              <td class="col-check"><app-check-fila [tabla]="tabla" [fila]="p" [etiqueta]="'Seleccionar pedido ' + p.codigo" /></td>
+              <td><a [routerLink]="['/pedidos', p.id]" class="font-bold text-text hover:underline">{{ p.codigo }}</a></td>
+              <td>
+                <div>{{ p.cliente || "Cliente de mostrador" }}</div>
+                @if (p.telefonoCliente) {
+                  <div class="text-[13px] text-muted">{{ p.telefonoCliente }}</div>
+                }
+              </td>
+              <td class="max-w-[220px]">{{ p.resumen }}</td>
+              <td class="whitespace-nowrap">
+                {{ fecha(p.fechaEntrega) }} {{ hora(p.horaEntrega) }}
+                <div class="text-[13px] text-muted">{{ p.tipoEntrega === "recojo" ? "Recoge en tienda" : p.distrito }}</div>
+              </td>
+              <td class="text-muted">
+                {{ canales[p.canal] }}
+                @if (p.vendedora) {
+                  <div class="text-[13px]">{{ p.vendedora }}</div>
+                }
+              </td>
+              <td><span [class]="'badge ' + claseEstado[p.estado]">{{ etiquetaEstado[p.estado] }}</span></td>
+              <td class="text-right tabular-nums">{{ soles(p.total) }}</td>
+              <td class="text-right tabular-nums">
+                @if (saldo(p) > 0) {
+                  <span class="font-bold text-saldo-fg">{{ soles(saldo(p)) }}</span>
+                } @else {
+                  <span class="text-muted">—</span>
+                }
+              </td>
+              <td>
+                <app-row-menu [etiqueta]="'Acciones del pedido ' + p.codigo">
+                  <a [routerLink]="['/pedidos', p.id]" class="btn-action" aria-label="Ver detalle"><app-icon name="pedido" [size]="15" /></a>
+                </app-row-menu>
+              </td>
+            </tr>
+          } @empty {
+            @if (!cargando()) {
+              <tr>
+                <td colspan="10">
+                  <div class="flex flex-col items-center gap-3 py-10 text-center">
+                    <p class="text-[16px] font-semibold">Ningún pedido coincide con esa búsqueda.</p>
+                    <p class="text-[14px] text-muted">Prueba con otro número o teléfono, o quita algún filtro.</p>
+                    <button type="button" class="btn-secondary" (click)="quitarFiltros()">Quitar filtros</button>
+                  </div>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>

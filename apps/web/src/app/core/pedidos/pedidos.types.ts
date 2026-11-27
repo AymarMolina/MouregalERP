@@ -204,3 +204,24 @@ export interface DashboardHoy {
   consultasAbiertas: { id: string; pedidoId: string; numero: number; codigo: string; descripcion: string; createdAt: string }[];
   stockBajo: StockBajoItem[];
 }
+
+/** Fila de "Todos los pedidos" (GET /pedidos): el pedido con cliente, distrito, vendedora y resumen. */
+export interface PedidoLista {
+  id: string;
+  numero: number;
+  codigo: string;
+  canal: Canal;
+  estado: EstadoPedido;
+  fechaEntrega: string;
+  horaEntrega: string;
+  tipoEntrega: TipoEntrega;
+  nombreReceptor: string | null;
+  total: string;
+  totalPagado: string;
+  createdAt: string;
+  cliente: string | null;
+  telefonoCliente: string | null;
+  distrito: string | null;
+  vendedora: string | null;
+  resumen: string | null;
+}

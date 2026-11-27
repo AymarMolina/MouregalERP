@@ -225,11 +225,9 @@ describe('API por HTTP (e2e)', () => {
       .auth(admin, { type: 'bearer' })
       .expect(200);
     expect(trimestre.body.agrupacion).toBe('mes');
-    expect(trimestre.body.serie.map((s: { fecha: string }) => s.fecha)).toEqual([
-      '2026-01',
-      '2026-02',
-      '2026-03',
-    ]);
+    expect(trimestre.body.serie.map((s: { fecha: string }) => s.fecha)).toEqual(
+      ['2026-01', '2026-02', '2026-03'],
+    );
     if (hoy !== '2026-11-12') {
       const programada = await request(http)
         .get('/api/reportes/envios?desde=2026-11-12&hasta=2026-11-12')

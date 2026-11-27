@@ -53,8 +53,23 @@ export class PedidosController {
     @Query('estado') estado?: EstadoPedido,
     @Query('canal') canal?: Canal,
     @Query('q') q?: string,
+    @Query('desde') desde?: string,
+    @Query('hasta') hasta?: string,
+    @Query('creadoPor') creadoPor?: string,
   ) {
-    return this.pedidos.list({ fecha, estado, canal, q });
+    const fechaOk = (f?: string) =>
+      f && /^\d{4}-\d{2}-\d{2}$/.test(f) ? f : undefined;
+    const uuid = (v?: string) =>
+      v && /^[0-9a-f-]{36}$/i.test(v) ? v : undefined;
+    return this.pedidos.list({
+      fecha: fechaOk(fecha),
+      desde: fechaOk(desde),
+      hasta: fechaOk(hasta),
+      estado,
+      canal,
+      creadoPor: uuid(creadoPor),
+      q,
+    });
   }
 
   @Roles('admin', 'vendedora', 'produccion', 'delivery')

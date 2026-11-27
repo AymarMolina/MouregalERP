@@ -6,7 +6,17 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { and, asc, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  getTableColumns,
+  ilike,
+  inArray,
+  or,
+  sql,
+} from 'drizzle-orm';
 import {
   calcularEnvio,
   calcularSaldo,
@@ -108,13 +118,22 @@ export class PedidosService {
 
   async list(filtros: {
     fecha?: string;
+    desde?: string;
+    hasta?: string;
     estado?: EstadoPedido;
     canal?: Canal;
+    creadoPor?: string;
     q?: string;
   }) {
     const condiciones = [];
     if (filtros.fecha)
       condiciones.push(eq(pedidos.fechaEntrega, filtros.fecha));
+    if (filtros.desde)
+      condiciones.push(sql`${pedidos.fechaEntrega} >= ${filtros.desde}`);
+    if (filtros.hasta)
+      condiciones.push(sql`${pedidos.fechaEntrega} <= ${filtros.hasta}`);
+    if (filtros.creadoPor)
+      condiciones.push(eq(pedidos.creadoPor, filtros.creadoPor));
     if (filtros.estado) condiciones.push(eq(pedidos.estado, filtros.estado));
     if (filtros.canal) condiciones.push(eq(pedidos.canal, filtros.canal));
     const q = filtros.q?.trim();
@@ -136,11 +155,24 @@ export class PedidosService {
       );
     }
 
+    // Lista "Todos los pedidos": cada fila trae el cliente, el distrito, quién lo
+    // vendió y un resumen de los arreglos, para no pedir el detalle uno por uno.
     return this.db
-      .select()
+      .select({
+        ...getTableColumns(pedidos),
+        cliente: clientes.nombre,
+        telefonoCliente: clientes.telefono,
+        distrito: distritos.nombre,
+        vendedora: usuarios.nombre,
+        resumen: sql<string | null>`(select string_agg(${productos.nombre} || ' ' || ${productoTallas.talla}::text || case when ${pedidoItems.cantidad} > 1 then ' × ' || ${pedidoItems.cantidad} else '' end, ', ') from ${pedidoItems} join ${productoTallas} on ${productoTallas.id} = ${pedidoItems.productoTallaId} join ${productos} on ${productos.id} = ${productoTallas.productoId} where ${pedidoItems.pedidoId} = ${pedidos.id})`,
+      })
       .from(pedidos)
+      .leftJoin(clientes, eq(clientes.id, pedidos.clienteId))
+      .leftJoin(distritos, eq(distritos.id, pedidos.distritoId))
+      .leftJoin(usuarios, eq(usuarios.id, pedidos.creadoPor))
       .where(condiciones.length ? and(...condiciones) : undefined)
-      .orderBy(desc(pedidos.createdAt));
+      .orderBy(desc(pedidos.createdAt))
+      .limit(500);
   }
 
   async findOne(id: string, exec: Exec = this.db) {

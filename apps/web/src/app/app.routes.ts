@@ -35,6 +35,13 @@ export const routes: Routes = [
         data: { roles: ["admin", "vendedora", "produccion"] },
       },
       {
+        path: "pedidos",
+        pathMatch: "full",
+        loadComponent: () => import("./pages/pedidos/pedidos.component").then((m) => m.PedidosComponent),
+        canActivate: [roleGuard],
+        data: { roles: ["admin", "vendedora"] },
+      },
+      {
         path: "pedidos/nuevo",
         loadComponent: () => import("./pages/pedido-nuevo/pedido-nuevo.component").then((m) => m.PedidoNuevoComponent),
         canActivate: [roleGuard],

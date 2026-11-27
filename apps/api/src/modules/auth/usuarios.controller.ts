@@ -10,7 +10,7 @@ import { usuarios } from '../../db/schema';
 export class UsuariosController {
   constructor(@Inject(DB) private readonly db: Db) {}
 
-  @Roles('admin', 'produccion', 'almacen')
+  @Roles('admin', 'vendedora', 'produccion', 'almacen')
   @Get()
   async list(@Query('rol') rol?: RolUsuario) {
     const rows = await this.db
