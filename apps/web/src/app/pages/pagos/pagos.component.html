@@ -20,7 +20,7 @@
       Solo con saldo pendiente
     </label>
     <div class="ml-auto pb-1 text-right" data-tour="pagos-total">
-      <div class="text-xs uppercase tracking-wide text-muted">Saldo por cobrar</div>
+      <div class="text-xs text-muted">Saldo por cobrar</div>
       <div class="text-lg font-semibold">{{ soles(totalSaldo()) }}</div>
     </div>
   </div>
@@ -125,11 +125,11 @@
 
         <div class="grid grid-cols-2 gap-3">
           <div class="rounded-md bg-bg p-3">
-            <div class="text-xs uppercase tracking-wide text-muted">Pagado</div>
+            <div class="text-xs text-muted">Pagado</div>
             <div class="font-semibold">{{ soles(f.totalPagado) }}</div>
           </div>
           <div class="rounded-md bg-accent-soft p-3">
-            <div class="text-xs uppercase tracking-wide text-accent-2">Saldo</div>
+            <div class="text-xs text-accent-2">Saldo</div>
             <div class="font-semibold text-accent-2">{{ soles(f.saldo) }}</div>
           </div>
         </div>

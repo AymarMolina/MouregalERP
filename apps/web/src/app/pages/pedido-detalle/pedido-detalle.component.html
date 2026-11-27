@@ -99,7 +99,7 @@
             <dt class="text-muted">Dirección</dt>
             <dd>{{ p.direccion }}@if (p.referencia) { <span class="text-muted"> ({{ p.referencia }})</span> }</dd>
             <dt class="text-muted">Vehículo</dt>
-            <dd><span class="badge badge-neutral uppercase">{{ p.vehiculo }}</span></dd>
+            <dd><span class="badge badge-neutral">{{ p.vehiculo }}</span></dd>
           </dl>
           @if (p.ubicacionLat !== null && p.ubicacionLng !== null) {
             <div class="mt-4"><app-mapa [lat]="p.ubicacionLat" [lng]="p.ubicacionLng" alto="h-56" /></div>

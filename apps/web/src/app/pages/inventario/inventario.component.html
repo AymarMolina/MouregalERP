@@ -206,7 +206,7 @@
                         {{ cantidad(i.stockActual) }}
                       </span>
                       <span
-                        class="mt-0.5 rounded-full px-2 py-px text-[10px] font-semibold uppercase tracking-wide"
+                        class="mt-0.5 rounded-full px-2 py-px text-[10px] font-semibold"
                         [class.bg-red-100]="agotado"
                         [class.text-negativo]="agotado"
                         [class.bg-amber-100]="!agotado"
@@ -276,7 +276,7 @@
               <app-icon name="historial" [size]="20" />
             </span>
             <div class="min-w-0">
-              <p class="text-xs font-medium uppercase tracking-wider text-muted">Kardex · {{ insumo.codigo }}</p>
+              <p class="text-xs font-mediumr text-muted">Kardex · {{ insumo.codigo }}</p>
               <h2 class="truncate text-lg font-semibold text-text">{{ insumo.nombre }}</h2>
             </div>
           </div>

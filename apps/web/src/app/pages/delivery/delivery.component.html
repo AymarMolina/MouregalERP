@@ -57,7 +57,7 @@
                   </div>
                   <div class="flex flex-col items-end gap-1">
                     <span class="badge" [class]="'badge ' + claseEstado[p.estado]">{{ etiquetaEstado[p.estado] }}</span>
-                    <span class="badge badge-neutral uppercase">{{ p.vehiculo }}</span>
+                    <span class="badge badge-neutral">{{ p.vehiculo }}</span>
                   </div>
                 </header>
 
@@ -91,7 +91,7 @@
                   </div>
                   @if (p.repartidor) {
                     <div class="text-right text-muted">
-                      <div class="text-xs uppercase tracking-wide">Repartidor</div>
+                      <div class="text-xs">Repartidor</div>
                       <div class="text-text">{{ p.repartidor }}</div>
                     </div>
                   }

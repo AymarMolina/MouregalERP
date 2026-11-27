@@ -343,7 +343,7 @@
               <tr [class.fila-sel]="tablaEnvios.marcado(f)">
                 <td class="col-check"><app-check-fila [tabla]="tablaEnvios" [fila]="f" /></td>
                 <td class="font-medium">{{ f.distrito }}</td>
-                <td><span class="badge badge-neutral uppercase">{{ f.vehiculo }}</span></td>
+                <td><span class="badge badge-neutral">{{ f.vehiculo }}</span></td>
                 <td class="text-right">{{ f.viajes }}</td>
                 <td class="text-right">{{ soles(f.cobrado) }}</td>
                 <td class="text-right">{{ soles(f.costo) }}</td>
