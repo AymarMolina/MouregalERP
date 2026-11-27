@@ -434,3 +434,15 @@ input[type="number"] {
 :focus-visible {
   outline-color: #c2185b;
 }
+
+/* Panel lateral (Producción): entra desde la derecha. */
+@keyframes panelEntra {
+  from { transform: translateX(24px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+.panel-lateral {
+  animation: panelEntra 0.2s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .panel-lateral { animation: none; }
+}

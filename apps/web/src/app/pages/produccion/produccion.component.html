@@ -116,123 +116,161 @@
       }
     </div>
 
-    @if (seleccionado(); as pedido) {
-      <div class="card space-y-5" data-tour="prod-detalle">
-        <div class="flex items-center justify-between border-b border-line pb-3">
-          <div>
-            <h2 class="panel-title text-base">Pedido {{ pedido.codigo }}</h2>
-            <p class="panel-subtitle">{{ cuando(pedido.fechaEntrega, pedido.horaEntrega) }} · {{ pedido.tipoEntrega === "recojo" ? "recoge en tienda" : pedido.nombreReceptor }}</p>
-          </div>
-          <button type="button" class="btn-action" (click)="cerrar()" title="Cerrar" aria-label="Cerrar"><app-icon name="cerrar" [size]="18" /></button>
-        </div>
-
-        @if (error()) {
-          <p class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-red-800">{{ error() }}</p>
-        }
-
-        @if (pedido.dedicatoria) {
-          <blockquote class="dedicatoria m-0 border-l-0 text-[22px]">“{{ pedido.dedicatoria }}”</blockquote>
-        }
-
-
-        @if (consultaAbierta(); as c) {
-          <div class="rounded-md border border-accent-2/30 bg-accent-soft p-4 space-y-2">
-            <p class="font-medium text-accent-2">Consulta abierta</p>
-            <p>{{ c.descripcion }}</p>
-            <form [formGroup]="resolverForm" class="flex items-end gap-2">
-              <div class="flex-1">
-                <label class="field-label">Respuesta</label>
-                <input formControlName="respuesta" class="input" />
-              </div>
-              <button type="button" (click)="resolverConsulta('aprobada')" class="btn-primary">Aprobar</button>
-              <button type="button" (click)="resolverConsulta('rechazada')" class="btn-secondary">Rechazar</button>
-            </form>
-          </div>
-        }
-
-        @if (pedido.estado === "pendiente") {
-          <div class="flex items-end gap-3">
-            <div>
-              <label class="field-label">Encargada</label>
-              <select
-                class="input"
-                [value]="encargadaSeleccionada()"
-                (change)="asignarEncargada($any($event.target).value)"
-              >
-                <option value="">Yo (quien empieza a armar)</option>
-                @for (u of encargadas(); track u.id) { <option [value]="u.id">{{ u.nombre }}</option> }
-              </select>
-            </div>
-            <button type="button" (click)="pasarAEnArmado()" class="btn-primary">Empezar a armar</button>
-          </div>
-        }
-
-        @if (pedido.estado === "en_armado") {
-          <div>
-            <h3 class="mb-2 font-medium">Receta vs. usado</h3>
-            <div class="table-wrap mb-3" [formGroup]="consumoForm">
-              <table class="table">
-                <thead>
-                  <tr>
-                    <th>Insumo</th>
-                    <th class="text-right">Receta</th>
-                    <th class="text-right">Stock</th>
-                    <th class="text-right">Usado</th>
-                    <th class="text-right">Queda</th>
-                    <th class="text-right">Merma</th>
-                  </tr>
-                </thead>
-                <tbody formArrayName="lineas">
-                  @for (linea of lineasForm.controls; track $index) {
-                    <tr [formGroupName]="$index">
-                      <td>{{ linea.value.nombre }}</td>
-                      <td class="text-right text-muted tabular">{{ cantidad(linea.value.cantidadReceta) }} {{ linea.value.unidadBase }}</td>
-                      <td class="text-right text-muted tabular">{{ cantidad(linea.value.stock) }} {{ linea.value.unidadBase }}</td>
-                      <td class="text-right">
-                        <input type="number" [step]="esUnidadEntera(linea.value.unidadBase) ? 1 : 0.001" min="0" formControlName="cantidadUsada" class="input w-28 py-1 text-right" />
-                      </td>
-                      <td class="text-right tabular" [class.text-negativo]="queda(linea.value) < 0">
-                        {{ cantidad(queda(linea.value)) }} {{ linea.value.unidadBase }}
-                      </td>
-                      <td class="text-right" [class.text-accent-2]="merma(linea.value) > 0">
-                        {{ cantidad(merma(linea.value)) }}
-                      </td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
-            <button
-              type="button"
-              (click)="confirmarConsumo()"
-              [disabled]="guardando() || consumoForm.invalid"
-              class="btn-primary"
-            >
-              {{ guardando() ? "Guardando..." : "Confirmar consumo" }}
-            </button>
-          </div>
-        }
-
-        @if (pedido.estado === "listo") {
-          <app-fotos-pedido [pedidoId]="pedido.id" [editable]="true" (cantidad)="cantidadFotos.set($event)" />
-        }
-
-        @if (pedido.estado === "listo") {
-          @if (puedeDespachar()) {
-            <button
-              type="button"
-              (click)="pasarAEnCamino()"
-              class="btn-primary"
-              [disabled]="cantidadFotos() < minFotos"
-              [title]="cantidadFotos() < minFotos ? 'Sube al menos una foto del arreglo' : 'Pasar a en camino'"
-            >
-              Pasar a en camino
-            </button>
-          } @else {
-            <p class="text-muted">Listo para despacho: lo despacha Delivery.</p>
-          }
-        }
-      </div>
-    }
   }
 </div>
+
+<!-- Panel lateral del pedido: se abre al tocar una tarjeta, encima del tablero -->
+@if (seleccionado(); as pedido) {
+  <div class="fixed inset-0 z-40 bg-[rgba(58,31,69,0.35)]" (click)="cerrar()" aria-hidden="true"></div>
+  <aside
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="prod-det-titulo"
+    class="panel-lateral fixed inset-y-0 right-0 z-50 flex w-full max-w-[540px] flex-col bg-white shadow-modal"
+    data-tour="prod-detalle"
+  >
+    <!-- Cabecera -->
+    <div class="flex items-start justify-between gap-3 border-b border-brand-divisor px-6 pb-4 pt-5">
+      <div class="min-w-0">
+        <div class="flex flex-wrap items-center gap-2">
+          <h2 id="prod-det-titulo" class="text-[24px] font-bold leading-tight">{{ pedido.codigo }}</h2>
+          <span [class]="'badge ' + claseEstado[pedido.estado]">{{ etiquetaEstado[pedido.estado] }}</span>
+        </div>
+        <p class="mt-1 text-[14px] text-muted">
+          Entrega {{ cuando(pedido.fechaEntrega, pedido.horaEntrega) }} ·
+          {{ pedido.tipoEntrega === "recojo" ? "recoge en tienda" : "recibe " + pedido.nombreReceptor }}
+        </p>
+      </div>
+      <button type="button" class="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] hover:bg-brand-soft" (click)="cerrar()" title="Cerrar (Esc)" aria-label="Cerrar" autofocus>
+        <app-icon name="cerrar" [size]="20" />
+      </button>
+    </div>
+
+    <!-- Cuerpo -->
+    <div class="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-6 py-5">
+      @if (error()) {
+        <p class="rounded-[10px] bg-[#FBE4E2] px-3.5 py-2.5 text-[14px] text-[#9B1C15]" role="alert">{{ error() }}</p>
+      }
+
+      <!-- Qué armar -->
+      <section aria-labelledby="que-armar">
+        <h3 id="que-armar" class="mb-2 text-[15px] font-semibold text-muted">Qué armar</h3>
+        @if (pedido.items.length) {
+          <ul class="flex flex-col gap-2.5">
+            @for (item of pedido.items; track item.id) {
+              <li class="rounded-[12px] border border-brand-line px-4 py-3">
+                <div class="text-[17px] font-bold">{{ item.cantidad > 1 ? item.cantidad + " × " : "" }}{{ item.producto }} · talla {{ item.talla }}</div>
+                <div class="mt-0.5 text-[14px] text-muted">
+                  {{ item.flor }}{{ item.papel ? ", " + item.papel : "" }}
+                  @for (e of item.extras; track e) { , {{ e }} }
+                </div>
+                @for (c of item.cambios; track c.descripcion) {
+                  <div class="mt-1 text-[13px] font-semibold text-text">{{ c.descripcion }}</div>
+                }
+              </li>
+            }
+          </ul>
+        } @else {
+          <div class="skeleton h-16" aria-label="Cargando la comanda"></div>
+        }
+      </section>
+
+      @if (pedido.dedicatoria) {
+        <section aria-label="Dedicatoria" class="rounded-[12px] border border-dashed border-brand-agujero px-4 py-3">
+          <div class="mb-1 text-[13px] text-muted">Dedicatoria para la tarjeta</div>
+          <blockquote class="dedicatoria m-0 border-l-0 text-[22px]">“{{ pedido.dedicatoria }}”</blockquote>
+        </section>
+      }
+
+      @if (consultaAbierta(); as c) {
+        <section class="flex flex-col gap-2.5 rounded-[12px] border-[1.5px] border-[#1F4E8C] p-4" aria-label="Consulta abierta">
+          <p class="text-[14px] leading-snug"><strong class="font-semibold">Consulta abierta.</strong> {{ c.descripcion }}</p>
+          <form [formGroup]="resolverForm" class="flex flex-col gap-2">
+            <label class="text-[14px] font-semibold">Respuesta para la vendedora<input formControlName="respuesta" class="input mt-1.5" placeholder="Ej. sí hay rosas blancas" /></label>
+            <div class="flex gap-2">
+              <button type="button" (click)="resolverConsulta('aprobada')" class="btn-primary flex-1">Aprobar</button>
+              <button type="button" (click)="resolverConsulta('rechazada')" class="btn-secondary flex-1">Rechazar</button>
+            </div>
+          </form>
+        </section>
+      }
+
+      @if (pedido.estado === "pendiente") {
+        <label class="flex flex-col gap-1.5 text-[14px] font-semibold">
+          Quién lo arma
+          <select class="input" [value]="encargadaSeleccionada()" (change)="asignarEncargada($any($event.target).value)">
+            <option value="">Yo (quien empieza a armar)</option>
+            @for (u of encargadas(); track u.id) { <option [value]="u.id">{{ u.nombre }}</option> }
+          </select>
+        </label>
+      }
+
+      @if (pedido.estado === "en_armado") {
+        <section aria-labelledby="receta-titulo">
+          <h3 id="receta-titulo" class="mb-1 text-[15px] font-semibold text-muted">Receta vs. lo que usas</h3>
+          <p class="mb-2 text-[13px] text-muted">Si usas más de lo que dice la receta, la diferencia queda como merma.</p>
+          <div class="overflow-hidden rounded-[12px] border border-brand-line" [formGroup]="consumoForm">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Insumo</th>
+                  <th class="text-right">Receta</th>
+                  <th class="text-right">Usado</th>
+                  <th class="text-right">Merma</th>
+                </tr>
+              </thead>
+              <tbody formArrayName="lineas">
+                @for (linea of lineasForm.controls; track $index) {
+                  <tr [formGroupName]="$index">
+                    <td>
+                      {{ linea.value.nombre }}
+                      <div class="text-[12px] text-muted">Quedan {{ cantidad(queda(linea.value)) }} {{ linea.value.unidadBase }}</div>
+                    </td>
+                    <td class="text-right tabular-nums text-muted">{{ cantidad(linea.value.cantidadReceta) }}</td>
+                    <td class="text-right">
+                      <input type="number" [step]="esUnidadEntera(linea.value.unidadBase) ? 1 : 0.001" min="0" formControlName="cantidadUsada" class="input !w-24 !py-1 text-right" [attr.aria-label]="'Usado de ' + linea.value.nombre" />
+                    </td>
+                    <td class="text-right font-semibold tabular-nums" [class.text-saldo-fg]="merma(linea.value) > 0" [class.text-muted]="merma(linea.value) === 0">
+                      {{ cantidad(merma(linea.value)) }}
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </section>
+      }
+
+      @if (pedido.estado === "listo") {
+        <app-fotos-pedido [pedidoId]="pedido.id" [editable]="true" (cantidad)="cantidadFotos.set($event)" />
+      }
+    </div>
+
+    <!-- Acción principal, siempre a la vista -->
+    <div class="flex flex-col gap-2 border-t border-brand-divisor px-6 py-4">
+      @if (pedido.estado === "pendiente") {
+        <button type="button" (click)="pasarAEnArmado()" class="btn-primary !min-h-[48px]" [disabled]="cargandoDetalle() || !!consultaAbierta()">Empezar a armar</button>
+        @if (consultaAbierta()) {
+          <p class="text-center text-[13px] text-muted">Responde la consulta antes de empezar.</p>
+        }
+      }
+      @if (pedido.estado === "en_armado") {
+        <button type="button" (click)="confirmarConsumo()" [disabled]="guardando() || consumoForm.invalid || cargandoDetalle()" class="btn-primary !min-h-[48px]">
+          {{ guardando() ? "Guardando..." : "Terminé: confirmar consumo" }}
+        </button>
+      }
+      @if (pedido.estado === "listo") {
+        @if (pedido.tipoEntrega === "recojo") {
+          <p class="text-center text-[14px] text-muted">Listo en el mostrador: la vendedora lo entrega al cliente.</p>
+        } @else if (puedeDespachar()) {
+          <button type="button" (click)="pasarAEnCamino()" class="btn-primary !min-h-[48px]" [disabled]="cantidadFotos() < minFotos">Pasar a en camino</button>
+          @if (cantidadFotos() < minFotos) {
+            <p class="text-center text-[13px] text-muted">Sube al menos una foto del arreglo para despachar.</p>
+          }
+        } @else {
+          <p class="text-center text-[14px] text-muted">Listo para despacho: lo despacha Delivery.</p>
+        }
+      }
+    </div>
+  </aside>
+}

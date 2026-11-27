@@ -1,5 +1,5 @@
 import { AvisosService } from "../../core/avisos/avisos.service";
-import { Component, OnInit, computed, inject, signal } from "@angular/core";
+import { Component, HostListener, OnInit, computed, inject, signal } from "@angular/core";
 import { FotosPedidoComponent } from "../../shared/fotos/fotos-pedido.component";
 import { IconComponent } from "../../shared/icon/icon.component";
 import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
@@ -17,7 +17,7 @@ import { esUnidadEntera } from "@erp/shared";
 import { cantidad, cuando } from "../../core/util/formato";
 import type { NombreIcono } from "../../shared/icon/icon.component";
 import { usarPolling } from "../../core/util/polling";
-import { ETIQUETA_ESTADO_PEDIDO } from "../../core/util/formato";
+import { CLASE_ESTADO_PEDIDO, ETIQUETA_ESTADO_PEDIDO } from "../../core/util/formato";
 import { descargarExcel } from "../../shared/tabla/excel";
 
 interface LineaConsumo {
@@ -71,6 +71,7 @@ export class ProduccionComponent implements OnInit {
 
   readonly encargadas = signal<Usuario[]>([]);
   readonly seleccionado = signal<PedidoDetalle | null>(null);
+  readonly cargandoDetalle = signal(false);
   readonly consultaAbierta = signal<Consulta | null>(null);
   readonly lineasConsumo = signal<LineaConsumo[]>([]);
   readonly guardando = signal(false);
@@ -85,6 +86,8 @@ export class ProduccionComponent implements OnInit {
   }
 
   readonly cuando = cuando;
+  readonly claseEstado = CLASE_ESTADO_PEDIDO;
+  readonly etiquetaEstado = ETIQUETA_ESTADO_PEDIDO;
   readonly cantidad = cantidad;
   readonly esUnidadEntera = esUnidadEntera;
 
@@ -122,8 +125,9 @@ export class ProduccionComponent implements OnInit {
 
   /** "2× Delirio rosé M · Susurro Pink S" */
   resumenItems(p: PedidoDetalle): string {
-    // El listado de pedidos trae solo la cabecera; los ítems llegan al abrir el detalle.
-    return (p.items ?? []).map((i) => `${i.cantidad > 1 ? i.cantidad + "× " : ""}${i.producto} ${i.talla}`).join(" · ");
+    // La lista trae el resumen ya armado; el detalle trae los ítems.
+    if (p.items?.length) return p.items.map((i) => `${i.cantidad > 1 ? i.cantidad + "× " : ""}${i.producto} ${i.talla}`).join(" · ");
+    return p.resumen ?? "";
   }
 
   nombreEncargada(p: PedidoDetalle): string {
@@ -169,7 +173,14 @@ export class ProduccionComponent implements OnInit {
   async seleccionar(pedido: PedidoDetalle): Promise<void> {
     this.error.set(null);
     this.cantidadFotos.set(0);
-    const detalle = await this.pedidosService.get(pedido.id);
+    // El panel se abre al instante con lo que ya se ve en la tarjeta; el detalle llega después.
+    if (this.seleccionado()?.id !== pedido.id) {
+      this.seleccionado.set({ ...pedido, items: pedido.items ?? [] });
+      this.consultaAbierta.set(null);
+    }
+    this.cargandoDetalle.set(true);
+    const detalle = await this.pedidosService.get(pedido.id).finally(() => this.cargandoDetalle.set(false));
+    if (this.seleccionado()?.id !== pedido.id) return;
     this.seleccionado.set(detalle);
 
     const abiertas = await this.consultasService.list("abierta");
@@ -198,6 +209,11 @@ export class ProduccionComponent implements OnInit {
     this.seleccionado.set(null);
   }
 
+  @HostListener("document:keydown.escape")
+  alEscape(): void {
+    if (this.seleccionado()) this.cerrar();
+  }
+
   merma(linea: { cantidadReceta: number; cantidadUsada: number }): number {
     return Math.max(0, linea.cantidadUsada - linea.cantidadReceta);
   }
@@ -220,6 +236,7 @@ export class ProduccionComponent implements OnInit {
     this.error.set(null);
     try {
       await this.pedidosService.transicion(pedido.id, "en_armado");
+      this.avisosFlotantes.exito(`${pedido.codigo} pasó a En armado`, "Registra lo que usas y confirma el consumo al terminar.");
       await this.cargarTablero();
       await this.seleccionar({ ...pedido, estado: "en_armado" });
     } catch (err) {
@@ -240,8 +257,9 @@ export class ProduccionComponent implements OnInit {
         cantidadUsada: Number(l["cantidadUsada"]),
       }));
       await this.pedidosService.confirmarConsumo(pedido.id, lineas);
+      this.avisosFlotantes.exito(`${pedido.codigo} está listo`, "Sube la foto del arreglo para que se pueda despachar.");
       await this.cargarTablero();
-      this.cerrar();
+      await this.seleccionar({ ...pedido, estado: "listo" });
     } catch (err) {
       this.error.set(mensajeError(err, "No se pudo confirmar el consumo."));
       this.avisosFlotantes.error(mensajeError(err, "No se pudo confirmar el consumo."));
@@ -256,6 +274,7 @@ export class ProduccionComponent implements OnInit {
     this.error.set(null);
     try {
       await this.pedidosService.transicion(pedido.id, "en_camino");
+      this.avisosFlotantes.exito(`${pedido.codigo} salió a reparto`);
       await this.cargarTablero();
       this.cerrar();
     } catch (err) {
@@ -276,6 +295,7 @@ export class ProduccionComponent implements OnInit {
       return;
     }
     this.resolverForm.reset();
+    this.avisosFlotantes.exito(estado === "aprobada" ? "Consulta aprobada" : "Consulta rechazada", "Se avisó a la vendedora.");
     const pedido = this.seleccionado();
     if (pedido) await this.seleccionar(pedido);
   }

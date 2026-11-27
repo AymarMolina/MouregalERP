@@ -84,6 +84,8 @@ export interface OpcionTalla {
 }
 
 export interface Pedido {
+  /** Solo en listas (GET /pedidos): arreglos del pedido en una línea, p. ej. "Ramo Clásico de Rosas S". */
+  resumen?: string | null;
   id: string;
   numero: number;
   codigo: string;
