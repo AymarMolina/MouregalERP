@@ -14,6 +14,8 @@ import { NotificacionesModule } from './modules/notificaciones/notificaciones.se
 import { PagosModule } from './modules/pagos/pagos.module';
 import { ReportesModule } from './modules/reportes/reportes.controller';
 import { SaludController } from './salud.controller';
+import { CajaModule } from './modules/caja/caja.module';
+import { ClientesModule } from './modules/clientes/clientes.module';
 
 @Module({
   imports: [
@@ -28,6 +30,8 @@ import { SaludController } from './salud.controller';
     ComprasModule,
     ReportesModule,
     DashboardModule,
+    CajaModule,
+    ClientesModule,
   ],
   controllers: [SaludController],
   providers: [

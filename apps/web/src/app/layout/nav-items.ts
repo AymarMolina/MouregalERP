@@ -29,8 +29,11 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "Pedidos",
     items: [
       { path: "/pedidos/nuevo", label: "Nuevo pedido", icon: "nuevo", roles: ["admin", "vendedora"] },
+      { path: "/venta-rapida", label: "Venta rápida", icon: "tienda", roles: ["admin", "vendedora"] },
       { path: "/pedidos", label: "Todos los pedidos", icon: "pedido", roles: ["admin", "vendedora"] },
+      { path: "/clientes", label: "Clientes", icon: "usuario", roles: ["admin", "vendedora"] },
       { path: "/pagos", label: "Pagos", icon: "pagos", roles: ["admin", "vendedora"] },
+      { path: "/caja", label: "Caja", icon: "pagos", roles: ["admin", "vendedora"] },
       { path: "/delivery", label: "Delivery", icon: "delivery", roles: ["admin", "delivery", "vendedora"] },
     ],
   },

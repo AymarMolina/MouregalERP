@@ -57,6 +57,13 @@
       "when": 1795558377155,
       "tag": "0007_adicional_insumo",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1795742951260,
+      "tag": "0008_caja_clientes_cobrador",
+      "breakpoints": true
     }
   ]
 }

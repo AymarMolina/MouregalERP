@@ -1,0 +1,106 @@
+<div class="px-4 pb-14 pt-6 sm:px-10">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Caja de {{ nombre() }}</h1>
+      <p class="page-subtitle">
+        @if (abierta(); as a) {
+          Abierta hoy a las {{ hora(a.caja.abiertaAt) }} con {{ soles(a.caja.fondo) }} de fondo.
+        } @else {
+          La caja está cerrada.
+        }
+      </p>
+    </div>
+  </div>
+
+  @if (cargando()) {
+    <div class="skeleton h-40 max-w-[520px]"></div>
+  } @else if (abierta()) {
+    @let a = abierta()!;
+    <!-- Resumen -->
+    <div class="mb-6 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6" data-tour="caja-resumen">
+      <div class="col-span-2 flex flex-col gap-0.5 rounded-[12px] border-2 border-brand p-3.5 md:col-span-1">
+        <span class="text-[13px] text-muted">Efectivo en caja</span>
+        <span class="text-[22px] font-bold tabular-nums">{{ soles(a.efectivoEsperado) }}</span>
+        <span class="text-[12px] text-muted">Fondo + cobros − egresos</span>
+      </div>
+      <div class="flex flex-col gap-0.5 rounded-[12px] border border-brand-line p-3.5">
+        <span class="text-[13px] text-muted">Efectivo cobrado</span>
+        <span class="text-[22px] font-bold tabular-nums">{{ soles(a.porMetodo["efectivo"] || 0) }}</span>
+      </div>
+      @for (m of metodos; track m.valor) {
+        <div class="flex flex-col gap-0.5 rounded-[12px] border border-brand-line p-3.5">
+          <span class="text-[13px] text-muted">{{ m.etiqueta }}</span>
+          <span class="text-[22px] font-bold tabular-nums">{{ soles(a.porMetodo[m.valor] || 0) }}</span>
+        </div>
+      }
+    </div>
+
+    <div class="flex flex-wrap items-start gap-6">
+      <section aria-labelledby="mov-titulo" class="min-w-0 flex-[2_1_480px] rounded-[14px] border border-brand-line p-5">
+        <div class="mb-2 flex items-baseline justify-between">
+          <h2 id="mov-titulo" class="panel-title">Movimientos de efectivo</h2>
+          <span class="text-[14px] text-muted">Total cobrado hoy, todos los métodos: <strong class="text-text">{{ soles(a.totalCobrado) }}</strong></span>
+        </div>
+        <table class="table">
+          <thead><tr><th class="!pl-0">Hora</th><th>Detalle</th><th class="text-right !pr-0">Monto</th></tr></thead>
+          <tbody>
+            @for (m of movimientos(); track m.id) {
+              <tr>
+                <td class="w-[70px] !pl-0 text-muted">{{ hora(m.at) }}</td>
+                <td>{{ m.detalle }}</td>
+                <td class="text-right !pr-0 font-semibold tabular-nums" [class.text-error]="m.monto < 0">{{ m.monto > 0 ? "+" : "−" }}{{ soles(m.monto < 0 ? -m.monto : m.monto) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </section>
+
+      <div class="flex min-w-0 flex-[1_1_320px] flex-col gap-4">
+        <section aria-labelledby="egr-titulo" class="flex flex-col gap-3 rounded-[14px] border border-brand-line p-5">
+          <h2 id="egr-titulo" class="panel-title">Registrar movimiento</h2>
+          <div class="flex gap-2" role="group" aria-label="Tipo de movimiento">
+            <button type="button" class="chip flex-1 justify-center" [class.chip-sel]="movTipo() === 'egreso'" [attr.aria-pressed]="movTipo() === 'egreso'" (click)="movTipo.set('egreso')">Sale dinero</button>
+            <button type="button" class="chip flex-1 justify-center" [class.chip-sel]="movTipo() === 'ingreso'" [attr.aria-pressed]="movTipo() === 'ingreso'" (click)="movTipo.set('ingreso')">Entra dinero</button>
+          </div>
+          <div class="flex gap-2.5">
+            <label class="flex flex-1 flex-col gap-1.5 text-[14px] font-semibold">Monto<input class="input" type="number" min="0" step="0.1" [ngModel]="movMonto()" (ngModelChange)="movMonto.set($event)" placeholder="0.00" /></label>
+            <label class="flex flex-[2] flex-col gap-1.5 text-[14px] font-semibold">Motivo<input class="input" [ngModel]="movMotivo()" (ngModelChange)="movMotivo.set($event)" placeholder="Ej. taxi para entrega" /></label>
+          </div>
+          <button type="button" class="btn-secondary" (click)="registrarMovimiento()" [disabled]="trabajando()">Registrar</button>
+        </section>
+
+        <section aria-labelledby="cie-titulo" class="flex flex-col gap-3 rounded-[14px] border-2 border-brand p-5">
+          <h2 id="cie-titulo" class="panel-title">Cerrar caja</h2>
+          <div class="flex justify-between text-[15px]"><span>Efectivo esperado</span><strong class="tabular-nums">{{ soles(a.efectivoEsperado) }}</strong></div>
+          <label class="flex flex-col gap-1.5 text-[14px] font-semibold">Efectivo contado<input class="input" type="number" min="0" step="0.1" [ngModel]="contado()" (ngModelChange)="contado.set($event)" placeholder="Cuenta los billetes y monedas" /></label>
+          @if (diferencia() !== null) {
+            <div class="rounded-[10px] px-3 py-2.5 text-[14px] font-semibold" [class]="diferencia() === 0 ? 'bg-estado-listo-bg text-estado-listo-fg' : diferencia()! < 0 ? 'bg-[#FBE4E2] text-[#9B1C15]' : 'bg-saldo-bg text-saldo-fuerte'">
+              {{ textoDiferencia(diferencia()!) }}
+            </div>
+          }
+          @if (diferencia() !== null && diferencia() !== 0) {
+            <label class="flex flex-col gap-1.5 text-[14px] font-semibold">¿Por qué no cuadra?<input class="input" [ngModel]="nota()" (ngModelChange)="nota.set($event)" placeholder="Ej. vuelto mal dado a un cliente" /></label>
+          }
+          <button type="button" class="btn-primary !min-h-[48px]" (click)="cerrar()" [disabled]="trabajando()">Cerrar caja</button>
+        </section>
+      </div>
+    </div>
+  } @else {
+    @if (cierre(); as c) {
+      <section class="mb-6 flex max-w-[560px] flex-col gap-3 rounded-[14px] border border-brand-line p-6">
+        <h2 class="text-[22px] font-bold">Caja cerrada</h2>
+        <div class="rounded-[10px] px-3 py-2.5 text-[14px] font-semibold" [class]="c.diferencia === 0 ? 'bg-estado-listo-bg text-estado-listo-fg' : c.diferencia < 0 ? 'bg-[#FBE4E2] text-[#9B1C15]' : 'bg-saldo-bg text-saldo-fuerte'">
+          {{ textoDiferencia(c.diferencia) }} @if (c.nota) { Nota: {{ c.nota }} }
+        </div>
+        <div class="flex justify-between text-[15px]"><span>Efectivo esperado</span><strong>{{ soles(c.esperado) }}</strong></div>
+        <div class="flex justify-between text-[15px]"><span>Efectivo entregado</span><strong>{{ soles(c.contado) }}</strong></div>
+      </section>
+    }
+    <section class="flex max-w-[520px] flex-col gap-4 rounded-[14px] border border-brand-line p-6" data-tour="caja-abrir">
+      <h2 class="text-[20px] font-bold">Abrir caja</h2>
+      <p class="text-[15px] leading-relaxed text-muted">Cuenta el efectivo con el que empiezas el día. Es el fondo para dar vuelto.</p>
+      <label class="flex flex-col gap-1.5 text-[14px] font-semibold">Fondo inicial (S/)<input class="input" type="number" min="0" step="0.1" [ngModel]="fondo()" (ngModelChange)="fondo.set($event)" /></label>
+      <button type="button" class="btn-primary !min-h-[48px]" (click)="abrir()" [disabled]="trabajando()">Abrir caja</button>
+    </section>
+  }
+</div>

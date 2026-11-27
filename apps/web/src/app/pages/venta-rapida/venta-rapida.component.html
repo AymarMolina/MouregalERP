@@ -1,0 +1,95 @@
+<div class="px-4 pb-14 pt-6 sm:px-10">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Venta rápida</h1>
+      <p class="page-subtitle">Para arreglos que ya están armados en la vitrina. Se cobra y se entrega al momento, sin pasar por Producción.</p>
+    </div>
+  </div>
+
+  <div class="flex flex-wrap items-start gap-7">
+    <!-- Vitrina -->
+    <section aria-label="Vitrina" class="grid min-w-0 flex-[2_1_520px] grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-3" data-tour="venta-vitrina">
+      @if (cargando()) {
+        @for (i of [1, 2, 3]; track i) {
+          <div class="skeleton h-64 rounded-[14px]"></div>
+        }
+      }
+      @for (p of productos(); track p.id) {
+        <div class="flex flex-col gap-2 rounded-[14px] border border-brand-line bg-white p-3">
+          <div class="flex h-[140px] items-center justify-center overflow-hidden rounded-[10px] bg-brand-soft">
+            @if (p.imagenUrl) {
+              <img [src]="p.imagenUrl" [alt]="p.nombre" class="h-full w-full object-cover" loading="lazy" />
+            } @else {
+              <app-icon name="flor" [size]="28" class="text-brand-agujero" />
+            }
+          </div>
+          <div class="text-[15px] font-semibold">{{ p.nombre }}</div>
+          <div class="flex flex-wrap gap-1.5" role="group" [attr.aria-label]="'Talla de ' + p.nombre">
+            @for (t of tallas(p); track t.id) {
+              <button type="button" class="min-h-[36px] rounded-[8px] px-3 text-[13px]" [class]="talla(p) === t.talla ? 'border-2 border-brand-darker bg-brand-darker font-semibold text-white' : 'border border-brand-input bg-white text-text'" [attr.aria-pressed]="talla(p) === t.talla" (click)="elegirTalla(p, t.talla)">
+                {{ t.talla }}
+              </button>
+            }
+          </div>
+          <div class="mt-auto flex items-center justify-between gap-2 pt-1">
+            <span class="text-[16px] font-bold">{{ soles(precio(p)) }}</span>
+            <button type="button" class="btn-secondary !min-h-[36px] !px-3" (click)="agregar(p)">Agregar</button>
+          </div>
+        </div>
+      }
+    </section>
+
+    <!-- Venta en mostrador -->
+    <aside aria-labelledby="venta-titulo" class="etiqueta-pedido min-w-0 flex-[1_1_320px] !gap-3.5 !p-[22px]" data-tour="venta-cobro">
+      <h2 id="venta-titulo" class="text-[18px] font-bold">Venta en mostrador</h2>
+      @if (!carrito().length) {
+        <p class="text-[14px] text-muted">Toca «Agregar» en un arreglo de la vitrina.</p>
+      }
+      @for (l of carrito(); track l.productoId + l.talla) {
+        <div class="flex items-center gap-2 text-[14px]">
+          <span class="flex-1">{{ l.nombre }} {{ l.talla }}</span>
+          <button type="button" class="flex h-8 w-8 items-center justify-center rounded-[8px] border border-brand-input hover:bg-brand-soft" (click)="quitar(l)" [attr.aria-label]="'Quitar un ' + l.nombre">−</button>
+          <strong class="min-w-[18px] text-center">{{ l.cantidad }}</strong>
+          <span class="min-w-[84px] text-right tabular-nums">{{ soles(l.precio * l.cantidad) }}</span>
+        </div>
+      }
+      @if (cotizacion(); as c) {
+        @if (!c.disponible) {
+          <p class="rounded-[10px] bg-[#FBE4E2] px-3 py-2 text-[13px] text-[#9B1C15]">Sin stock de {{ faltan() }}.</p>
+        }
+      }
+      <div class="flex items-baseline justify-between border-t border-dashed border-brand-input pt-2.5">
+        <span class="text-[15px] font-semibold">Total</span>
+        <span class="text-[22px] font-bold tabular-nums">{{ soles(total()) }}</span>
+      </div>
+      <div class="flex gap-1.5" role="group" aria-label="Forma de pago">
+        @for (m of metodos; track m.valor) {
+          <button type="button" class="min-h-[44px] flex-1 rounded-[10px] text-[14px]" [class]="metodo() === m.valor ? 'border-2 border-brand-darker bg-brand-darker font-semibold text-white' : 'border border-brand-input bg-white'" [attr.aria-pressed]="metodo() === m.valor" (click)="metodo.set(m.valor)">{{ m.etiqueta }}</button>
+        }
+      </div>
+      @if (metodo() === "efectivo") {
+        <div class="flex items-center gap-2.5">
+          <input class="input" type="number" min="0" step="0.1" [ngModel]="pagaCon()" (ngModelChange)="pagaCon.set($event)" placeholder="Paga con" aria-label="Paga con" />
+          <strong class="whitespace-nowrap text-[15px]" [class.text-error]="(vuelto() ?? 0) < 0">
+            {{ vuelto() === null ? "Vuelto —" : vuelto()! < 0 ? "Falta " + soles(-vuelto()!) : "Vuelto " + soles(vuelto()!) }}
+          </strong>
+        </div>
+      }
+      @if (necesitaOperacion()) {
+        <input class="input" [ngModel]="operacion()" (ngModelChange)="operacion.set($event)" placeholder="N° de operación" aria-label="Número de operación" />
+      }
+      <details class="text-[14px]">
+        <summary class="cursor-pointer font-semibold text-brand-darker">Agregar cliente (opcional)</summary>
+        <div class="mt-2 flex flex-col gap-2">
+          <input class="input" [ngModel]="clienteNombre()" (ngModelChange)="clienteNombre.set($event)" placeholder="Nombre" aria-label="Nombre del cliente" />
+          <input class="input" [ngModel]="clienteTelefono()" (ngModelChange)="clienteTelefono.set($event)" placeholder="Teléfono" aria-label="Teléfono del cliente" />
+        </div>
+      </details>
+      @if (error()) {
+        <p class="text-[14px] font-semibold text-error" role="alert">{{ error() }}</p>
+      }
+      <button type="button" class="btn-primary !min-h-[52px] !text-[16px]" (click)="vender()" [disabled]="vendiendo()">{{ vendiendo() ? "Registrando..." : "Cobrar y entregar" }}</button>
+      <span class="text-[13px] text-muted">Se descuenta del stock y queda registrado como entregado. ¿Lleva cambios o delivery? Usa <a routerLink="/pedidos/nuevo" class="font-semibold underline">Nuevo pedido</a>.</span>
+    </aside>
+  </div>
+</div>

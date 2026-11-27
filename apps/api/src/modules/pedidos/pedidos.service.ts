@@ -39,6 +39,7 @@ import {
   type PedidoInput,
   type PedidoEntrada,
   pedidoInputSchema,
+  pedidoItemInputSchema,
   type RolUsuario,
 } from '@erp/shared';
 import { DB } from '../../db/db.module';
@@ -164,7 +165,9 @@ export class PedidosService {
         telefonoCliente: clientes.telefono,
         distrito: distritos.nombre,
         vendedora: usuarios.nombre,
-        resumen: sql<string | null>`(select string_agg(${productos.nombre} || ' ' || ${productoTallas.talla}::text || case when ${pedidoItems.cantidad} > 1 then ' × ' || ${pedidoItems.cantidad} else '' end, ', ') from ${pedidoItems} join ${productoTallas} on ${productoTallas.id} = ${pedidoItems.productoTallaId} join ${productos} on ${productos.id} = ${productoTallas.productoId} where ${pedidoItems.pedidoId} = ${pedidos.id})`,
+        resumen: sql<
+          string | null
+        >`(select string_agg(${productos.nombre} || ' ' || ${productoTallas.talla}::text || case when ${pedidoItems.cantidad} > 1 then ' × ' || ${pedidoItems.cantidad} else '' end, ', ') from ${pedidoItems} join ${productoTallas} on ${productoTallas.id} = ${pedidoItems.productoTallaId} join ${productos} on ${productos.id} = ${productoTallas.productoId} where ${pedidoItems.pedidoId} = ${pedidos.id})`,
       })
       .from(pedidos)
       .leftJoin(clientes, eq(clientes.id, pedidos.clienteId))
@@ -788,6 +791,95 @@ export class PedidosService {
    * efectiva de todos los ítems quepa en el disponible (5.3): dos ventas
    * simultáneas no pueden reservar el mismo stock.
    */
+  /**
+   * Venta rápida de mostrador (diseño Mouregal): el arreglo ya está en vitrina.
+   * Pasa por `crear` (reserva y valida stock con lock) y por `confirmarConsumo`
+   * (Kardex), así el stock queda al día; luego se cierra como entregado.
+   * Si lo pagado no cubre el total, no se crea nada.
+   */
+  async ventaRapida(
+    input: {
+      items: PedidoEntrada['items'];
+      pagos: NonNullable<PedidoEntrada['pagos']>;
+      cliente: { nombre?: string; telefono?: string };
+    },
+    actor: Actor,
+  ) {
+    // Se cobra todo: se calcula el total antes de crear, para no dejar un pedido
+    // con pagos registrados si el monto no alcanza.
+    const ctx = await this.resolver.cargarContexto(this.db);
+    const resueltos = await Promise.all(
+      input.items.map((i) =>
+        this.resolver.resolver(this.db, ctx, pedidoItemInputSchema.parse(i)),
+      ),
+    );
+    const total = round2(resueltos.reduce((a, i) => a + i.subtotal, 0));
+    const pagado = round2(input.pagos.reduce((a, p) => a + Number(p.monto), 0));
+    if (pagado + 0.001 < total)
+      throw new BadRequestException(
+        `En venta rápida se cobra todo: faltan S/ ${(total - pagado).toFixed(2)} (total S/ ${total.toFixed(2)})`,
+      );
+    if (resueltos.some((i) => i.consultas.length))
+      throw new BadRequestException(
+        'Un arreglo de vitrina no lleva cambios que necesiten consulta a Producción',
+      );
+    const ahora = new Date();
+    const fecha = ahora.toLocaleDateString('en-CA', {
+      timeZone: 'America/Lima',
+    });
+    const hora = ahora.toLocaleTimeString('en-GB', {
+      timeZone: 'America/Lima',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
+    const creado = await this.crear(
+      {
+        canal: 'vendedora',
+        tipoEntrega: 'recojo',
+        cliente: {
+          nombre: input.cliente.nombre || undefined,
+          telefono: input.cliente.telefono || undefined,
+        },
+        items: input.items,
+        fechaEntrega: fecha,
+        horaEntrega: hora,
+        pagos: input.pagos,
+      } as PedidoEntrada,
+      actor,
+    );
+    // Armado "virtual": el arreglo ya existe (lo armó la tienda), se registra
+    // su consumo según receta. La encargada es quien vende.
+    await this.db
+      .update(pedidos)
+      .set({ encargadaId: actor.sub, updatedAt: new Date() })
+      .where(eq(pedidos.id, creado.id));
+    await this.transicion(
+      creado.id,
+      'en_armado',
+      'Venta rápida: arreglo de vitrina',
+      { sub: actor.sub, rol: 'admin' },
+    );
+    const receta = await this.recetaEfectivaDelPedido(creado.id);
+    await this.confirmarConsumo(
+      creado.id,
+      {
+        lineas: receta.map((l) => ({
+          insumoId: l.insumoId,
+          cantidadUsada: l.cantidad,
+        })),
+      },
+      actor.sub,
+    );
+    await this.transicion(
+      creado.id,
+      'entregado',
+      'Entregado en mostrador',
+      actor,
+    );
+    return this.findOne(creado.id);
+  }
+
   async crear(entrada: PedidoEntrada, actor: Actor) {
     // Normaliza (valores por defecto y validaciones de delivery/recojo) aunque
     // llegue sin pasar por el controlador.
@@ -981,6 +1073,7 @@ export class PedidosService {
             monto: String(p.monto),
             estado: 'pagado' as const,
             referenciaExterna: p.referencia,
+            registradoPor: creadoPor,
             pagadoAt: ahora,
           })),
         );

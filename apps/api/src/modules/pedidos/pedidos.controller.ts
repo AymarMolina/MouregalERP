@@ -16,8 +16,11 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { Request } from 'express';
+import { z } from 'zod';
 import {
   asignarInputSchema,
+  parteCobroSchema,
+  pedidoItemInputSchema,
   consumoInputSchema,
   despacharInputSchema,
   pedidoInputSchema,
@@ -130,6 +133,34 @@ export class PedidosController {
   @Post()
   crear(@Body() body: unknown, @Req() req: Request & { user: JwtPayload }) {
     return this.pedidos.crear(pedidoInputSchema.parse(body), {
+      sub: req.user.sub,
+      rol: req.user.rol,
+    });
+  }
+
+  /**
+   * Venta rápida de mostrador: el arreglo ya está armado en la vitrina. Se cobra
+   * todo, se descuenta la receta y queda entregado en un solo paso.
+   */
+  @Roles('admin', 'vendedora')
+  @Post('venta-rapida')
+  ventaRapida(
+    @Body() body: unknown,
+    @Req() req: Request & { user: JwtPayload },
+  ) {
+    const input = z
+      .object({
+        items: z.array(pedidoItemInputSchema).min(1),
+        pagos: z.array(parteCobroSchema).min(1).max(5),
+        cliente: z
+          .object({
+            nombre: z.string().trim().optional(),
+            telefono: z.string().trim().optional(),
+          })
+          .default({}),
+      })
+      .parse(body);
+    return this.pedidos.ventaRapida(input, {
       sub: req.user.sub,
       rol: req.user.rol,
     });

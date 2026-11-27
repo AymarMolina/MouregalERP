@@ -48,6 +48,15 @@ export class PedidosService {
     return firstValueFrom(this.http.get<PedidoLista[]>(`${this.base}${qs ? `?${qs}` : ""}`));
   }
 
+  /** Venta rápida de mostrador: cobra todo, descuenta la receta y queda entregado. */
+  ventaRapida(input: {
+    items: { productoId: string; talla: string; cantidad: number; florId: string; papelId?: string | null; extraIds: string[] }[];
+    pagos: { metodo: string; monto: number; referencia?: string }[];
+    cliente?: { nombre?: string; telefono?: string };
+  }): Promise<PedidoDetalle> {
+    return firstValueFrom(this.http.post<PedidoDetalle>(`${this.base}/venta-rapida`, input));
+  }
+
   get(id: string): Promise<PedidoDetalle> {
     return firstValueFrom(this.http.get<PedidoDetalle>(`${this.base}/${id}`));
   }

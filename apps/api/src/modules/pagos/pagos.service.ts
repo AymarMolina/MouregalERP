@@ -96,7 +96,11 @@ export class PagosService {
   }
 
   /** Registro manual de un pago ya cobrado (Yape, Plin, efectivo...). */
-  async registrarManual(pedidoId: string, input: PagoManualInput) {
+  async registrarManual(
+    pedidoId: string,
+    input: PagoManualInput,
+    registradoPor?: string,
+  ) {
     return this.db.transaction(async (tx) => {
       const pedido = await this.bloquearPedido(tx, pedidoId);
       const saldo = calcularSaldo(
@@ -126,6 +130,7 @@ export class PagosService {
             monto: String(p.monto),
             estado: 'pagado' as const,
             referenciaExterna: p.referenciaExterna,
+            registradoPor,
             pagadoAt: ahora,
           })),
         )
@@ -152,7 +157,11 @@ export class PagosService {
   }
 
   /** Marca como pagado un pago pendiente (link cobrado, verificado a mano o por webhook). */
-  async confirmar(pagoId: string, input: ConfirmarPagoInput) {
+  async confirmar(
+    pagoId: string,
+    input: ConfirmarPagoInput,
+    registradoPor?: string,
+  ) {
     return this.db.transaction(async (tx) => {
       const pago = await this.bloquearPago(tx, pagoId);
       if (pago.estado !== 'pendiente')
@@ -172,6 +181,7 @@ export class PagosService {
         .set({
           estado: 'pagado',
           pagadoAt: new Date(),
+          registradoPor: registradoPor ?? pago.registradoPor,
           referenciaExterna: input.referenciaExterna ?? pago.referenciaExterna,
         })
         .where(eq(pagos.id, pagoId))

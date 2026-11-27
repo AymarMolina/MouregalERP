@@ -8,3 +8,4 @@ export * from './pedidos';
 export * from './pagos';
 export * from './compras';
 export * from './integraciones';
+export * from './caja';

@@ -1,0 +1,109 @@
+<div class="px-4 pb-14 pt-6 sm:px-10">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Clientes</h1>
+      <p class="page-subtitle">{{ resumenSemana() }}</p>
+    </div>
+  </div>
+
+  <div class="flex flex-wrap items-start gap-6">
+    <!-- Lista -->
+    <section aria-label="Lista de clientes" class="flex min-w-0 flex-[1_1_300px] flex-col overflow-hidden rounded-[14px] border border-brand-line" data-tour="clientes-lista">
+      <div class="p-3">
+        <label class="search !max-w-none">
+          <app-icon name="buscar" [size]="16" class="pointer-events-none absolute left-3 text-muted" />
+          <input type="search" [ngModel]="q()" (ngModelChange)="buscar($event)" placeholder="Nombre o teléfono" aria-label="Buscar cliente" class="!h-11 !pl-9" />
+        </label>
+      </div>
+      <div class="max-h-[640px] overflow-y-auto">
+        @for (c of lista(); track c.id) {
+          <button type="button" class="flex w-full flex-col gap-0.5 border-t border-brand-divisor px-4 py-3 text-left text-[14px] transition-colors hover:bg-brand-band" [class.!bg-brand-soft]="sel() === c.id" [attr.aria-pressed]="sel() === c.id" (click)="elegir(c.id)">
+            <span class="flex justify-between gap-2">
+              <span class="font-semibold">{{ c.nombre }}</span>
+              @if (c.debe > 0) {
+                <span class="text-[12px] font-semibold text-saldo-fg">Debe</span>
+              } @else if (c.pedidos >= 3) {
+                <span class="text-[12px] font-semibold text-muted">Frecuente</span>
+              }
+            </span>
+            <span class="text-[13px] text-muted">{{ c.telefono || "Sin teléfono" }} · {{ c.pedidos }} {{ c.pedidos === 1 ? "pedido" : "pedidos" }}</span>
+          </button>
+        } @empty {
+          <p class="px-4 py-8 text-center text-[14px] text-muted">{{ cargando() ? "Cargando..." : "Ningún cliente coincide." }}</p>
+        }
+      </div>
+    </section>
+
+    <!-- Ficha -->
+    @if (ficha(); as f) {
+      <section aria-labelledby="ficha-nombre" class="flex min-w-0 flex-[2_1_520px] flex-col gap-4" [class.opacity-60]="cargandoFicha()">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 id="ficha-nombre" class="text-[26px] font-bold">{{ f.cliente.nombre }}</h2>
+            <p class="mt-1 text-[15px] text-muted">{{ f.cliente.telefono || "Sin teléfono" }}. Cliente desde {{ desde(f.cliente.createdAt) }}.</p>
+          </div>
+          <a routerLink="/pedidos/nuevo" class="btn-primary">Nuevo pedido para {{ f.cliente.nombre.split(" ")[0] }}</a>
+        </div>
+        <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <div class="flex flex-col gap-0.5 rounded-[12px] border border-brand-line p-3.5"><span class="text-[13px] text-muted">Pedidos</span><span class="text-[22px] font-bold">{{ f.pedidos }}</span></div>
+          <div class="flex flex-col gap-0.5 rounded-[12px] border border-brand-line p-3.5"><span class="text-[13px] text-muted">Gastado en total</span><span class="text-[22px] font-bold tabular-nums">{{ soles(f.gastado) }}</span></div>
+          <div class="flex flex-col gap-0.5 rounded-[12px] p-3.5" [class]="f.debe > 0 ? 'bg-saldo-bg text-saldo-fuerte' : 'border border-brand-line'"><span class="text-[13px]" [class.text-muted]="f.debe === 0">Debe</span><span class="text-[22px] font-bold tabular-nums">{{ soles(f.debe) }}</span></div>
+          <div class="flex flex-col gap-0.5 rounded-[12px] border border-brand-line p-3.5"><span class="text-[13px] text-muted">Ticket promedio</span><span class="text-[22px] font-bold tabular-nums">{{ soles(f.pedidos ? f.gastado / f.pedidos : 0) }}</span></div>
+        </div>
+
+        <div class="flex flex-wrap items-start gap-4">
+          <div class="flex min-w-0 flex-[1_1_280px] flex-col gap-2.5 rounded-[14px] border border-brand-line p-[18px]">
+            <h3 class="text-[16px] font-bold">Fechas especiales</h3>
+            @for (fe of f.fechas; track fe.id) {
+              <div class="flex items-center justify-between gap-2 border-t border-brand-divisor pt-2 text-[14px]">
+                <span><strong class="font-semibold">{{ fe.descripcion }}</strong><br /><span class="text-muted">{{ fecha(fe) }}</span></span>
+                <span class="flex gap-1.5">
+                  @if (linkWhatsapp(fe, f.cliente); as wa) {
+                    <a [href]="wa" target="_blank" rel="noopener" class="btn-secondary !min-h-[36px] !px-3 !text-[13px]">Escribir por WhatsApp</a>
+                  }
+                  <button type="button" class="btn-action btn-action-danger" (click)="quitarFecha(fe)" [attr.aria-label]="'Quitar ' + fe.descripcion" title="Quitar fecha"><app-icon name="eliminar" [size]="15" /></button>
+                </span>
+              </div>
+            } @empty {
+              <p class="text-[14px] text-muted">Aún no tiene fechas. Agrega cumpleaños o aniversarios para recordarle comprar.</p>
+            }
+            <div class="flex gap-2 border-t border-brand-divisor pt-2.5">
+              <input class="input !min-h-[40px] flex-[2]" [ngModel]="nuevaDesc()" (ngModelChange)="nuevaDesc.set($event)" placeholder="Ej. aniversario" aria-label="Qué se celebra" />
+              <input class="input !min-h-[40px] flex-1" [ngModel]="nuevaFecha()" (ngModelChange)="nuevaFecha.set($event)" placeholder="dd/mm" aria-label="Fecha" (keydown.enter)="agregarFecha()" />
+              <button type="button" class="rounded-[8px] bg-brand px-3 text-[13px] font-semibold text-white hover:bg-brand-darker" (click)="agregarFecha()">Agregar</button>
+            </div>
+          </div>
+          <div class="flex min-w-0 flex-[1_1_280px] flex-col gap-2 rounded-[14px] border border-brand-line p-[18px]">
+            <h3 class="text-[16px] font-bold">Direcciones frecuentes</h3>
+            @for (d of f.direcciones; track d.direccion) {
+              <div class="border-t border-brand-divisor pt-2 text-[14px] leading-snug">{{ d.direccion }}@if (d.distrito) {, {{ d.distrito }}} <span class="text-muted">({{ d.veces }} {{ d.veces === 1 ? "vez" : "veces" }})</span></div>
+            } @empty {
+              <p class="text-[14px] text-muted">Siempre recoge en tienda.</p>
+            }
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <div class="overflow-x-auto">
+            <table class="table min-w-[600px]">
+              <thead><tr><th>Pedido</th><th>Entrega</th><th>Arreglo</th><th>Estado</th><th class="text-right">Total</th></tr></thead>
+              <tbody>
+                @for (h of f.historial; track h.id) {
+                  <tr>
+                    <td><a [routerLink]="['/pedidos', h.id]" class="font-bold hover:underline">{{ h.codigo }}</a></td>
+                    <td>{{ fechaCorta(h.fechaEntrega) }}</td>
+                    <td>{{ h.resumen }}</td>
+                    <td><span [class]="'badge ' + claseEstado[h.estado]">{{ etiquetaEstado[h.estado] }}</span></td>
+                    <td class="text-right tabular-nums">{{ soles(h.total) }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    } @else if (!cargando()) {
+      <p class="flex-[2_1_520px] rounded-[14px] border border-dashed border-brand-input px-4 py-12 text-center text-muted">Elige un cliente para ver su ficha.</p>
+    }
+  </div>
+</div>

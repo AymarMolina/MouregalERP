@@ -6,10 +6,13 @@ import {
   ParseUUIDPipe,
   Post,
   Query,
+  Req,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import { confirmarPagoInputSchema, pagoManualInputSchema } from '@erp/shared';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { PagosService } from './pagos.service';
+import type { JwtPayload } from '../auth/strategies/jwt-access.strategy';
 
 @Controller()
 export class PagosController {
@@ -33,8 +36,16 @@ export class PagosController {
 
   @Roles('admin', 'vendedora')
   @Post('pedidos/:id/pagos')
-  registrar(@Param('id', ParseUUIDPipe) id: string, @Body() body: unknown) {
-    return this.pagos.registrarManual(id, pagoManualInputSchema.parse(body));
+  registrar(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: unknown,
+    @Req() req: Request & { user: JwtPayload },
+  ) {
+    return this.pagos.registrarManual(
+      id,
+      pagoManualInputSchema.parse(body),
+      req.user.sub,
+    );
   }
 
   @Roles('admin', 'vendedora', 'delivery')
@@ -45,8 +56,16 @@ export class PagosController {
 
   @Roles('admin', 'vendedora')
   @Post('pagos/:id/confirmar')
-  confirmar(@Param('id', ParseUUIDPipe) id: string, @Body() body: unknown) {
-    return this.pagos.confirmar(id, confirmarPagoInputSchema.parse(body ?? {}));
+  confirmar(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: unknown,
+    @Req() req: Request & { user: JwtPayload },
+  ) {
+    return this.pagos.confirmar(
+      id,
+      confirmarPagoInputSchema.parse(body ?? {}),
+      req.user.sub,
+    );
   }
 
   @Roles('admin', 'vendedora')

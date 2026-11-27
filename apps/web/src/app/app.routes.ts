@@ -42,6 +42,24 @@ export const routes: Routes = [
         data: { roles: ["admin", "vendedora"] },
       },
       {
+        path: "venta-rapida",
+        loadComponent: () => import("./pages/venta-rapida/venta-rapida.component").then((m) => m.VentaRapidaComponent),
+        canActivate: [roleGuard],
+        data: { roles: ["admin", "vendedora"] },
+      },
+      {
+        path: "clientes",
+        loadComponent: () => import("./pages/clientes/clientes.component").then((m) => m.ClientesComponent),
+        canActivate: [roleGuard],
+        data: { roles: ["admin", "vendedora"] },
+      },
+      {
+        path: "caja",
+        loadComponent: () => import("./pages/caja/caja.component").then((m) => m.CajaComponent),
+        canActivate: [roleGuard],
+        data: { roles: ["admin", "vendedora"] },
+      },
+      {
         path: "pedidos/nuevo",
         loadComponent: () => import("./pages/pedido-nuevo/pedido-nuevo.component").then((m) => m.PedidoNuevoComponent),
         canActivate: [roleGuard],

@@ -74,7 +74,10 @@ export class UsuariosController {
   @Roles('admin')
   @Get('todos')
   todos() {
-    return this.db.select(columnas).from(usuarios).orderBy(asc(usuarios.nombre));
+    return this.db
+      .select(columnas)
+      .from(usuarios)
+      .orderBy(asc(usuarios.nombre));
   }
 
   /** Crea un usuario. Sin contraseña, genera una y la devuelve una sola vez. */
@@ -93,7 +96,10 @@ export class UsuariosController {
       })
       .onConflictDoNothing({ target: usuarios.email })
       .returning(columnas);
-    if (!u) throw new ConflictException(`Ya existe un usuario con el email ${d.email}`);
+    if (!u)
+      throw new ConflictException(
+        `Ya existe un usuario con el email ${d.email}`,
+      );
     return { usuario: u, password: d.password ? null : password };
   }
 
@@ -106,8 +112,13 @@ export class UsuariosController {
     @Req() req: Request & { user: JwtPayload },
   ) {
     const d = editarSchema.parse(body);
-    if (id === req.user.sub && (d.activo === false || (d.rol && d.rol !== 'admin')))
-      throw new BadRequestException('No puedes desactivarte ni quitarte el rol de admin a ti mismo');
+    if (
+      id === req.user.sub &&
+      (d.activo === false || (d.rol && d.rol !== 'admin'))
+    )
+      throw new BadRequestException(
+        'No puedes desactivarte ni quitarte el rol de admin a ti mismo',
+      );
     const [u] = await this.db
       .update(usuarios)
       .set({
