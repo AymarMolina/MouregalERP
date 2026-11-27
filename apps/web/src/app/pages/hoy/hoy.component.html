@@ -6,7 +6,7 @@
       <p class="panel-subtitle flex items-center gap-2">
         Resumen del día
         @if (actualizado(); as a) {
-          <span class="text-gray-300">·</span>
+          <span class="text-brand-agujero">·</span>
           <span>Actualizado {{ a.toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" }) }}</span>
         }
       </p>
@@ -43,178 +43,112 @@
     </div>
   } @else if (data()) {
     @let d = data()!;
-    <!-- KPIs -->
-    <div class="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4" data-tour="hoy-kpis">
-      @for (k of kpis(); track k.etiqueta) {
-        <div class="kpi">
-          <span class="kpi-icon"><app-icon [name]="k.icono" [size]="18" /></span>
-          <div class="min-w-0">
-            <div class="kpi-label">{{ k.etiqueta }}</div>
-            <div class="kpi-value">{{ k.valor }}</div>
-            <div class="kpi-delta">
-              @if (k.variacion !== null && k.variacion <= -100) {
-                <!-- Al abrir el día todo sale en cero: no es una caída, es que aún no empieza. -->
-                Aún sin registros hoy · vs {{ comparadoCon() }}
-              } @else if (k.variacion !== null) {
-                <span class="font-medium" [class.text-positivo]="k.variacion > 0" [class.text-negativo]="k.variacion < 0">
-                  {{ k.variacion > 0 ? "▲" : k.variacion < 0 ? "▼" : "" }} {{ delta(k.variacion) }}
-                </span>
-                vs {{ comparadoCon() }}
-              } @else if (k.nota) {
-                {{ k.nota }}
-              } @else {
-                Sin datos el {{ comparadoCon() }}
+    <!-- Resumen del día en una frase (diseño Mouregal) -->
+    <p class="-mt-2 mb-7 text-[17px] leading-relaxed text-muted" data-tour="hoy-kpis">
+      {{ resumen().pedidos }}, {{ resumen().ventas }} vendidos y
+      <span class="font-semibold text-saldo-fg">{{ resumen().porCobrar }} por cobrar</span>.
+      @if (atrasados() > 0) {
+        <span class="font-semibold text-error">{{ atrasados() === 1 ? "Uno va atrasado." : atrasados() + " van atrasados." }}</span>
+      }
+    </p>
+
+    <!-- Riel de entregas por hora: cada pedido es una etiqueta en su franja -->
+    <section class="mb-8" data-tour="hoy-horas" aria-labelledby="riel-titulo">
+      <h2 id="riel-titulo" class="panel-title mb-3">Entregas por hora</h2>
+      <div class="overflow-x-auto pb-1">
+        <div class="grid min-w-[980px] grid-cols-6 gap-3">
+          @for (s of riel(); track s.desde) {
+            <div class="flex flex-col gap-2">
+              <div class="flex items-baseline justify-between px-0.5 pb-2" [class]="s.ahora ? 'border-b-[3px] border-rosa' : 'border-b border-brand-input'">
+                <span class="text-[20px] font-bold text-brand-darker">{{ s.etiqueta }}</span>
+                @if (s.ahora) {
+                  <span class="text-[12px] font-semibold text-rosa">ahora</span>
+                }
+              </div>
+              @for (p of s.pedidos; track p.id) {
+                <a
+                  [routerLink]="['/pedidos', p.id]"
+                  class="etiqueta-pedido !gap-1 !p-3 transition-colors hover:border-brand-agujero"
+                  [class.!border-error]="atrasado(p)"
+                  [class.!border-[1.5px]]="atrasado(p)"
+                  [class.!bg-brand-band]="p.estado === 'entregado'"
+                >
+                  <span class="pr-4 text-[12px] text-muted">{{ p.codigo }}, {{ p.distrito }}, {{ hora(p.horaEntrega) }}</span>
+                  <span class="text-[14px] font-semibold leading-snug" [class.text-muted]="p.estado === 'entregado'">{{ p.cliente }}</span>
+                  <span class="mt-1 flex flex-wrap items-center gap-1.5">
+                    <span [class]="'badge ' + claseEstado[p.estado]">{{ etiquetaEstado[p.estado] }}</span>
+                    @if (atrasado(p)) {
+                      <span class="text-[12px] font-semibold text-error">Atrasado</span>
+                    }
+                    @if (saldo(p) > 0) {
+                      <span class="saldo">Debe {{ soles(saldo(p)) }}</span>
+                    }
+                  </span>
+                </a>
+              } @empty {
+                <p class="px-1 py-2 text-[13px] text-muted">Sin entregas.</p>
               }
             </div>
-          </div>
+          }
         </div>
-      }
-    </div>
+      </div>
+    </section>
 
-    <!-- Tablero en tarjetas: cuatro paneles a la izquierda y los pedidos del día a la derecha -->
-    <div class="mb-6 grid gap-4 xl:grid-cols-3">
-      <div class="grid gap-4 md:grid-cols-2 xl:col-span-2">
-        <section class="card" data-tour="hoy-ventas">
-          <div class="mb-3 flex items-start justify-between gap-3">
-            <div>
-              <h2 class="panel-title">Ventas · 14 días</h2>
-              <p class="panel-subtitle text-xs">Por fecha de entrega, sin cancelados</p>
+    <div class="mb-8 flex flex-wrap items-start gap-6">
+      <!-- Recojos en tienda -->
+      <section class="min-w-0 flex-[2_1_520px]" data-tour="hoy-estados" aria-labelledby="recojos-titulo">
+        <h2 id="recojos-titulo" class="panel-title mb-3">Recojos en tienda</h2>
+        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          @for (p of recojos(); track p.id) {
+            <div class="etiqueta-pedido !gap-1.5 !p-3.5" [class.!bg-brand-band]="p.estado === 'entregado'">
+              <span class="text-[12px] text-muted">{{ p.codigo }}, {{ hora(p.horaEntrega) }}</span>
+              <span class="text-[15px] font-semibold">{{ p.cliente }}</span>
+              <span class="mt-0.5 flex flex-wrap items-center gap-1.5">
+                <span [class]="'badge ' + claseEstado[p.estado]">{{ etiquetaEstado[p.estado] }}</span>
+                @if (saldo(p) > 0) {
+                  <span class="saldo">Debe {{ soles(saldo(p)) }}</span>
+                } @else {
+                  <span class="text-[12px] text-muted">Pagado</span>
+                }
+              </span>
+              @if (p.estado === "listo") {
+                <a [routerLink]="['/pedidos', p.id]" class="mt-2" [class]="saldo(p) > 0 ? 'btn-primary mt-2' : 'btn-secondary mt-2'">
+                  {{ saldo(p) > 0 ? "Cobrar " + soles(saldo(p)) + " y entregar" : "Entregado al cliente" }}
+                </a>
+              } @else if (p.estado === "pendiente" || p.estado === "en_armado") {
+                <p class="mt-1.5 text-[13px] leading-snug text-muted">Se podrá entregar cuando Producción lo marque listo.</p>
+              }
             </div>
-            <div class="rounded-full bg-brand-soft px-3 py-1 text-right">
-              <div class="font-display text-[15px] font-semibold text-brand-dark">{{ soles(totalSerie()) }}</div>
-            </div>
-          </div>
-          <app-area-chart [datos]="serieVentas()" [formato]="formatoSoles" titulo="Ventas de los últimos 14 días" [alto]="210" />
-        </section>
+          } @empty {
+            <p class="rounded-[14px] border border-dashed border-brand-input px-4 py-6 text-center text-[14px] text-muted sm:col-span-2 lg:col-span-3">No hay recojos en tienda para hoy.</p>
+          }
+        </div>
+      </section>
 
-        <section class="card" data-tour="hoy-horas">
-          <div class="mb-3">
-            <h2 class="panel-title">Entregas por hora</h2>
-            <p class="panel-subtitle text-xs">Pedidos activos de hoy según hora de entrega</p>
-          </div>
-          <app-bar-chart [datos]="porHora()" [formato]="formatoPedidos" titulo="Entregas de hoy por hora" [alto]="210" />
-        </section>
-
-        <section class="card" data-tour="hoy-estados">
-          <h2 class="panel-title text-xl">Pedidos de hoy por estado</h2>
-          <p class="panel-subtitle mb-5 text-sm">{{ estados().total }} {{ estados().total === 1 ? "pedido" : "pedidos" }} activos</p>
-          @if (estados().total) {
-            <app-donut-chart [datos]="estados().dona" [formato]="formatoPedidos" titulo="Pedidos de hoy por estado" [alto]="220">
-              <span class="font-display text-[28px] font-bold leading-none text-brand-dark">{{ estados().total }}</span>
-              <span class="mt-0.5 text-[12px] text-muted">{{ estados().total === 1 ? "pedido" : "pedidos" }} hoy</span>
-            </app-donut-chart>
-          } @else {
-            <!-- Sin pedidos: anillo vacío con las mismas medidas que la dona (208 px, hueco del 70 %) -->
-            <div class="flex h-[220px] items-center justify-center">
-              <div class="flex h-[208px] w-[208px] flex-col items-center justify-center rounded-full border-[31px] border-brand-soft text-center">
-                <span class="font-display text-[28px] font-bold leading-none text-brand-dark">0</span>
-                <span class="mt-0.5 text-[12px] text-muted">pedidos hoy</span>
-              </div>
+      <!-- Requiere atención -->
+      <section class="min-w-0 flex-[1_1_300px]" data-tour="hoy-atencion" aria-labelledby="atencion-titulo">
+        <h2 id="atencion-titulo" class="panel-title mb-3">Requiere atención</h2>
+        <div class="overflow-hidden rounded-[14px] border border-brand-line bg-white">
+          @for (p of atrasadosLista(); track p.id) {
+            <a [routerLink]="['/pedidos', p.id]" class="flex flex-col gap-1 border-b border-brand-divisor px-4 py-3.5 last:border-b-0 hover:bg-brand-band">
+              <span class="text-[14px] font-semibold text-error">{{ p.codigo }} va atrasado</span>
+              <span class="text-[13px] leading-snug text-muted">Debía entregarse a las {{ hora(p.horaEntrega) }} y sigue en {{ etiquetaEstado[p.estado].toLowerCase() }}.</span>
+            </a>
+          }
+          @for (c of d.consultasAbiertas; track c.id) {
+            <a [routerLink]="['/pedidos', c.pedidoId]" class="flex flex-col gap-1 border-b border-brand-divisor px-4 py-3.5 last:border-b-0 hover:bg-brand-band">
+              <span class="text-[14px] font-semibold">{{ c.codigo }} espera respuesta</span>
+              <span class="text-[13px] leading-snug text-muted">{{ c.descripcion }}</span>
+            </a>
+          }
+          @for (s of d.stockBajo; track s.id) {
+            <div class="flex flex-col gap-1 border-b border-brand-divisor px-4 py-3.5 last:border-b-0">
+              <span class="text-[14px] font-semibold">{{ s.nombre }} bajo el mínimo</span>
+              <span class="text-[13px] leading-snug text-muted">Quedan {{ cantidad(s.stockActual) }} {{ s.unidadBase }} y el mínimo es {{ cantidad(s.stockMinimo) }}.</span>
             </div>
           }
-          <ul class="mt-5 space-y-2.5">
-            @for (e of estados().partes; track e.estado) {
-              <li class="flex items-center gap-3">
-                <span class="h-3.5 w-3.5 shrink-0 rounded-full" [style.background-color]="e.color" aria-hidden="true"></span>
-                <span [class]="'badge px-3 py-1 text-[14px] ' + claseEstado[e.estado]">{{ etiquetaEstado[e.estado] }}</span>
-                <span class="ml-auto text-sm tabular-nums text-muted">{{ e.pct }}%</span>
-                <span class="w-10 text-right font-display text-xl font-semibold tabular-nums">{{ e.n }}</span>
-              </li>
-            }
-          </ul>
-        </section>
-
-        <!-- Toma el alto de la tarjeta de estados ([contain:size] no la deja empujar la fila);
-             la lista hace scroll y el resumen queda abajo. -->
-        <section class="card flex flex-col md:[contain:size]" data-tour="hoy-atencion">
-          <h2 class="panel-title">Requiere atención</h2>
-          <p class="panel-subtitle mb-4 text-xs">Consultas abiertas e insumos bajo el mínimo</p>
-          <ul class="-mr-2 min-h-0 flex-1 space-y-2.5 overflow-y-auto pr-2">
-            @for (c of d.consultasAbiertas; track c.id) {
-              <li class="flex items-start gap-3 rounded-xl bg-brand-band px-3 py-2.5">
-                <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-brand"><app-icon name="consulta" [size]="16" /></span>
-                <div class="min-w-0 flex-1">
-                  <a [routerLink]="['/pedidos', c.pedidoId]" class="font-medium text-text hover:underline">Consulta · {{ c.codigo }}</a>
-                  <div class="truncate text-xs text-muted" [title]="c.descripcion">{{ c.descripcion }}</div>
-                </div>
-              </li>
-            }
-            @for (s of d.stockBajo; track s.id) {
-              <li class="flex items-start gap-3 rounded-xl bg-red-50/70 px-3 py-2.5">
-                <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-negativo"><app-icon name="alerta" [size]="16" /></span>
-                <div class="min-w-0 flex-1">
-                  <div class="font-medium text-text">{{ s.nombre }}</div>
-                  <div class="text-xs text-muted">
-                    Stock {{ cantidad(s.stockActual) }} {{ s.unidadBase }} · mínimo {{ cantidad(s.stockMinimo) }}
-                  </div>
-                </div>
-              </li>
-            }
-            @if (!d.consultasAbiertas.length && !d.stockBajo.length) {
-              <li class="flex h-full min-h-[8rem] flex-col items-center justify-center gap-3 rounded-xl bg-brand-band px-3 py-6 text-center text-muted">
-                <span class="flex h-11 w-11 items-center justify-center rounded-full bg-white text-positivo"><app-icon name="check" [size]="20" /></span>
-                Sin consultas abiertas ni insumos bajo el mínimo.
-              </li>
-            }
-          </ul>
-          <div class="mt-4 grid shrink-0 grid-cols-2 gap-3 border-t border-brand-divisor pt-4">
-            <div class="rounded-xl bg-brand-band px-3 py-2.5">
-              <div class="font-display text-2xl font-semibold tabular-nums text-brand-dark">{{ d.consultasAbiertas.length }}</div>
-              <div class="text-xs text-muted">{{ d.consultasAbiertas.length === 1 ? "Consulta abierta" : "Consultas abiertas" }}</div>
-            </div>
-            <div class="rounded-xl px-3 py-2.5" [class.bg-red-50]="d.stockBajo.length" [class.bg-brand-band]="!d.stockBajo.length">
-              <div class="font-display text-2xl font-semibold tabular-nums" [class.text-negativo]="d.stockBajo.length" [class.text-brand-dark]="!d.stockBajo.length">{{ d.stockBajo.length }}</div>
-              <div class="text-xs text-muted">Bajo el mínimo</div>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      <!-- Columna derecha: pedidos del día en tarjetas. En xl toma el alto de los paneles
-           de la izquierda ([contain:size] no la deja empujar la fila) y la lista hace scroll. -->
-      <section class="flex flex-col rounded-2xl bg-brand-band p-4 xl:[contain:size]">
-        <div class="mb-3 flex items-center justify-between px-1">
-          <h2 class="panel-title">Pedidos de hoy</h2>
-          <button type="button" class="text-xs font-medium text-brand-dark underline underline-offset-2 hover:text-brand" (click)="tablaPedidos.scrollIntoView({ behavior: 'smooth' })">
-            Ver todos
-          </button>
-        </div>
-        <div class="-mr-2 min-h-0 flex-1 space-y-3 overflow-y-auto pr-2">
-          @for (p of d.pedidos; track p.id; let primero = $first) {
-            <a
-              [routerLink]="['/pedidos', p.id]"
-              class="block rounded-2xl border bg-white p-4 transition-colors hover:border-brand"
-              [class.border-brand-dark]="primero"
-              [class.border-transparent]="!primero"
-            >
-              <div class="mb-2 flex items-center justify-between text-xs text-muted">
-                <span>Pedido <span class="font-semibold text-text">{{ p.codigo }}</span></span>
-                <span class="tabular-nums">Hoy, {{ hora(p.horaEntrega) }}</span>
-              </div>
-              <div class="mb-1 flex items-center justify-between gap-2">
-                <span class="truncate font-display text-[16px] font-medium text-text">{{ p.cliente }}</span>
-                <span [class]="'badge ' + claseEstado[p.estado]">{{ etiquetaEstado[p.estado] }}</span>
-              </div>
-              <div class="mb-3 text-xs text-muted">
-                @if (p.tipoEntrega === "recojo") {
-                  Recoge en tienda
-                } @else {
-                  Recibe {{ p.nombreReceptor }} · {{ p.distrito }}
-                }
-              </div>
-              <div class="flex items-center justify-end gap-1.5 text-[13px] text-muted">
-                @if (saldo(p) > 0) {
-                  <span class="mr-auto text-xs font-medium text-negativo">Saldo {{ soles(saldo(p)) }}</span>
-                }
-                Total
-                <span class="font-display text-[16px] font-semibold text-text">{{ soles(p.total) }}</span>
-              </div>
-            </a>
-          } @empty {
-            <div class="flex h-full min-h-[10rem] flex-col items-center justify-center gap-3 rounded-2xl bg-white px-4 py-8 text-center text-muted">
-              <span class="flex h-12 w-12 items-center justify-center rounded-full bg-brand-soft text-brand"><app-icon name="flor" [size]="22" /></span>
-              No hay pedidos con entrega para hoy.
-            </div>
+          @if (!atrasadosLista().length && !d.consultasAbiertas.length && !d.stockBajo.length) {
+            <p class="px-4 py-6 text-center text-[14px] text-muted">Todo en orden: sin atrasos, consultas ni faltantes.</p>
           }
         </div>
       </section>

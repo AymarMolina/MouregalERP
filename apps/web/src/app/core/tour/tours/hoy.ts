@@ -14,7 +14,7 @@ export const TOUR_HOY: Tour = {
       titulo: "Cómo funciona",
       texto:
         "<ol>" +
-        "<li>Al abrir la pantalla ves los indicadores y los pedidos con entrega hoy.</li>" +
+        "<li>Arriba ves el resumen del día y, debajo, cada pedido con delivery en su franja horaria.</li>" +
         "<li>Los datos se actualizan solos cada 15 segundos; se pausa si cambias de pestaña.</li>" +
         "<li>Filtra por estado o busca por número, cliente o distrito.</li>" +
         "<li>Abre un pedido para ver su comanda, pagos e historial.</li>" +
@@ -30,25 +30,24 @@ export const TOUR_HOY: Tour = {
     },
     {
       elemento: "hoy-kpis",
-      titulo: "Indicadores del día",
+      titulo: "Resumen del día",
       texto:
-        "<p>Pedidos, ventas, ticket promedio y saldo por cobrar. La flecha compara contra el mismo día de la semana pasada (verde sube, rojo baja).</p>" +
-        "<p>El saldo por cobrar indica cuántos pedidos aún deben dinero.</p>",
+        "<p>Cuántos pedidos hay, cuánto se vendió y cuánto falta cobrar. Si algún pedido pasó su hora de entrega, aparece en rojo.</p>",
       lado: "bottom",
     },
     {
-      elemento: "hoy-ventas",
-      titulo: "Ventas de 14 días",
+      elemento: "hoy-horas",
+      titulo: "Entregas por hora",
       texto:
-        "<p>Ventas por fecha de entrega, sin pedidos cancelados. Pasa el cursor por la línea para ver el monto de cada día.</p>",
+        "<p>Cada pedido con delivery aparece en su franja horaria. La franja con la línea rosada es la de ahora. Un borde rojo indica que ya pasó su hora y aún no sale. El saldo se ve en ámbar.</p>",
       lado: "top",
     },
     {
       elemento: "hoy-estados",
-      titulo: "Pedidos por estado",
+      titulo: "Recojos en tienda",
       texto:
-        "<p>Cuántos pedidos de hoy hay en cada etapa. Si muchos siguen en «pendiente» cerca de la hora de entrega, Producción está atrasada.</p>",
-      lado: "left",
+        "<p>Los pedidos que el cliente pasa a recoger. Cuando están listos, ábrelos para cobrar lo que falte y entregarlos en un solo paso.</p>",
+      lado: "top",
     },
     {
       elemento: "hoy-pedidos",

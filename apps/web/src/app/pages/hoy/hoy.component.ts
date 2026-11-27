@@ -8,9 +8,7 @@ import { DashboardService } from "../../core/pedidos/pedidos.service";
 import type { DashboardHoy, PedidoDelDia } from "../../core/pedidos/pedidos.types";
 import { CLASE_ESTADO_PEDIDO, ETIQUETA_ESTADO_PEDIDO, cantidad, hora, soles } from "../../core/util/formato";
 import { usarPolling } from "../../core/util/polling";
-import { AreaChartComponent } from "../../shared/charts/area-chart.component";
-import { BarChartComponent } from "../../shared/charts/bar-chart.component";
-import { COLORES_DONA, DonutChartComponent } from "../../shared/charts/donut-chart.component";
+import { COLORES_DONA } from "../../shared/charts/donut-chart.component";
 import type { Punto } from "../../shared/charts/escala";
 import { IconComponent, type NombreIcono } from "../../shared/icon/icon.component";
 import { RowMenuComponent } from "../../shared/tabla/row-menu.component";
@@ -34,9 +32,15 @@ const fechaLarga = new Intl.DateTimeFormat("es-PE", { weekday: "short", day: "nu
 const fechaTitulo = new Intl.DateTimeFormat("es-PE", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
 const deFecha = (f: string) => new Date(`${f}T12:00:00Z`);
 
+/** Minutos desde la medianoche en Lima. */
+function minutosLima(): number {
+  const [h, m] = new Date().toLocaleTimeString("en-GB", { timeZone: "America/Lima", hour: "2-digit", minute: "2-digit", hour12: false }).split(":").map(Number);
+  return h * 60 + m;
+}
+
 @Component({
   selector: "app-hoy",
-  imports: [RouterLink, FormsModule, IconComponent, AreaChartComponent, BarChartComponent, DonutChartComponent, RowMenuComponent, ...TABLA_CONTROLES],
+  imports: [RouterLink, FormsModule, IconComponent, RowMenuComponent, ...TABLA_CONTROLES],
   templateUrl: "./hoy.component.html",
 })
 export class HoyComponent implements OnInit {
@@ -58,6 +62,50 @@ export class HoyComponent implements OnInit {
   readonly actualizado = signal<Date | null>(null);
   readonly busqueda = signal("");
   readonly filtroEstado = signal<EstadoPedido | null>(null);
+
+  /** Hora actual en Lima, en minutos desde la medianoche (se renueva con cada carga). */
+  private readonly ahoraMin = signal(minutosLima());
+
+  /** Resumen del día en una frase. */
+  readonly resumen = computed(() => {
+    const k = this.data()?.kpis;
+    return {
+      pedidos: `${k?.pedidosHoy ?? 0} ${k?.pedidosHoy === 1 ? "pedido" : "pedidos"}`,
+      ventas: soles(k?.ventasHoy ?? 0),
+      porCobrar: soles(k?.porCobrar ?? 0),
+    };
+  });
+
+  /** Franjas del riel: 9, 11, 13, 15, 17 y 19 h. Lo anterior a las 11 cae en 9, lo posterior a las 19 en 19. */
+  readonly riel = computed(() => {
+    const franjas = [9, 11, 13, 15, 17, 19];
+    const ahoraH = Math.floor(this.ahoraMin() / 60);
+    const delivery = (this.data()?.pedidos ?? []).filter((p) => p.tipoEntrega !== "recojo" && p.estado !== "cancelado");
+    return franjas.map((desde, i) => {
+      const hasta = franjas[i + 1] ?? 24;
+      const enFranja = (h: number) => (i === 0 ? h < hasta : h >= desde && h < hasta);
+      return {
+        desde,
+        etiqueta: `${desde}:00`,
+        ahora: enFranja(ahoraH),
+        pedidos: delivery.filter((p) => enFranja(Number(p.horaEntrega.slice(0, 2)))).sort((a, b) => a.horaEntrega.localeCompare(b.horaEntrega)),
+      };
+    });
+  });
+
+  readonly recojos = computed(() =>
+    (this.data()?.pedidos ?? []).filter((p) => p.tipoEntrega === "recojo" && p.estado !== "cancelado").sort((a, b) => a.horaEntrega.localeCompare(b.horaEntrega)),
+  );
+
+  readonly atrasadosLista = computed(() => (this.data()?.pedidos ?? []).filter((p) => this.atrasado(p)));
+  readonly atrasados = computed(() => this.atrasadosLista().length);
+
+  /** Ya pasó la hora de entrega y el pedido aún no salió ni se entregó. */
+  atrasado(p: PedidoDelDia): boolean {
+    if (!["pendiente", "en_armado", "listo"].includes(p.estado)) return false;
+    const [h, m] = p.horaEntrega.split(":").map(Number);
+    return h * 60 + (m || 0) < this.ahoraMin();
+  }
 
   readonly puedeVender = computed(() => ["admin", "vendedora"].includes(this.auth.user()?.rol ?? ""));
 
@@ -179,6 +227,7 @@ export class HoyComponent implements OnInit {
   async cargar(): Promise<void> {
     try {
       this.data.set(await this.dashboardService.hoy());
+      this.ahoraMin.set(minutosLima());
       this.actualizado.set(new Date());
       this.error.set(null);
     } catch (err) {
