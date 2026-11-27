@@ -205,7 +205,7 @@
     <!-- MERMA -->
     @if (pestana() === "merma" && merma(); as m) {
       <p class="mb-3 text-muted">
-        Producción: lo usado por encima de la receta. Cancelación: insumos de pedidos cancelados después de armarse.
+        Producción: lo usado por encima de la receta. Almacén: lo que se marchitó, llegó dañado o se rompió fuera de un pedido. Cancelación: insumos de pedidos cancelados después de armarse.
       </p>
       <div class="table-wrap">
         <div class="table-head">
@@ -220,6 +220,8 @@
               <th class="col-check"><app-check-todos [tabla]="tablaMerma" /></th>
               <th>Insumo</th>
               <th class="text-right">Merma producción</th>
+              <th class="text-right">Valor</th>
+              <th class="text-right">En almacén</th>
               <th class="text-right">Valor</th>
               <th class="text-right">Por cancelación</th>
               <th class="text-right">Valor</th>
@@ -236,12 +238,14 @@
                 </td>
                 <td class="text-right">{{ cantidad(f.cantidadProduccion) }} {{ f.unidadBase }}</td>
                 <td class="text-right">{{ soles(f.valorProduccion) }}</td>
+                <td class="text-right">{{ cantidad(f.cantidadAlmacen) }} {{ f.unidadBase }}</td>
+                <td class="text-right">{{ soles(f.valorAlmacen) }}</td>
                 <td class="text-right">{{ cantidad(f.cantidadCancelacion) }} {{ f.unidadBase }}</td>
                 <td class="text-right">{{ soles(f.valorCancelacion) }}</td>
                 <td class="text-right font-semibold text-text">{{ soles(f.valorTotal) }}</td>
               </tr>
             } @empty {
-              <tr><td colspan="7" class="py-10 text-center text-muted">Sin merma en el rango.</td></tr>
+              <tr><td colspan="9" class="py-10 text-center text-muted">Sin merma en el rango.</td></tr>
             }
           </tbody>
           @if (m.filas.length) {
@@ -251,6 +255,8 @@
                 <td class="px-4 py-2.5">Total</td>
                 <td></td>
                 <td class="px-4 py-2.5 text-right">{{ soles(m.totales.valorProduccion) }}</td>
+                <td></td>
+                <td class="px-4 py-2.5 text-right">{{ soles(m.totales.valorAlmacen) }}</td>
                 <td></td>
                 <td class="px-4 py-2.5 text-right">{{ soles(m.totales.valorCancelacion) }}</td>
                 <td class="px-4 py-2.5 text-right">{{ soles(m.totales.valorTotal) }}</td>

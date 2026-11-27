@@ -37,6 +37,11 @@ describe("validarTransicion", () => {
 describe("desglosarConsumo", () => {
   it("receta 50, usado 53 → consumo 50 + merma 3", () => {
     expect(desglosarConsumo(50, 53)).toEqual({ consumo: 50, merma: 3 });
+    // Con lo perdido indicado, lo de más va en el arreglo (flores extra para que se vea mejor).
+    expect(desglosarConsumo(12, 15, 0)).toEqual({ consumo: 15, merma: 0 });
+    expect(desglosarConsumo(12, 15, 1)).toEqual({ consumo: 14, merma: 1 });
+    expect(desglosarConsumo(12, 12, 2)).toEqual({ consumo: 10, merma: 2 });
+    expect(desglosarConsumo(12, 3, 9)).toEqual({ consumo: 0, merma: 3 });
   });
 
   it("usado menor que la receta → solo consumo, sin merma", () => {

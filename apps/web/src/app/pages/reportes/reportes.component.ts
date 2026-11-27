@@ -75,13 +75,15 @@ export class ReportesComponent implements OnInit {
     id: (f) => f.insumoId,
     porPagina: 10,
     nombreCsv: "reporte-merma",
-    totales: ["valorProduccion", "valorCancelacion", "valorTotal"],
+    totales: ["valorProduccion", "valorAlmacen", "valorCancelacion", "valorTotal"],
     csv: (f) => ({
       codigo: f.codigo,
       insumo: f.nombre,
       unidad: f.unidadBase,
       mermaProduccion: f.cantidadProduccion,
       valorProduccion: f.valorProduccion,
+      mermaAlmacen: f.cantidadAlmacen,
+      valorAlmacen: f.valorAlmacen,
       mermaCancelacion: f.cantidadCancelacion,
       valorCancelacion: f.valorCancelacion,
       valorTotal: f.valorTotal,
@@ -176,6 +178,7 @@ export class ReportesComponent implements OnInit {
           resumen: t
             ? [
                 { etiqueta: "Merma de producción", valor: soles(t.valorProduccion) },
+                { etiqueta: "Merma en almacén", valor: soles(t.valorAlmacen) },
                 { etiqueta: "Merma por cancelación", valor: soles(t.valorCancelacion) },
                 { etiqueta: "Merma total", valor: soles(t.valorTotal) },
               ]

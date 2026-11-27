@@ -1,4 +1,5 @@
 import { AjusteConteoComponent } from "./ajuste-conteo.component";
+import { RegistrarMermaComponent } from "../../shared/merma/registrar-merma.component";
 import { DatePipe } from "@angular/common";
 import { IconComponent } from "../../shared/icon/icon.component";
 import { RowMenuComponent } from "../../shared/tabla/row-menu.component";
@@ -15,7 +16,7 @@ import { InsumosService, type KardexMovimiento } from "../../core/catalogo/insum
 
 @Component({
   selector: "app-inventario",
-  imports: [ReactiveFormsModule, DatePipe, IconComponent, RouterLink, RowMenuComponent, AjusteConteoComponent, ...TABLA_CONTROLES],
+  imports: [ReactiveFormsModule, DatePipe, IconComponent, RouterLink, RowMenuComponent, AjusteConteoComponent, RegistrarMermaComponent, ...TABLA_CONTROLES],
   templateUrl: "./inventario.component.html",
 })
 export class InventarioComponent implements OnInit {
@@ -34,6 +35,8 @@ export class InventarioComponent implements OnInit {
   readonly insumos = signal<Insumo[]>([]);
   /** Modal de ajuste por conteo: null cerrado, "" abierto sin insumo elegido, o el id del insumo. */
   readonly ajusteDe = signal<string | null>(null);
+  /** Modal de merma: null cerrado, "" abierto sin insumo elegido, o el id del insumo. */
+  readonly mermaDe = signal<string | null>(null);
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
   readonly editingId = signal<string | null>(null);

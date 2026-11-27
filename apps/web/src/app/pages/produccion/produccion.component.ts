@@ -1,6 +1,9 @@
 import { AvisosService } from "../../core/avisos/avisos.service";
 import { Component, HostListener, OnInit, computed, inject, signal } from "@angular/core";
 import { FotosPedidoComponent } from "../../shared/fotos/fotos-pedido.component";
+import { RegistrarMermaComponent } from "../../shared/merma/registrar-merma.component";
+import { InsumosService } from "../../core/catalogo/insumos.service";
+import type { Insumo } from "../../core/catalogo/catalogo.types";
 import { IconComponent } from "../../shared/icon/icon.component";
 import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
 import {
@@ -28,7 +31,7 @@ interface LineaConsumo {
 
 @Component({
   selector: "app-produccion",
-  imports: [ReactiveFormsModule, IconComponent, FotosPedidoComponent],
+  imports: [ReactiveFormsModule, IconComponent, FotosPedidoComponent, RegistrarMermaComponent],
   templateUrl: "./produccion.component.html",
 })
 export class ProduccionComponent implements OnInit {
@@ -74,6 +77,13 @@ export class ProduccionComponent implements OnInit {
   readonly cargandoDetalle = signal(false);
   readonly consultaAbierta = signal<Consulta | null>(null);
   readonly lineasConsumo = signal<LineaConsumo[]>([]);
+  private readonly insumosService = inject(InsumosService);
+  /** Insumos para el modal de merma; se cargan al abrirlo. */
+  readonly insumosMerma = signal<Insumo[] | null>(null);
+
+  async abrirMerma(): Promise<void> {
+    this.insumosMerma.set(await this.insumosService.list());
+  }
   /** Insumos que pide el pedido pendiente, con lo que hay en almacén (solo consulta). */
   readonly recetaPendiente = signal<{ insumoId: string; nombre: string; unidadBase: string; cantidad: number; stock: number }[] | null>(null);
   readonly faltaStock = computed(() => (this.recetaPendiente() ?? []).some((l) => l.stock < l.cantidad));
@@ -208,6 +218,7 @@ export class ProduccionComponent implements OnInit {
             cantidadReceta: [l.cantidad],
             stock: [l.stock],
             cantidadUsada: [l.cantidad, [Validators.required, Validators.min(0)]],
+            perdido: [0, [Validators.required, Validators.min(0)]],
           }),
         );
       }
@@ -220,12 +231,21 @@ export class ProduccionComponent implements OnInit {
 
   @HostListener("document:keydown.escape")
   alEscape(): void {
-    if (this.seleccionado()) this.cerrar();
+    if (this.insumosMerma()) this.insumosMerma.set(null);
+    else if (this.seleccionado()) this.cerrar();
   }
 
-  merma(linea: { cantidadReceta: number; cantidadUsada: number }): number {
-    return Math.max(0, linea.cantidadUsada - linea.cantidadReceta);
+  /** Lo que se usó de más y va en el arreglo (flores extra para que se vea mejor). No es merma. */
+  extraEnRamo(linea: { cantidadReceta: number; cantidadUsada: number; perdido: number }): number {
+    const usado = Number(linea.cantidadUsada || 0);
+    const perdido = Number(linea.perdido || 0);
+    return Math.round(Math.max(0, usado - perdido - linea.cantidadReceta) * 1000) / 1000;
   }
+
+  perdidoInvalido(linea: { cantidadUsada: number; perdido: number }): boolean {
+    return Number(linea.perdido || 0) > Number(linea.cantidadUsada || 0);
+  }
+
 
   /** Stock que quedaría tras confirmar con lo escrito en "Usado". */
   queda(linea: { stock: number; cantidadUsada: number }): number {
@@ -264,7 +284,13 @@ export class ProduccionComponent implements OnInit {
       const lineas = this.lineasForm.getRawValue().map((l) => ({
         insumoId: l["insumoId"] as string,
         cantidadUsada: Number(l["cantidadUsada"]),
+        merma: Number(l["perdido"] || 0),
       }));
+      if (lineas.some((l) => l.merma > l.cantidadUsada)) {
+        this.error.set("En «Se perdió» no puede ir más de lo que usaste.");
+        this.guardando.set(false);
+        return;
+      }
       await this.pedidosService.confirmarConsumo(pedido.id, lineas);
       this.avisosFlotantes.exito(`${pedido.codigo} está listo`, "Sube la foto del arreglo para que se pueda despachar.");
       await this.cargarTablero();

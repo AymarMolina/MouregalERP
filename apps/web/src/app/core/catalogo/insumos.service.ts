@@ -1,7 +1,7 @@
 import { HttpClient } from "@angular/common/http";
 import { Injectable, inject } from "@angular/core";
 import { firstValueFrom } from "rxjs";
-import type { AjusteInventarioInput, AperturaInput, InsumoInput } from "@erp/shared";
+import type { AjusteInventarioInput, AperturaInput, InsumoInput, MermaInput } from "@erp/shared";
 import { environment } from "../../../environments/environment";
 import type { Insumo } from "./catalogo.types";
 
@@ -46,5 +46,10 @@ export class InsumosService {
 
   ajustar(input: AjusteInventarioInput): Promise<void> {
     return firstValueFrom(this.http.post<void>(`${environment.apiUrl}/inventario/ajustes`, input));
+  }
+
+  /** Merma fuera de un pedido (se marchitó, llegó dañada, se cayó). Devuelve el stock que queda. */
+  registrarMerma(input: MermaInput): Promise<{ stock: number }> {
+    return firstValueFrom(this.http.post<{ stock: number }>(`${environment.apiUrl}/inventario/merma`, input));
   }
 }

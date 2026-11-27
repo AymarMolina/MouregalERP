@@ -1,6 +1,6 @@
 import { Body, Controller, Post, Req } from '@nestjs/common';
 import type { Request } from 'express';
-import { ajusteInventarioInputSchema } from '@erp/shared';
+import { ajusteInventarioInputSchema, mermaInputSchema } from '@erp/shared';
 import { Roles } from '../../common/decorators/roles.decorator';
 import type { JwtPayload } from '../auth/strategies/jwt-access.strategy';
 import { KardexService } from './kardex.service';
@@ -20,5 +20,15 @@ export class AjustesController {
       req.user.sub,
     );
     return { ok: true };
+  }
+
+  /** Merma fuera de un pedido. Producción también la registra: es quien ve las flores. */
+  @Roles('admin', 'almacen', 'produccion')
+  @Post('merma')
+  merma(@Body() body: unknown, @Req() req: Request & { user: JwtPayload }) {
+    return this.kardex.registrarMerma(
+      mermaInputSchema.parse(body),
+      req.user.sub,
+    );
   }
 }

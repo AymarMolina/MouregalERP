@@ -4,9 +4,12 @@
       <h1 class="page-title">Producción</h1>
       <p class="page-subtitle">Pedidos por armar, en armado y listos para despacho. Se actualiza cada 15 segundos.</p>
     </div>
+    <div class="flex items-center gap-2">
+    <button type="button" class="btn-secondary" (click)="abrirMerma()" title="Flores que se marchitaron o dañaron fuera de un pedido">Registrar merma</button>
     <button type="button" class="btn-secondary" data-tour="prod-excel" (click)="exportarExcel()" [disabled]="loading()" title="Hoja de producción: un renglón por producto">
       <app-icon name="excel" [size]="16" class="text-green-700" /> Excel
     </button>
+    </div>
   </div>
 
   @if (loading()) {
@@ -255,7 +258,9 @@
       @if (pedido.estado === "en_armado") {
         <section aria-labelledby="receta-titulo">
           <h3 id="receta-titulo" class="mb-1 text-[15px] font-semibold text-muted">Receta vs. lo que usas</h3>
-          <p class="mb-2 text-[13px] text-muted">Si usas más de lo que dice la receta, la diferencia queda como merma.</p>
+          <p class="mb-2 text-[13px] leading-snug text-muted">
+            Si pones flores de más para que se vea mejor, súmalas en «Usado»: van en el ramo. En «Se perdió» anota solo lo que se rompió o descartaste; eso es merma.
+          </p>
           <div class="overflow-hidden rounded-[12px] border border-brand-line" [formGroup]="consumoForm">
             <table class="table">
               <thead>
@@ -263,22 +268,26 @@
                   <th>Insumo</th>
                   <th class="text-right">Receta</th>
                   <th class="text-right">Usado</th>
-                  <th class="text-right">Merma</th>
+                  <th class="text-right">Se perdió</th>
                 </tr>
               </thead>
               <tbody formArrayName="lineas">
                 @for (linea of lineasForm.controls; track $index) {
+                  @let v = linea.value;
                   <tr [formGroupName]="$index">
                     <td>
-                      {{ linea.value.nombre }}
-                      <div class="text-[12px] text-muted">Quedan {{ cantidad(queda(linea.value)) }} {{ linea.value.unidadBase }}</div>
+                      {{ v.nombre }}
+                      <div class="text-[12px] text-muted">Quedan {{ cantidad(queda(v)) }} {{ v.unidadBase }}</div>
+                      @if (extraEnRamo(v) > 0) {
+                        <div class="text-[12px] font-semibold text-exito">+{{ cantidad(extraEnRamo(v)) }} en el ramo</div>
+                      }
                     </td>
-                    <td class="text-right tabular-nums text-muted">{{ cantidad(linea.value.cantidadReceta) }}</td>
+                    <td class="text-right tabular-nums text-muted">{{ cantidad(v.cantidadReceta) }}</td>
                     <td class="text-right">
-                      <input type="number" [step]="esUnidadEntera(linea.value.unidadBase) ? 1 : 0.001" min="0" formControlName="cantidadUsada" class="input !w-24 !py-1 text-right" [attr.aria-label]="'Usado de ' + linea.value.nombre" />
+                      <input type="number" [step]="esUnidadEntera(v.unidadBase) ? 1 : 0.001" min="0" formControlName="cantidadUsada" class="input !w-20 !py-1 text-right" [attr.aria-label]="'Usado de ' + v.nombre" />
                     </td>
-                    <td class="text-right font-semibold tabular-nums" [class.text-saldo-fg]="merma(linea.value) > 0" [class.text-muted]="merma(linea.value) === 0">
-                      {{ cantidad(merma(linea.value)) }}
+                    <td class="text-right">
+                      <input type="number" [step]="esUnidadEntera(v.unidadBase) ? 1 : 0.001" min="0" formControlName="perdido" class="input !w-20 !py-1 text-right" [class.!border-error]="perdidoInvalido(v)" [class.text-error]="v.perdido > 0" [attr.aria-label]="'Se perdió de ' + v.nombre" />
                     </td>
                   </tr>
                 }
@@ -322,4 +331,8 @@
       }
     </div>
   </aside>
+}
+
+@if (insumosMerma(); as lista) {
+  <app-registrar-merma [insumos]="lista" (cerrar)="insumosMerma.set(null)" (guardado)="insumosMerma.set(null)" />
 }

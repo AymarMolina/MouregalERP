@@ -1,5 +1,6 @@
 import { Component, computed, EventEmitter, inject, Input, Output, signal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
+import type { MotivoMerma } from "@erp/shared";
 import { AvisosService } from "../../core/avisos/avisos.service";
 import { InsumosService } from "../../core/catalogo/insumos.service";
 import type { Insumo } from "../../core/catalogo/catalogo.types";
@@ -7,6 +8,8 @@ import { mensajeError } from "../../core/http/errores";
 import { cantidad } from "../../core/util/formato";
 
 const MOTIVOS = ["Flores marchitas", "Rotura o daño", "Error de registro", "Otro"];
+/** Con faltante, estos motivos se registran como merma y no como ajuste. */
+const MERMA_POR_MOTIVO: Record<string, MotivoMerma | undefined> = { "Flores marchitas": "marchita", "Rotura o daño": "rotura" };
 
 /** Modal "Ajustar por conteo": compara lo contado con el sistema y registra el ajuste en el Kardex. */
 @Component({
@@ -58,7 +61,9 @@ const MOTIVOS = ["Flores marchitas", "Rotura o daño", "Error de registro", "Otr
           @if (motivo() === "Otro") {
             <input class="input" [ngModel]="detalle()" (ngModelChange)="detalle.set($event)" placeholder="Explica la diferencia" aria-label="Detalle del motivo" />
           }
-          <p class="text-[14px] text-muted">Se agrega al Kardex como ajuste, con tu nombre y la hora.</p>
+          <p class="text-[14px] text-muted">
+            {{ diferencia() !== null && diferencia()! < 0 && (motivo() === "Flores marchitas" || motivo() === "Rotura o daño") ? "Se registra como merma: sale en el reporte de merma." : "Se agrega al Kardex como ajuste, con tu nombre y la hora." }}
+          </p>
           @if (error()) {
             <p class="text-[14px] font-semibold text-error" role="alert">{{ error() }}</p>
           }
@@ -121,7 +126,13 @@ export class AjusteConteoComponent {
     this.error.set(null);
     this.guardando.set(true);
     try {
-      await this.api.ajustar({ insumoId: i.id, tipo: d > 0 ? "ajuste_positivo" : "ajuste_negativo", cantidad: Math.abs(d), nota: `Conteo físico: ${nota}` });
+      // Faltante por flores marchitas o dañadas es pérdida real: va como merma (sale en Reportes → Merma).
+      const motivoMerma = d < 0 ? MERMA_POR_MOTIVO[this.motivo()] : undefined;
+      if (motivoMerma) {
+        await this.api.registrarMerma({ insumoId: i.id, cantidad: Math.abs(d), motivo: motivoMerma, nota: "Detectada en conteo físico" });
+      } else {
+        await this.api.ajustar({ insumoId: i.id, tipo: d > 0 ? "ajuste_positivo" : "ajuste_negativo", cantidad: Math.abs(d), nota: `Conteo físico: ${nota}` });
+      }
       this.avisos.exito("Ajuste guardado", `${i.nombre} queda en ${cantidad(Number(this.contado()))} ${i.unidadBase}.`);
       this.guardado.emit();
     } catch (err) {

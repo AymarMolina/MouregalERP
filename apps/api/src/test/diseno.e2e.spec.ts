@@ -239,4 +239,70 @@ describe('Diseño Mouregal: venta rápida, caja, clientes y usuarios (e2e)', () 
       .patch(`/api/usuarios/${yo}`, { activo: false })
       .expect(400);
   });
+
+  it('consumo: lo usado de más va en el ramo y solo lo indicado en "merma" es merma', async () => {
+    const rosa = await e.insumo('ROS-ROJ');
+    const stock = Number(rosa.stockActual);
+    const creado = await como('vendedora')
+      .post('/api/pedidos', {
+        canal: 'whatsapp',
+        tipoEntrega: 'recojo',
+        cliente: { nombre: 'Ana Ruiz', telefono: '987111222' },
+        items: [await itemRamoS()],
+        fechaEntrega: '2026-12-01',
+        horaEntrega: '16:00',
+        pagos: [{ metodo: 'yape', monto: 30 }],
+      })
+      .expect(201);
+    const id = creado.body.id as string;
+    await como('produccion')
+      .post(`/api/pedidos/${id}/transicion`, { a: 'en_armado' })
+      .expect(201);
+    // Receta 12 rosas: usa 15 (2 extra para que luzca + 1 rota). Se perdió 1.
+    await como('produccion')
+      .post(`/api/pedidos/${id}/consumo`, {
+        lineas: [{ insumoId: rosa.id, cantidadUsada: 15, merma: 1 }],
+      })
+      .expect(201);
+    expect(Number((await e.insumo('ROS-ROJ')).stockActual)).toBe(stock - 15);
+    const r = (
+      await como('admin')
+        .get('/api/reportes/merma?desde=2000-01-01&hasta=2100-01-01')
+        .expect(200)
+    ).body as { filas: { codigo: string; cantidadProduccion: number }[] };
+    expect(r.filas.find((f) => f.codigo === 'ROS-ROJ')?.cantidadProduccion).toBe(1);
+  });
+
+  it('merma en almacén: Producción la registra, sale del stock y del reporte aparte', async () => {
+    const rosa = await e.insumo('ROS-ROJ');
+    const stock = Number(rosa.stockActual);
+    const r = await como('produccion')
+      .post('/api/inventario/merma', {
+        insumoId: rosa.id,
+        cantidad: 5,
+        motivo: 'marchita',
+      })
+      .expect(201);
+    expect(r.body.stock).toBe(stock - 5);
+    await como('vendedora')
+      .post('/api/inventario/merma', { insumoId: rosa.id, cantidad: 1, motivo: 'rotura' })
+      .expect(403);
+    await como('admin')
+      .post('/api/inventario/merma', { insumoId: rosa.id, cantidad: stock + 1, motivo: 'rotura' })
+      .expect(400);
+    await como('admin')
+      .post('/api/inventario/merma', { insumoId: rosa.id, cantidad: 1, motivo: 'otro' })
+      .expect(400);
+    const rep = (
+      await como('admin')
+        .get('/api/reportes/merma?desde=2000-01-01&hasta=2100-01-01')
+        .expect(200)
+    ).body as {
+      filas: { codigo: string; cantidadAlmacen: number; cantidadProduccion: number }[];
+      totales: { valorAlmacen: number };
+    };
+    const fila = rep.filas.find((f) => f.codigo === 'ROS-ROJ');
+    expect(fila).toMatchObject({ cantidadAlmacen: 5, cantidadProduccion: 0 });
+    expect(rep.totales.valorAlmacen).toBeGreaterThan(0);
+  });
 });

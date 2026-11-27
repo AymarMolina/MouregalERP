@@ -126,6 +126,10 @@ Todo cálculo de negocio está en el backend o en `packages/shared` como funcion
   - El teléfono reconoce al cliente; si se escribe otro nombre, se actualiza.
   - Producción: si quien empieza a armar no eligió encargada, queda como encargada.
   - Tutorial: solo el general (3 pasos) se abre solo; los de cada pantalla, con "?".
+- **Merma** (2026-11-26, sin migración):
+  - Al confirmar el consumo, Producción anota «Usado» (todo lo que salió) y «Se perdió» (`merma` en cada línea de `POST /pedidos/:id/consumo`). Lo que pasa de la receta y no se perdió **va en el ramo** (a veces ponen flores de más para que luzca): cuenta como consumo, no como merma. Sin `merma` en la línea se mantiene lo anterior (todo lo de más es merma).
+  - Merma fuera de un pedido: `POST /inventario/merma` `{insumoId, cantidad, motivo, nota?}` (admin, almacén y producción; motivos en `MOTIVO_MERMA`). Kardex tipo `merma` con `referencia_tipo = 'almacen'`; no deja el stock en negativo. Botón «Registrar merma» en Inventario y Producción. En «Ajustar por conteo», un faltante por «Flores marchitas» o «Rotura o daño» se registra como merma.
+  - Reporte de merma: columnas producción, almacén y cancelación.
 - **Login:** máximo 5 fallos en 15 min por IP+email (en memoria; con varias instancias habría que pasarlo a Redis). Logout incrementa `token_version`.
 
 ## Guía de diseño (UI/UX) — obligatoria

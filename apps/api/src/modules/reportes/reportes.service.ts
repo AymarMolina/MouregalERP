@@ -189,7 +189,8 @@ export class ReportesService {
 
   /**
    * Merma por insumo: lo registrado como merma en producción (usó más que
-   * la receta) + lo consumido en pedidos que luego se cancelaron (5.6).
+   * la receta), la registrada a mano en almacén (se marchitó, llegó dañada…)
+   * y lo consumido en pedidos que luego se cancelaron (5.6).
    */
   async merma(r: RangoFechas) {
     const { desde, hasta } = limitesLima(r);
@@ -250,6 +251,8 @@ export class ReportesService {
       {
         cantidadProduccion: number;
         valorProduccion: number;
+        cantidadAlmacen: number;
+        valorAlmacen: number;
         cantidadCancelacion: number;
         valorCancelacion: number;
       }
@@ -264,12 +267,17 @@ export class ReportesService {
       const g = grupos.get(m.insumoId) ?? {
         cantidadProduccion: 0,
         valorProduccion: 0,
+        cantidadAlmacen: 0,
+        valorAlmacen: 0,
         cantidadCancelacion: 0,
         valorCancelacion: 0,
       };
       const cant = Number(m.salida);
       const valor = cant * Number(m.costoUnitario);
-      if (esMerma) {
+      if (esMerma && m.referenciaTipo === 'almacen') {
+        g.cantidadAlmacen += cant;
+        g.valorAlmacen += valor;
+      } else if (esMerma) {
         g.cantidadProduccion += cant;
         g.valorProduccion += valor;
       } else {
@@ -287,9 +295,11 @@ export class ReportesService {
         unidadBase: infoPorId.get(insumoId)?.unidadBase ?? '',
         cantidadProduccion: r3(g.cantidadProduccion),
         valorProduccion: r2(g.valorProduccion),
+        cantidadAlmacen: r3(g.cantidadAlmacen),
+        valorAlmacen: r2(g.valorAlmacen),
         cantidadCancelacion: r3(g.cantidadCancelacion),
         valorCancelacion: r2(g.valorCancelacion),
-        valorTotal: r2(g.valorProduccion + g.valorCancelacion),
+        valorTotal: r2(g.valorProduccion + g.valorAlmacen + g.valorCancelacion),
       }))
       .sort((a, b) => b.valorTotal - a.valorTotal);
 
@@ -298,6 +308,7 @@ export class ReportesService {
       filas,
       totales: {
         valorProduccion: r2(filas.reduce((a, f) => a + f.valorProduccion, 0)),
+        valorAlmacen: r2(filas.reduce((a, f) => a + f.valorAlmacen, 0)),
         valorCancelacion: r2(filas.reduce((a, f) => a + f.valorCancelacion, 0)),
         valorTotal: r2(filas.reduce((a, f) => a + f.valorTotal, 0)),
       },

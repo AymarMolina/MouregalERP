@@ -187,11 +187,13 @@ export interface ReporteMerma {
     unidadBase: string;
     cantidadProduccion: number;
     valorProduccion: number;
+    cantidadAlmacen: number;
+    valorAlmacen: number;
     cantidadCancelacion: number;
     valorCancelacion: number;
     valorTotal: number;
   }[];
-  totales: { valorProduccion: number; valorCancelacion: number; valorTotal: number };
+  totales: { valorProduccion: number; valorAlmacen: number; valorCancelacion: number; valorTotal: number };
 }
 
 export interface ReporteMasVendidos {

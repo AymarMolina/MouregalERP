@@ -78,7 +78,16 @@ export function validarTransicion(
  * Sección 5.7 — separa lo usado en consumo (hasta lo que pide la receta) y
  * merma (lo que excede). Si usó menos que la receta no hay merma.
  */
-export function desglosarConsumo(cantidadReceta: number, cantidadUsada: number): { consumo: number; merma: number } {
+export function desglosarConsumo(
+  cantidadReceta: number,
+  cantidadUsada: number,
+  mermaIndicada?: number,
+): { consumo: number; merma: number } {
+  // Producción dice cuánto se perdió: el resto va en el arreglo, aunque pase la receta.
+  if (mermaIndicada !== undefined) {
+    const merma = round3(Math.min(Math.max(0, mermaIndicada), cantidadUsada));
+    return { consumo: round3(cantidadUsada - merma), merma };
+  }
   return {
     consumo: round3(Math.min(cantidadUsada, cantidadReceta)),
     merma: round3(Math.max(0, cantidadUsada - cantidadReceta)),

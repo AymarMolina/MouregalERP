@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CANAL, ESTADO_PEDIDO, METODOS_COBRO_DIRECTO, TALLA, TIPO_ENTREGA } from "../enums";
+import { CANAL, ESTADO_PEDIDO, METODOS_COBRO_DIRECTO, MOTIVO_MERMA, TALLA, TIPO_ENTREGA } from "../enums";
 
 /**
  * Algo que el cliente pide y no está en el catálogo de extras (una planta, unos
@@ -137,10 +137,22 @@ export const asignarInputSchema = z.object({
 });
 export type AsignarInput = z.infer<typeof asignarInputSchema>;
 
-export const consumoLineaInputSchema = z.object({
-  insumoId: z.string().uuid(),
-  cantidadUsada: z.coerce.number().nonnegative(),
-});
+export const consumoLineaInputSchema = z
+  .object({
+    insumoId: z.string().uuid(),
+    /** Todo lo que salió del almacén para este insumo (lo que va en el arreglo + lo que se perdió). */
+    cantidadUsada: z.coerce.number().nonnegative(),
+    /**
+     * Lo que se perdió (se rompió, se descartó). Lo demás va en el arreglo aunque
+     * pase la receta: a veces se ponen flores de más para que se vea mejor.
+     * Sin este dato, todo lo que pasa de la receta cuenta como merma (comportamiento anterior).
+     */
+    merma: z.coerce.number().nonnegative().optional(),
+  })
+  .refine((l) => l.merma === undefined || l.merma <= l.cantidadUsada, {
+    message: "Lo que se perdió no puede ser más que lo usado",
+    path: ["merma"],
+  });
 export const consumoInputSchema = z.object({
   lineas: z.array(consumoLineaInputSchema).min(1),
 });
@@ -153,6 +165,17 @@ export const ajusteInventarioInputSchema = z.object({
   nota: z.string().trim().min(1),
 });
 export type AjusteInventarioInput = z.infer<typeof ajusteInventarioInputSchema>;
+
+/** Merma registrada a mano (lo que se pierde fuera de un pedido). Con motivo "otro" la nota es obligatoria. */
+export const mermaInputSchema = z
+  .object({
+    insumoId: z.string().uuid(),
+    cantidad: z.coerce.number().positive("La cantidad debe ser mayor que 0"),
+    motivo: z.enum(MOTIVO_MERMA),
+    nota: z.string().trim().max(200).optional(),
+  })
+  .refine((m) => m.motivo !== "otro" || !!m.nota, { message: "Explica el motivo", path: ["nota"] });
+export type MermaInput = z.infer<typeof mermaInputSchema>;
 
 /** Cotización del pedido completo (varios ítems): total, vehículo, envío y stock combinado. */
 export const cotizacionPedidoInputSchema = z.object({

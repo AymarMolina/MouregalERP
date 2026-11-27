@@ -726,6 +726,7 @@ export class PedidosService {
           const { consumo, merma } = desglosarConsumo(
             cantidadReceta,
             cantidadUsada,
+            linea?.merma,
           );
 
           // Sin costo: el Kardex valoriza al costo_promedio vigente con la fila bloqueada.
@@ -741,7 +742,10 @@ export class PedidosService {
               ...base,
               tipo: 'merma',
               salida: merma,
-              nota: `usó ${cantidadUsada} de ${cantidadReceta}`,
+              nota:
+                linea?.merma !== undefined
+                  ? `se perdieron ${merma} (usó ${cantidadUsada}, receta ${cantidadReceta})`
+                  : `usó ${cantidadUsada} de ${cantidadReceta}`,
             });
 
           const partes = items

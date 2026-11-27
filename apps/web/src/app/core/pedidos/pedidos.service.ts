@@ -82,7 +82,7 @@ export class PedidosService {
     return firstValueFrom(this.http.post<PedidoDetalle>(`${this.base}/${id}/transicion`, { a, nota }));
   }
 
-  confirmarConsumo(id: string, lineas: { insumoId: string; cantidadUsada: number }[]): Promise<PedidoDetalle> {
+  confirmarConsumo(id: string, lineas: { insumoId: string; cantidadUsada: number; merma?: number }[]): Promise<PedidoDetalle> {
     return firstValueFrom(this.http.post<PedidoDetalle>(`${this.base}/${id}/consumo`, { lineas }));
   }
 

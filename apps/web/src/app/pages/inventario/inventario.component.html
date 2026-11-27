@@ -5,6 +5,7 @@
       <p class="page-subtitle">Insumos, stock mínimo, costo promedio y saldo de apertura.</p>
     </div>
     <div class="flex items-center gap-2" data-tour="inv-acciones">
+      <button type="button" class="btn-secondary" (click)="mermaDe.set(kardexDe()?.id ?? '')">Registrar merma</button>
       <button type="button" class="btn-secondary" (click)="ajusteDe.set(kardexDe()?.id ?? '')">Ajustar por conteo</button>
       <label class="btn-secondary cursor-pointer">
         Cargar apertura (CSV)
@@ -388,6 +389,9 @@
   }
 </div>
 
+@if (mermaDe() !== null) {
+  <app-registrar-merma [insumos]="insumos()" [inicial]="mermaDe()" (cerrar)="mermaDe.set(null)" (guardado)="mermaDe.set(null); cargar()" />
+}
 @if (ajusteDe() !== null) {
   <app-ajuste-conteo [insumos]="insumos()" [inicial]="ajusteDe()" (cerrar)="ajusteDe.set(null)" (guardado)="ajusteDe.set(null); cargar()" />
 }

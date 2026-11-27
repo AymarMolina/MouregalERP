@@ -8,7 +8,9 @@ import { and, asc, desc, eq, gte, inArray, lte, sql } from 'drizzle-orm';
 import {
   costoPromedioPonderado,
   errorCantidadPorUnidad,
+  MOTIVO_MERMA_ETIQUETA,
   type AjusteInventarioInput,
+  type MermaInput,
 } from '@erp/shared';
 import { DB } from '../../db/db.module';
 import type { Db, Tx } from '../../db/client';
@@ -233,6 +235,40 @@ export class KardexService {
         nota: input.nota,
         usuarioId,
       });
+    });
+  }
+
+  /**
+   * Merma fuera de un pedido (se marchitó en la cámara, llegó dañada, se cayó).
+   * Sale del stock como tipo 'merma' con referencia 'almacen', valorizada al
+   * costo promedio, y aparece en el reporte de merma separada de la de producción.
+   */
+  async registrarMerma(
+    input: MermaInput,
+    usuarioId: string,
+  ): Promise<{ stock: number }> {
+    return this.db.transaction(async (tx) => {
+      const [insumo] = await tx
+        .select({ nombre: insumos.nombre, stockActual: insumos.stockActual, unidadBase: insumos.unidadBase })
+        .from(insumos)
+        .where(eq(insumos.id, input.insumoId))
+        .for('update')
+        .limit(1);
+      if (!insumo) throw new NotFoundException('Insumo no encontrado');
+      if (input.cantidad > Number(insumo.stockActual))
+        throw new BadRequestException(
+          `No hay tanto ${insumo.nombre} en el sistema (quedan ${Number(insumo.stockActual)} ${insumo.unidadBase}). Si la diferencia es de conteo, usa "Ajustar por conteo".`,
+        );
+      const etiqueta = MOTIVO_MERMA_ETIQUETA[input.motivo];
+      const stock = await this.registrarMovimiento(tx, {
+        insumoId: input.insumoId,
+        tipo: 'merma',
+        salida: input.cantidad,
+        referenciaTipo: 'almacen',
+        nota: input.nota ? `${etiqueta}: ${input.nota}` : etiqueta,
+        usuarioId,
+      });
+      return { stock };
     });
   }
 }

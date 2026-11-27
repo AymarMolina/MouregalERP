@@ -126,3 +126,14 @@ export const FORMATO_IDENTIDAD: Record<TipoIdentidad, { regex: RegExp; mensaje: 
 
 /** Fotos del arreglo terminado: mínimo para pasar a en_camino y máximo por pedido. */
 export const FOTOS_PEDIDO = { min: 1, max: 3 } as const;
+
+/** Merma fuera de un pedido (almacén o cámara): por qué se perdió el insumo. */
+export const MOTIVO_MERMA = ["marchita", "danada_transporte", "rotura", "vencida", "otro"] as const;
+export type MotivoMerma = (typeof MOTIVO_MERMA)[number];
+export const MOTIVO_MERMA_ETIQUETA: Record<MotivoMerma, string> = {
+  marchita: "Se marchitó",
+  danada_transporte: "Llegó dañada del proveedor",
+  rotura: "Se rompió o cayó",
+  vencida: "Vencida",
+  otro: "Otro",
+};
