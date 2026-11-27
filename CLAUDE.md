@@ -129,21 +129,41 @@ Todo cálculo de negocio está en el backend o en `packages/shared` como funcion
 
 ## Guía de diseño (UI/UX) — obligatoria
 
-**Estructura de la Intranet de NeuroLee** (2026-11-24, a pedido del usuario) con la **paleta azul marino** de Mouregal (2026-11-20). La estructura se tomó de `WEBSY/neurolee` (capturas en `neurolee/manuales/guia/capturas/`); los colores de NeuroLee (morado, turquesa) **no** se usan.
+**Diseño Mouregal** (2026-11-26, a pedido del usuario: "usa el diseño al 100%"). Reemplaza la paleta azul marino y la estructura NeuroLee. La especificación completa con tokens, componentes y pantallas está en [`docs/diseno/DISENO_MOUREGAL.md`](docs/diseno/DISENO_MOUREGAL.md). Las maquetas interactivas son el artefacto "Mouregal ERP — Dirección visual" en claude.ai.
 
+- **Principios:**
+  - El pedido se ve como una **etiqueta** (`.etiqueta-pedido`: agujero arriba a la derecha y pie punteado) en Hoy, Producción, Delivery, Pagos y Detalle.
+  - La **dedicatoria** va en serif itálica (`.dedicatoria`).
+  - El **saldo** siempre en ámbar (`.saldo`).
+  - **Una sola acción rosada** por pantalla.
 - **Colores** (tokens en `tailwind.config.js`):
-  - Fondo y superficies blancos, bordes `brand-line` (`#dde3ee`), cabecera de tabla `brand-band`.
-  - Azul marino: `brand-dark` `#14213d` (menú lateral, botón primario, recuadro del título), `brand` `#1e3a6e` (acento, foco, gráficos), `brand-soft` (fondos suaves).
-  - `oro` (`#f2c14e`, `oro-soft`, `oro-fg`): marca del ítem activo del menú, contadores de pestañas y aviso sin conexión. Es relleno; nunca texto sobre blanco.
-  - Badges pastel por estado (`estado.*`, con punto de color) y `positivo`/`negativo`.
+  - Fondo blanco.
+  - Morado del logo: `brand` / `brand-dark` `#4A2A55` en el menú lateral y en lo seleccionado, `brand-darker` / `text` `#3A1F45` en la tinta, `muted` `#6B5573`.
+  - Lilas: `brand-soft` `#F4EBF7`, `brand-line` `#E3D8E7`, `brand-input` `#D6C8DC`, `brand-divisor` `#EEE7F1`, `brand-agujero` `#CDB6D6`.
+  - **Acción principal `rosa` `#C2185B`**, también en el foco.
+  - Estados `estado.*`, `saldo` (ámbar), `exito` `#1F8A4C` y `error` `#B3261E`.
+  - `oro` quedó como alias del ámbar; no se usa dorado.
+- **Tipografía:**
+  - **Albert Sans** en toda la UI (`font-sans` y `font-display`).
+  - **Cormorant Garamond** itálica (`font-serif`) solo para dedicatorias y notas.
+  - **Comfortaa** (`font-marca`) solo para la marca.
+  - Texto de 14 px. Los títulos de página (`.page-title`) van en 32 px bold, sin recuadro.
+  - Nunca MAYÚSCULAS en etiquetas ni en cabeceras de tabla. Números tabulares.
 - **Layout** (`layout/shell`):
-  - Barra superior blanca a todo el ancho (56 px): logo + "ERP", buscador "Buscar o escribe un comando…", botón "?" y píldora del usuario con menú (correo, Cerrar sesión).
-  - Menú lateral oscuro (`brand-dark`, 240 px) con grupos; ítem activo `.nav-item-activo` (fondo blanco al 12 % y barra dorada). Bajo `lg` se oculta y se abre con el botón de menú.
-  - Contenido sobre blanco con migas (`.migas`) arriba. Cada `h1` usa `.page-title` (recuadro azul marino con la flor + título) dentro de `.page-header`, que cierra con una línea.
-- **Botón primario** `bg-brand-dark` texto blanco seminegrita; secundario blanco con borde gris.
-- **Login:** video de fondo `public/videos/fondo logo erp.mp4`, tarjeta blanca y logo `public/logo-mouregal.png` (conserva el lila del logo).
-- **Tipografía:** Poppins (`font-display`) en títulos y cifras grandes, Roboto en el texto. Números tabulares en tablas, inventarios y ejes.
-- **Componentes base** en `apps/web/src/styles.css` (Tailwind `@apply`): `card`, `kpi`, `toolbar`, `search`, `pill`/`pill-active`, `tabs`/`tab`/`tab-active`/`tab-count`, `table-wrap`/`table`/`table-head`/`col-check`/`fila-sel`, `seleccion-bar`, `badge`, `btn-primary`/`btn-secondary`/`btn-text`, `btn-action` (+ `-danger`/`-ok`), `spinner`, `skeleton`.
+  - Barra superior blanca: logo, buscador, "?" y usuario.
+  - Menú lateral `#4A2A55`. El ítem activo usa `#64407A`, sin barra dorada.
+  - Contenido sobre blanco con migas.
+- **Botones:**
+  - `btn-primary`: rosa, solo para la acción principal.
+  - `btn-secondary`: borde de 1.5 px en la tinta.
+  - `btn-peligro`: rojo, para cancelar o anular.
+  - `btn-text`: subrayado al pasar.
+  - Mínimo 40 a 44 px de alto.
+- **Avisos flotantes** (`core/avisos/avisos.service.ts` + `<app-avisos>` en el shell):
+  - Arriba a la derecha, blancos, con línea verde (`avisos.exito`) o roja (`avisos.error`). Se cierran solos a los 5 s.
+  - Toda acción que cambie datos confirma con un aviso. Los errores también se muestran junto al campo.
+  - Mensajes directos y sin emojis: "Pago registrado", "NO-0031 entregado".
+- **Modales** (`core/dialogo/dialogo.service.ts` + `<app-dialogo>`): `dialogo.confirmar()` y `dialogo.pedirTexto()` (con opciones rápidas). **Prohibido** usar `confirm()`, `prompt()` y `alert()`.
 - **Tablas de datos** (`shared/tabla/`): toda lista usa `Tabla<T>` (paginación + selección múltiple + export CSV) con `TABLA_CONTROLES`:
   - Primera columna checkbox (`app-check-todos` / `app-check-fila`), barra `app-seleccion-bar` al marcar.
   - Paginación `app-paginacion` arriba a la derecha ("Página 1 de 4" con flechas).
@@ -160,6 +180,15 @@ Todo cálculo de negocio está en el backend o en `packages/shared` como funcion
 - **Sin "fluff":** nada de emojis, toasts motivacionales ni loaders tipo "Pensando…". Mensajes directos ("Pedido #1041 actualizado"). Los errores se muestran con `mensajeError()` (`core/http/errores.ts`), que muestra el mensaje real del API.
 - **Fechas y horas:** usar `cuando()`, `hora()`, `soles()` y `hoyLima()` de `core/util/formato.ts`. Zona horaria `America/Lima`.
 - **Tableros en vivo** (`/hoy`, `/produccion`, `/delivery`): `usarPolling()` cada 15 s, que se pausa con la pestaña oculta.
+- Todas las páginas cargan en diferido (`loadComponent` en `app.routes.ts`).
+- **Filtros por estado = pestañas** (`tabs`) con contador. La pestaña activa se subraya en rosa.
+- **Íconos** en `shared/icon/icon.component.ts` (Lucide con nombres en español). Siempre con `title` y `aria-label`.
+- **Gráficos con Chart.js** mediante `shared/charts/*`:
+  - Una serie: `#7E4E90`.
+  - Categóricos: la paleta validada `COLORES_DONA` (la misma de `reporte-ventas`).
+  - Tooltip blanco y tabla `sr-only` accesible.
+- **Fechas y horas:** `cuando()`, `hora()`, `soles()` y `hoyLima()` de `core/util/formato.ts`. Zona `America/Lima`.
+- **Tableros en vivo** (`/hoy`, `/produccion`, `/delivery`): `usarPolling()` cada 15 s.
 - Todas las páginas cargan en diferido (`loadComponent` en `app.routes.ts`).
 - **Tutorial interactivo** (driver.js, `core/tour/`):
   - Ilumina secciones marcadas con `data-tour="<clave>"` y las explica.
@@ -184,9 +213,9 @@ Todo cálculo de negocio está en el backend o en `packages/shared` como funcion
 ## Pendientes conocidos
 
 1. **Fase 6:** webhooks de Shopify (HMAC + `integraciones_log` idempotente), stock por variante, fulfillments, API para el chatbot de WhatsApp y la pantalla `/config/integraciones` (hoy es un placeholder).
-2. **Modales** en vez de los `confirm()`/`prompt()` nativos que quedan: cancelar pedido, confirmar y anular pago, entregar con saldo y anular orden de compra.
-3. **Pantallas sin construir:** ajustes manuales de stock (el API `POST /inventario/ajustes` existe, falta la UI) y administración de usuarios.
-4. Revisar en Excel de escritorio los `.xlsx` exportados (se validó la estructura del ZIP y el XML, pero no se abrieron en Excel).
-5. **Producción:** la UI de resolver consultas no tiene campo para `ajustePrecio` (el API sí lo acepta).
-6. **Rate limit en memoria** (pasar a Redis si hay varias instancias) y **notificaciones reales** (hoy son stub).
-7. **Imágenes del catálogo:** las fotos de producto que usa la web son `.webp` optimizados en `apps/web/public/productos/`. Los originales (`FOTOS/`, ~1 GB de .DNG/.MOV) **no están en git**: un archivo pasa el límite de 100 MB de GitHub. Se guardan fuera del repo (Drive o disco).
+2. **Pantallas sin construir:** ajustes manuales de stock (el API `POST /inventario/ajustes` existe, falta la UI) y administración de usuarios.
+3. Revisar en Excel de escritorio los `.xlsx` exportados (se validó la estructura del ZIP y el XML, pero no se abrieron en Excel).
+4. **Producción:** la UI de resolver consultas no tiene campo para `ajustePrecio` (el API sí lo acepta).
+5. **Rate limit en memoria** (pasar a Redis si hay varias instancias) y **notificaciones reales** (hoy son stub).
+6. **Imágenes del catálogo:** las fotos de producto que usa la web son `.webp` optimizados en `apps/web/public/productos/`. Los originales (`FOTOS/`, ~1 GB de .DNG/.MOV) **no están en git**: un archivo pasa el límite de 100 MB de GitHub. Se guardan fuera del repo (Drive o disco).
+7. **Diseño Mouregal, pantallas nuevas** (ver `docs/diseno/DISENO_MOUREGAL.md`, sección 4): Todos los pedidos (`/pedidos`), Clientes, Caja por vendedora, Venta rápida, Usuarios y permisos, comprobantes SUNAT e Integraciones. Necesitan endpoints nuevos en el API.
