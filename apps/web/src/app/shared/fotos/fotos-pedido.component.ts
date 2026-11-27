@@ -1,3 +1,4 @@
+import { AvisosService } from "../../core/avisos/avisos.service";
 import { Component, OnDestroy, effect, inject, input, output, signal, untracked } from "@angular/core";
 import { FOTOS_PEDIDO } from "@erp/shared";
 import { mensajeError } from "../../core/http/errores";
@@ -50,7 +51,7 @@ async function comprimir(archivo: File): Promise<Blob> {
         @for (f of fotos(); track f.id) {
           <div class="relative">
             <a [href]="f.url" target="_blank" rel="noopener" title="Ver foto en grande">
-              <img [src]="f.url" alt="Foto del arreglo" class="h-24 w-24 rounded-lg border border-gray-200/80 object-cover" />
+              <img [src]="f.url" alt="Foto del arreglo" class="h-24 w-24 rounded-lg border border-brand-line/80 object-cover" />
             </a>
             @if (editable()) {
               <button
@@ -72,7 +73,7 @@ async function comprimir(archivo: File): Promise<Blob> {
         }
         @if (editable() && fotos().length < max) {
           <label
-            class="flex h-24 w-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-gray-300 text-muted hover:bg-gray-50"
+            class="flex h-24 w-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-brand-input text-muted hover:bg-brand-band"
             [class.opacity-50]="ocupado()"
           >
             <app-icon name="foto" [size]="20" />
@@ -88,6 +89,7 @@ async function comprimir(archivo: File): Promise<Blob> {
   `,
 })
 export class FotosPedidoComponent implements OnDestroy {
+  private readonly avisosFlotantes = inject(AvisosService);
   private readonly api = inject(PedidosService);
 
   readonly pedidoId = input.required<string>();
@@ -144,6 +146,7 @@ export class FotosPedidoComponent implements OnDestroy {
       }
     } catch (err) {
       this.error.set(mensajeError(err, "No se pudo subir la foto. Usa una imagen JPG o PNG."));
+      this.avisosFlotantes.error(mensajeError(err, "No se pudo subir la foto. Usa una imagen JPG o PNG."));
     } finally {
       await this.cargar(this.pedidoId());
       this.ocupado.set(false);
@@ -158,6 +161,7 @@ export class FotosPedidoComponent implements OnDestroy {
       await this.cargar(this.pedidoId());
     } catch (err) {
       this.error.set(mensajeError(err, "No se pudo quitar la foto."));
+      this.avisosFlotantes.error(mensajeError(err, "No se pudo quitar la foto."));
     } finally {
       this.ocupado.set(false);
     }

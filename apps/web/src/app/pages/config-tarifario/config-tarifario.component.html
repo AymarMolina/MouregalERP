@@ -93,7 +93,7 @@
             } @else {
               <tr [class.fila-sel]="tabla.marcado(d)">
                 <td class="col-check"><app-check-fila [tabla]="tabla" [fila]="d" [etiqueta]="'Seleccionar ' + d.nombre" /></td>
-                <td class="font-medium text-gray-900">{{ d.nombre }}</td>
+                <td class="font-medium text-text">{{ d.nombre }}</td>
                 <td class="text-right tabular">{{ d.tarifaMoto }}</td>
                 <td class="text-right tabular">{{ d.tarifaCarro }}</td>
                 <td>

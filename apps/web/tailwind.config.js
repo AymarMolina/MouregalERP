@@ -4,70 +4,81 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Blanco y azul marino oscuro con toque floral (2026-11-20): títulos en
-        // Poppins (texto en Roboto), botón primario azul marino y flores en trazo fino.
-        // #1e3a6e en checkboxes, pestaña activa, foco y gráficos.
-        //   acento   #5b74a6 #6f86b3 #4a6396 #1e3a6e
-        //   oscuros  #14213d #0b1530  apagados #6b7fa6 #334a73 #475a7d
-        // El login conserva los colores del logo (lila).
+        // Diseño Mouregal (2026-11-26): fondo blanco con detalles morados del logo,
+        // acción principal rosada y estados con su propio color. Ver DISENO_MOUREGAL.md.
+        //   morado menú #4A2A55 · tinta #3A1F45 · tinta suave #6B5573 · rosa #C2185B
+        //   lila: tinte #F4EBF7 · borde #E3D8E7 · input #D6C8DC · divisor #EEE7F1
         bg: "#ffffff",
         surface: "#ffffff",
-        // Superficie suave (dedicatorias, pies de tabla, resaltados)
-        sidebar: "#f9fafb",
-        "sidebar-act": "#f3f4f6",
-        // Barra lateral blanca
+        sidebar: "#FBF9FC",
+        "sidebar-act": "#F4EBF7",
         nav: {
-          DEFAULT: "#ffffff",
-          hover: "#f3f4f6",
-          text: "#4b5563",
-          muted: "#9ca3af",
-          line: "#e5e7eb",
+          DEFAULT: "#4A2A55",
+          hover: "#64407A",
+          text: "#EFE4F3",
+          muted: "#CDB6D6",
+          line: "#64407A",
         },
-        text: "#111827",
-        muted: "#6b7280",
-        line: "#e5e7eb",
-        accent: "#1e3a6e",
-        "accent-hover": "#334a73",
-        "accent-soft": "#f3f4f6",
-        // Énfasis oscuro (≥ 4.5:1 sobre blanco)
-        "accent-2": "#111827",
+        text: "#3A1F45",
+        muted: "#6B5573",
+        line: "#E3D8E7",
+        accent: "#4A2A55",
+        "accent-hover": "#3A1F45",
+        "accent-soft": "#F4EBF7",
+        "accent-2": "#3A1F45",
+        // Acción principal (un solo botón rosado por pantalla) y foco.
+        rosa: {
+          DEFAULT: "#C2185B",
+          hover: "#A3134C",
+          soft: "#FBE7EF",
+        },
         brand: {
-          DEFAULT: "#1e3a6e",
-          soft: "#eef2f8",
-          band: "#f5f7fb",
-          line: "#dde3ee",
-          dark: "#14213d",
-          darker: "#0b1530",
+          DEFAULT: "#4A2A55",
+          soft: "#F4EBF7",
+          band: "#FBF9FC",
+          line: "#E3D8E7",
+          input: "#D6C8DC",
+          divisor: "#EEE7F1",
+          agujero: "#CDB6D6",
+          hover: "#64407A",
+          dark: "#4A2A55",
+          darker: "#3A1F45",
         },
-        // Marca dorada de la estructura NeuroLee: barra del ítem activo del menú
-        // y contadores. Es relleno, nunca color de texto sobre blanco.
+        // Se conserva el nombre por compatibilidad: ahora es el ámbar de "saldo / aviso".
         oro: {
-          DEFAULT: "#f2c14e",
-          soft: "#fdf1cc",
-          fg: "#6b4e00",
+          DEFAULT: "#E0A43A",
+          soft: "#FBEFDF",
+          fg: "#8F4A00",
         },
-        positivo: "#15803d",
-        negativo: "#b91c1c",
+        saldo: { bg: "#FBEFDF", fg: "#8F4A00", fuerte: "#5A2E00" },
+        exito: "#1F8A4C",
+        error: "#B3261E",
+        positivo: "#1F6B3A",
+        negativo: "#B3261E",
         estado: {
-          pendiente: { bg: "#fef9c3", fg: "#854d0e" },
-          "en-armado": { bg: "#f3e8ff", fg: "#6b21a8" },
-          listo: { bg: "#dcfce7", fg: "#166534" },
-          "en-camino": { bg: "#e0f2fe", fg: "#075985" },
-          entregado: { bg: "#f3f4f6", fg: "#4b5563" },
-          cancelado: { bg: "#fee2e2", fg: "#991b1b" },
+          pendiente: { bg: "#EFEAF1", fg: "#4A3D52" },
+          "en-armado": { bg: "#E3ECF8", fg: "#1F4E8C" },
+          listo: { bg: "#E2F0E6", fg: "#1F6B3A" },
+          "en-camino": { bg: "#EFE6F7", fg: "#5B2F86" },
+          entregado: { bg: "#F4EBF7", fg: "#6B5573" },
+          cancelado: { bg: "#FBE4E2", fg: "#9B1C15" },
         },
       },
       borderRadius: {
-        DEFAULT: "6px",
+        DEFAULT: "10px",
       },
       boxShadow: {
-        card: "0 1px 2px 0 rgba(17, 24, 39, 0.04)",
-        pop: "0 10px 30px -8px rgba(17, 24, 39, 0.18), 0 2px 6px -2px rgba(17, 24, 39, 0.06)",
+        card: "none",
+        pop: "0 14px 36px rgba(58, 31, 69, 0.18)",
+        modal: "0 24px 60px rgba(58, 31, 69, 0.28)",
       },
       fontFamily: {
-        // Roboto para texto y UI; Poppins para títulos y cifras grandes.
-        sans: ["Roboto", "ui-sans-serif", "system-ui", "sans-serif"],
-        display: ["Poppins", "ui-sans-serif", "system-ui", "sans-serif"],
+        // Albert Sans en toda la interfaz; Cormorant Garamond itálica solo para
+        // dedicatorias y notas; Comfortaa solo para la palabra "Mouregal" del menú.
+        sans: ["Albert Sans", "ui-sans-serif", "system-ui", "sans-serif"],
+        display: ["Albert Sans", "ui-sans-serif", "system-ui", "sans-serif"],
+        serif: ["Cormorant Garamond", "Georgia", "serif"],
+        marca: ["Comfortaa", "Albert Sans", "sans-serif"],
       },
       fontSize: {
         base: "13px",

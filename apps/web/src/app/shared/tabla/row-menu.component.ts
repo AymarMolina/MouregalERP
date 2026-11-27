@@ -17,8 +17,8 @@ import { IconComponent } from "../icon/icon.component";
       #disparador
       type="button"
       class="btn-action h-7 w-7"
-      [class.bg-gray-100]="abierto()"
-      [class.text-gray-900]="abierto()"
+      [class.bg-brand-soft]="abierto()"
+      [class.text-text]="abierto()"
       (click)="alternar($event)"
       [attr.aria-expanded]="abierto()"
       aria-haspopup="menu"

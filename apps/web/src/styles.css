@@ -5,9 +5,9 @@
 html,
 body {
   background-color: #ffffff;
-  color: #111827;
-  font-family: "Roboto", ui-sans-serif, system-ui, sans-serif;
-  font-size: 13px;
+  color: #3a1f45;
+  font-family: "Albert Sans", ui-sans-serif, system-ui, sans-serif;
+  font-size: 14px;
   font-weight: 400;
   -webkit-font-smoothing: antialiased;
 }
@@ -22,20 +22,20 @@ input[type="number"] {
 @layer components {
   /* ---------- Botones ---------- */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-lg bg-brand-dark px-3.5 py-2 font-semibold text-white shadow-sm transition-colors hover:bg-brand-darker focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-dark/30 focus-visible:ring-offset-1 active:bg-brand-darker disabled:pointer-events-none disabled:opacity-50;
+    @apply inline-flex min-h-[40px] items-center justify-center gap-1.5 rounded-[10px] bg-rosa px-4 py-2 text-[14px] font-semibold text-white transition-colors hover:bg-rosa-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rosa focus-visible:ring-offset-2 active:bg-rosa-hover disabled:pointer-events-none disabled:opacity-50;
   }
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3.5 py-2 font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/15 disabled:pointer-events-none disabled:opacity-50;
+    @apply inline-flex min-h-[40px] items-center justify-center gap-1.5 rounded-[10px] border-[1.5px] border-brand-darker bg-white px-4 py-2 text-[14px] font-semibold text-brand-darker transition-colors hover:bg-brand-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rosa focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
   }
   .btn-text {
-    @apply inline-flex items-center gap-1 rounded-md px-2 py-1 font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-900 disabled:pointer-events-none disabled:opacity-50;
+    @apply inline-flex items-center gap-1 rounded-md px-2 py-1 font-semibold text-brand-darker underline-offset-2 transition-colors hover:bg-brand-soft hover:underline disabled:pointer-events-none disabled:opacity-50;
   }
   .btn-icon {
-    @apply inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-gray-100 hover:text-text;
+    @apply inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-brand-soft hover:text-text;
   }
   /* Acción de fila con ícono (lápiz, basurero...): siempre con title y aria-label. */
   .btn-action {
-    @apply inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-gray-100 hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 disabled:pointer-events-none disabled:opacity-40;
+    @apply inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-brand-soft hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rosa disabled:pointer-events-none disabled:opacity-40;
   }
   .btn-action-danger {
     @apply hover:bg-red-50 hover:text-negativo;
@@ -49,13 +49,14 @@ input[type="number"] {
 
   /* ---------- Formularios ---------- */
   .field-label {
-    @apply mb-1 block text-xs font-medium text-muted;
+    @apply mb-1.5 block text-[14px] font-semibold text-text;
   }
   /* Título de página (estructura NeuroLee): recuadro oscuro con la flor y el título al lado. */
   .page-title {
-    @apply flex items-center gap-3.5 font-display text-[26px] font-semibold leading-tight tracking-[-0.01em] text-brand-dark;
+    @apply font-display text-[32px] font-bold leading-[1.15] tracking-[-0.015em] text-brand-darker;
   }
-  .page-title::before {
+  /* El recuadro con la flor del diseño anterior queda desactivado. */
+  .page-title-flor::before {
     content: "";
     @apply h-[38px] w-[38px] shrink-0 rounded-[10px] bg-brand-dark bg-center bg-no-repeat;
     background-size: 22px 22px;
@@ -63,21 +64,21 @@ input[type="number"] {
   }
   .input,
   select.input {
-    @apply w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-text transition-colors placeholder:text-gray-400 hover:border-gray-300 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10;
+    @apply min-h-[40px] w-full rounded-[10px] border border-brand-input bg-white px-3 py-2 text-[14px] text-text transition-colors placeholder:text-muted/70 hover:border-brand-agujero focus:border-brand-darker focus:outline-none focus:ring-2 focus:ring-rosa/30;
   }
   .checkbox {
-    @apply h-4 w-4 cursor-pointer rounded border-gray-300 accent-[#1e3a6e] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40;
+    @apply h-4 w-4 cursor-pointer rounded border-brand-input accent-[#C2185B] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rosa;
   }
 
   /* ---------- Superficies ---------- */
   .card {
-    @apply rounded-xl border border-brand-line bg-white p-5;
+    @apply rounded-[14px] border border-brand-line bg-white p-5;
   }
   .panel-title {
-    @apply font-display text-[17px] font-semibold text-brand-dark;
+    @apply font-display text-[18px] font-bold text-brand-darker;
   }
   .panel-subtitle {
-    @apply mt-0.5 text-gray-500;
+    @apply mt-0.5 text-[14px] text-muted;
   }
   /* Cabecera de página (estructura NeuroLee): sin caja, separada del contenido por una línea. */
   .page-header {
@@ -86,7 +87,7 @@ input[type="number"] {
 
   /* ---------- KPI ---------- */
   .kpi {
-    @apply flex items-start gap-3 rounded-2xl border border-gray-200/80 bg-white p-4;
+    @apply flex items-start gap-3 rounded-[14px] border border-brand-line bg-white p-4;
   }
   .kpi-icon {
     @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-line bg-brand-soft text-brand-dark;
@@ -95,7 +96,7 @@ input[type="number"] {
     @apply text-[13px] text-muted;
   }
   .kpi-value {
-    @apply mt-1 font-display text-[26px] font-semibold leading-tight tracking-[-0.02em] text-gray-900;
+    @apply mt-1 font-display text-[26px] font-bold leading-tight tracking-[-0.02em] text-brand-darker;
   }
   .kpi-delta {
     @apply mt-1 text-xs text-muted;
@@ -103,7 +104,7 @@ input[type="number"] {
 
   /* ---------- Toolbar de tablas: búsqueda + filtros píldora ---------- */
   .toolbar {
-    @apply flex flex-wrap items-center gap-2 border-b border-gray-100 px-4 py-3;
+    @apply flex flex-wrap items-center gap-2 border-b border-brand-divisor px-4 py-3;
   }
   .search {
     @apply relative flex min-w-[12rem] flex-1 items-center sm:max-w-xs;
@@ -112,38 +113,38 @@ input[type="number"] {
     @apply pointer-events-none absolute left-2.5 h-4 w-4 text-muted;
   }
   .search > input {
-    @apply w-full rounded-lg border border-gray-200 bg-white py-1.5 pl-8 pr-3 text-text placeholder:text-gray-400 hover:border-gray-300 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10;
+    @apply min-h-[40px] w-full rounded-[10px] border border-brand-input bg-white py-1.5 pl-8 pr-3 text-[14px] text-text placeholder:text-muted/70 hover:border-brand-agujero focus:border-brand-darker focus:outline-none focus:ring-2 focus:ring-rosa/30;
   }
   .pill {
-    @apply inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900;
+    @apply inline-flex min-h-[36px] items-center gap-1.5 rounded-full border border-brand-input bg-white px-3.5 py-1 text-[13px] font-medium text-text transition-colors hover:bg-brand-soft;
   }
   .pill-active {
-    @apply border-brand-dark bg-brand-dark text-white hover:bg-brand-dark hover:text-white;
+    @apply border-brand bg-brand font-semibold text-white hover:bg-brand hover:text-white;
   }
 
   /* ---------- Tablas ---------- */
   .table-wrap {
-    @apply overflow-hidden rounded-xl border border-brand-line bg-white;
+    @apply overflow-hidden rounded-[14px] border border-brand-line bg-white;
   }
   table.table {
     @apply w-full border-collapse text-left;
   }
   .table th {
-    @apply whitespace-nowrap border-b border-brand-line bg-brand-band px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.05em] text-gray-600;
+    @apply whitespace-nowrap border-b border-brand-line bg-white px-4 py-3 text-[13px] font-medium text-muted;
   }
   .table td {
-    @apply border-b border-gray-100 px-4 py-3.5 align-middle text-gray-700;
+    @apply border-b border-brand-divisor px-4 py-3.5 align-middle text-[14px] text-text;
   }
   .table tbody tr:last-child td {
     @apply border-b-0;
   }
   .table tbody tr {
-    @apply transition-colors hover:bg-gray-50/60;
+    @apply transition-colors hover:bg-brand-band;
   }
 
   /* ---------- Badges píldora ---------- */
   .badge {
-    @apply inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium;
+    @apply inline-flex items-center gap-1 whitespace-nowrap rounded-md px-2 py-0.5 text-[12px] font-semibold;
   }
   .badge-neutral {
     @apply bg-estado-pendiente-bg text-estado-pendiente-fg;
@@ -155,15 +156,15 @@ input[type="number"] {
     @apply bg-estado-listo-bg text-estado-listo-fg;
   }
   .badge-warn {
-    @apply bg-accent-soft text-accent-2;
+    @apply bg-saldo-bg text-saldo-fg;
   }
 
   /* ---------- Carga sutil ---------- */
   .spinner {
-    @apply inline-block h-4 w-4 animate-spin rounded-full border-2 border-brand-line border-t-brand-dark;
+    @apply inline-block h-4 w-4 animate-spin rounded-full border-2 border-brand-line border-t-rosa;
   }
   .skeleton {
-    @apply animate-pulse rounded-md bg-gray-100;
+    @apply animate-pulse rounded-md bg-brand-soft;
   }
 
   /* Primera columna con checkbox de selección masiva */
@@ -172,41 +173,41 @@ input[type="number"] {
     @apply w-10 pr-0;
   }
   .table tbody tr.fila-sel {
-    @apply bg-brand-soft/60 hover:bg-brand-soft;
+    @apply bg-brand-soft hover:bg-brand-soft;
   }
 
   /* Cabecera de tabla: título a la izquierda, paginación a la derecha */
   .table-head {
-    @apply flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-4 py-3;
+    @apply flex flex-wrap items-center justify-between gap-3 border-b border-brand-divisor px-4 py-3;
   }
   .table-title {
-    @apply font-display text-[14px] font-semibold text-gray-900;
+    @apply font-display text-[15px] font-bold text-brand-darker;
   }
 
   /* Barra de selección masiva */
   .seleccion-bar {
-    @apply flex flex-wrap items-center gap-2 border-b border-gray-100 bg-gray-50 px-4 py-2 text-[12px] text-gray-600;
+    @apply flex flex-wrap items-center gap-2 border-b border-brand-divisor bg-brand-soft px-4 py-2 text-[13px] text-text;
   }
 
   /* ---------- Pestañas con indicador inferior ---------- */
   .tabs {
-    @apply flex items-center gap-5 overflow-x-auto overflow-y-hidden border-b border-gray-200;
+    @apply flex items-center gap-5 overflow-x-auto overflow-y-hidden border-b border-brand-line;
     scrollbar-width: none;
   }
   .tabs::-webkit-scrollbar {
     display: none;
   }
   .tab {
-    @apply -mb-px inline-flex items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent pb-2.5 pt-1 font-medium text-gray-500 transition-colors hover:text-gray-900;
+    @apply -mb-px inline-flex items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent pb-2.5 pt-1 text-[14px] font-medium text-muted transition-colors hover:text-text;
   }
   .tab-active {
-    @apply border-brand-dark font-semibold text-brand-dark;
+    @apply border-rosa font-semibold text-brand-darker;
   }
   .tab-count {
-    @apply rounded-full bg-oro-soft px-1.5 py-px text-[11px] font-semibold tabular-nums text-oro-fg;
+    @apply rounded-full bg-brand-soft px-1.5 py-px text-[12px] font-semibold tabular-nums text-muted;
   }
   .tab-active .tab-count {
-    @apply bg-oro-soft text-oro-fg;
+    @apply bg-brand text-white;
   }
 
   /* Selector con flecha desplegable limpia */
@@ -215,48 +216,53 @@ input[type="number"] {
     @apply appearance-none bg-no-repeat pr-8;
     background-size: 16px 16px;
     background-position: right 0.6rem center;
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='m6 9 6 6 6-6'/%3e%3c/svg%3e");
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236B5573' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='m6 9 6 6 6-6'/%3e%3c/svg%3e");
   }
 
   /* ---- Nuevo pedido: tarjetas seleccionables, chips y stepper ---- */
   /* Tarjeta seleccionable (canal, distrito, flor, papel, extra): borde fino y anillo de acento al elegir. */
   .opcion {
-    @apply relative rounded-xl border border-gray-200 bg-white text-left transition-colors hover:border-gray-300 hover:bg-gray-50/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-gray-200 disabled:hover:bg-white;
+    @apply relative rounded-[12px] border border-brand-input bg-white text-left text-text transition-colors hover:border-brand-agujero hover:bg-brand-band focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rosa disabled:cursor-not-allowed disabled:border-dashed disabled:opacity-50 disabled:hover:border-brand-input disabled:hover:bg-white;
   }
   .opcion-sel {
-    @apply border-accent bg-brand-soft ring-1 ring-accent hover:border-accent hover:bg-brand-soft;
+    @apply border-brand bg-brand text-white ring-0 hover:border-brand hover:bg-brand;
+  }
+  .opcion-sel .text-muted,
+  .opcion-sel .text-gray-500,
+  .opcion-sel .text-gray-600 {
+    color: #eadcef;
   }
   /* Marca redonda arriba a la derecha; el check solo se ve al elegir. */
   .marca {
-    @apply absolute right-2.5 top-2.5 flex h-5 w-5 items-center justify-center rounded-full border border-gray-300 bg-white text-transparent transition-colors;
+    @apply absolute right-2.5 top-2.5 flex h-5 w-5 items-center justify-center rounded-full border border-brand-agujero bg-white text-transparent transition-colors;
   }
   .opcion-sel .marca {
-    @apply border-accent bg-accent text-white;
+    @apply border-white bg-white text-brand;
   }
 
   /* Chip de elección rápida (fecha, hora, adelanto). */
   .chip {
-    @apply inline-flex items-center rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-[14.5px] font-medium text-gray-700 transition-colors hover:border-gray-300 hover:bg-gray-50;
+    @apply inline-flex min-h-[44px] items-center rounded-[10px] border border-brand-input bg-white px-4 py-2.5 text-[14.5px] font-medium text-text transition-colors hover:bg-brand-band disabled:cursor-not-allowed disabled:border-dashed disabled:text-muted disabled:line-through;
   }
   .chip-sel {
-    @apply border-accent bg-brand-soft text-brand-dark ring-1 ring-accent hover:border-accent hover:bg-brand-soft;
+    @apply border-brand-darker bg-brand-darker font-semibold text-white hover:bg-brand-darker;
   }
 
   /* Paso del stepper. */
   .paso {
-    @apply flex w-full items-center gap-3.5 rounded-xl px-4 py-3.5 text-left transition-colors hover:bg-gray-50;
+    @apply flex w-full items-center gap-3.5 rounded-[12px] px-4 py-3.5 text-left transition-colors hover:bg-brand-band;
   }
   .paso-activo {
     @apply bg-brand-soft hover:bg-brand-soft;
   }
   .paso-num {
-    @apply flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-white text-muted transition-colors;
+    @apply flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-brand-input bg-white text-muted transition-colors;
   }
   .paso-num-actual {
-    @apply border-accent bg-accent text-white ring-4 ring-accent/15;
+    @apply border-brand bg-brand text-white ring-4 ring-brand/15;
   }
   .paso-num-listo {
-    @apply border-accent bg-brand-soft text-accent;
+    @apply border-brand bg-brand-soft text-brand;
   }
 
   /* Encabezado de sección: ícono en recuadro + título. */
@@ -264,36 +270,75 @@ input[type="number"] {
     @apply flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-brand-line bg-brand-soft text-brand-dark;
   }
   .etiqueta {
-    @apply mb-3 flex items-center gap-1.5 text-[12.5px] font-medium uppercase tracking-wider text-muted;
+    @apply mb-3 flex items-center gap-1.5 text-[14px] font-semibold text-muted;
   }
 
   /* ---------- Marco (estructura NeuroLee) ---------- */
   .nav-item {
-    @apply relative mb-0.5 flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-medium text-white/80 transition-colors hover:bg-white/[0.07] hover:text-white;
+    @apply relative mb-0.5 flex items-center gap-3 rounded-lg px-3 py-2.5 text-[14px] font-medium text-nav-text transition-colors hover:bg-white/[0.08] hover:text-white;
   }
   /* Ítem activo: fondo un poco más claro, letra blanca y la marca dorada a la izquierda. */
   .nav-item-activo {
-    @apply bg-white/[0.12] font-semibold text-white hover:bg-white/[0.12];
-  }
-  .nav-item-activo::before {
-    content: "";
-    @apply absolute bottom-2 left-0 top-2 w-[3px] rounded-full bg-oro;
+    @apply bg-nav-hover font-semibold text-white hover:bg-nav-hover;
   }
   .migas {
-    @apply flex items-center gap-2 px-4 pt-5 text-[13px] text-gray-600 sm:px-6;
+    @apply flex items-center gap-2 px-4 pt-5 text-[13px] text-muted sm:px-6;
   }
   .migas + * > .page-header:first-child,
   .migas + * > :first-child {
     @apply mt-0;
   }
   .menu-item {
-    @apply flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left font-medium text-gray-700 transition-colors hover:bg-brand-soft hover:text-brand-dark;
+    @apply flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left font-medium text-text transition-colors hover:bg-brand-soft hover:text-brand-darker;
   }
   .aviso-offline {
-    @apply flex items-start gap-2.5 border-b border-oro/60 bg-oro-soft px-4 py-3 text-[13px] leading-relaxed text-oro-fg sm:px-6;
+    @apply flex items-start gap-2.5 border-b border-saldo-bg bg-saldo-bg px-4 py-3 text-[14px] leading-relaxed text-saldo-fuerte sm:px-6;
+  }
+
+  /* ---------- Diseño Mouregal: piezas propias ---------- */
+  /* Etiqueta de pedido: la misma tarjeta en Hoy, Producción, Delivery, Pagos y Detalle. */
+  .etiqueta-pedido {
+    @apply relative flex flex-col gap-2.5 rounded-[14px] border border-brand-line bg-white p-[18px];
+  }
+  .etiqueta-pedido::after {
+    content: "";
+    @apply pointer-events-none absolute right-3.5 top-3.5 h-2.5 w-2.5 rounded-full border-2 border-brand-agujero bg-white;
+  }
+  .etiqueta-pie {
+    @apply flex items-center justify-between gap-2 border-t border-dashed border-brand-input pt-3;
+  }
+  /* Dedicatorias y notas para Producción: la parte escrita a mano del pedido. */
+  .dedicatoria {
+    @apply font-serif text-[20px] italic leading-[1.35] text-brand-darker;
+  }
+  .nota-produccion {
+    @apply rounded-[10px] bg-brand-soft px-3.5 py-3;
+  }
+  /* Saldo siempre visible en ámbar. */
+  .saldo {
+    @apply inline-flex items-center whitespace-nowrap rounded-md bg-saldo-bg px-2 py-0.5 text-[12px] font-semibold text-saldo-fg;
+  }
+  .btn-peligro {
+    @apply inline-flex min-h-[40px] items-center justify-center gap-1.5 rounded-[10px] bg-error px-4 py-2 text-[14px] font-semibold text-white transition-colors hover:bg-[#8f1d17] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-error focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
+  }
+  /* Modal propio (reemplaza confirm/prompt). */
+  .modal-fondo {
+    @apply fixed inset-0 z-50 flex items-center justify-center bg-[rgba(58,31,69,0.45)] p-4;
+  }
+  .modal {
+    @apply flex max-h-full w-full max-w-[600px] flex-col overflow-hidden rounded-2xl bg-white shadow-modal;
+  }
+  .modal-cabecera {
+    @apply flex items-start justify-between gap-4 border-b border-brand-divisor px-6 pb-4 pt-5;
+  }
+  .modal-cuerpo {
+    @apply flex flex-col gap-5 overflow-auto px-6 py-5;
+  }
+  .modal-pie {
+    @apply flex flex-wrap items-center justify-end gap-2 border-t border-brand-divisor px-6 py-4;
   }
   .badge-offline {
-    @apply inline-flex items-center gap-1.5 rounded-full bg-oro-soft px-2.5 py-1 text-xs font-semibold text-oro-fg;
+    @apply inline-flex items-center gap-1.5 rounded-full bg-saldo-bg px-2.5 py-1 text-xs font-semibold text-saldo-fg;
   }
 }
 
@@ -310,15 +355,15 @@ input[type="number"] {
 /* ---------- Tutorial interactivo (driver.js) ----------
    Tarjeta blanca, borde fino, acento de marca solo en el progreso y el foco. */
 .driver-popover.tour-pop {
-  @apply max-w-[380px] rounded-xl border border-gray-200/80 bg-white p-4 text-text shadow-pop;
-  font-family: "Roboto", ui-sans-serif, system-ui, sans-serif;
+  @apply max-w-[380px] rounded-[14px] border border-brand-line bg-white p-4 text-text shadow-pop;
+  font-family: "Albert Sans", ui-sans-serif, system-ui, sans-serif;
 }
 .driver-popover.tour-pop .driver-popover-title {
-  @apply pr-6 text-[15px] font-semibold leading-snug tracking-[-0.01em] text-gray-900;
+  @apply pr-6 text-[15px] font-bold leading-snug tracking-[-0.01em] text-brand-darker;
   font-family: inherit;
 }
 .driver-popover.tour-pop .driver-popover-description {
-  @apply mt-1.5 text-[13px] leading-relaxed text-gray-600;
+  @apply mt-1.5 text-[14px] leading-relaxed text-muted;
   font-family: inherit;
 }
 .driver-popover.tour-pop .driver-popover-footer {
@@ -338,14 +383,14 @@ input[type="number"] {
   line-height: 1.4;
 }
 .driver-popover.tour-pop .driver-popover-prev-btn {
-  @apply border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900;
+  @apply border border-brand-darker bg-white text-brand-darker hover:bg-brand-soft;
 }
 .driver-popover.tour-pop .driver-popover-next-btn {
-  @apply border border-brand-dark bg-brand-dark font-semibold text-white hover:bg-brand-darker;
+  @apply border border-rosa bg-rosa font-semibold text-white hover:bg-rosa-hover;
 }
 .driver-popover.tour-pop .driver-popover-navigation-btns button:focus-visible,
 .driver-popover.tour-pop .driver-popover-close-btn:focus-visible {
-  @apply outline-none ring-2 ring-accent/40;
+  @apply outline-none ring-2 ring-rosa;
 }
 .driver-popover.tour-pop .driver-popover-close-btn {
   @apply right-2 top-2 h-7 w-7 rounded-md text-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700;
@@ -369,4 +414,19 @@ input[type="number"] {
 }
 .driver-popover.tour-pop .driver-popover-description strong {
   @apply font-semibold text-gray-900;
+}
+
+/* Avisos flotantes: arriba a la derecha, blancos con línea verde (bien) o roja (error). */
+@keyframes avisoEntra {
+  from { opacity: 0; transform: translateX(16px); }
+  to { opacity: 1; transform: none; }
+}
+.aviso-flotante {
+  animation: avisoEntra 0.25s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .aviso-flotante { animation: none; }
+}
+:focus-visible {
+  outline-color: #c2185b;
 }

@@ -66,11 +66,11 @@
             @for (f of tabla.filas(); track f.id) {
               <tr class="cursor-pointer" [class.fila-sel]="tabla.marcado(f)" [class.bg-brand-soft]="seleccionadoId() === f.id" (click)="seleccionar(f)">
                 <td class="col-check"><app-check-fila [tabla]="tabla" [fila]="f" [etiqueta]="'Seleccionar pedido ' + f.codigo" /></td>
-                <td class="font-semibold text-gray-900">
+                <td class="font-semibold text-text">
                   <a [routerLink]="['/pedidos', f.id]" (click)="$event.stopPropagation()" class="hover:underline">{{ f.codigo }}</a>
                 </td>
                 <td>
-                  <div class="text-gray-900">{{ f.clienteNombre }}</div>
+                  <div class="text-text">{{ f.clienteNombre }}</div>
                   <div class="text-xs text-muted">{{ f.clienteTelefono ?? "—" }}</div>
                 </td>
                 <td>
@@ -80,7 +80,7 @@
                 <td><span [class]="'badge ' + claseEstado[f.estado]">{{ etiquetaEstado[f.estado] }}</span></td>
                 <td class="text-right tabular-nums">{{ soles(f.total) }}</td>
                 <td class="text-right tabular-nums">{{ soles(f.totalPagado) }}</td>
-                <td class="text-right font-semibold tabular-nums" [class.text-gray-900]="f.saldo > 0">{{ soles(f.saldo) }}</td>
+                <td class="text-right font-semibold tabular-nums" [class.text-text]="f.saldo > 0">{{ soles(f.saldo) }}</td>
                 <td>
                   @if (pagoPendiente(f); as p) {
                     <span [class]="'badge ' + clasePago[p.estado]">{{ p.tipo }} {{ soles(p.monto) }}</span>

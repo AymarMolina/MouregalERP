@@ -8,7 +8,7 @@ import { VistaPreviaComponent } from "./vista-previa.component";
   selector: "app-paginacion",
   imports: [IconComponent, VistaPreviaComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: "ml-auto flex items-center gap-2 text-[12px] text-gray-500" },
+  host: { class: "ml-auto flex items-center gap-2 text-[12px] text-muted" },
   template: `
     @if (tabla.exportable) {
       <button
@@ -39,7 +39,7 @@ import { VistaPreviaComponent } from "./vista-previa.component";
     <div class="flex items-center">
       <button
         type="button"
-        class="btn-action h-7 w-7 rounded-md border border-gray-200 bg-white"
+        class="btn-action h-7 w-7 rounded-md border border-brand-line bg-white"
         (click)="tabla.anterior()"
         [disabled]="tabla.paginaActual() <= 1"
         title="Página anterior"
@@ -49,7 +49,7 @@ import { VistaPreviaComponent } from "./vista-previa.component";
       </button>
       <button
         type="button"
-        class="btn-action ml-1 h-7 w-7 rounded-md border border-gray-200 bg-white"
+        class="btn-action ml-1 h-7 w-7 rounded-md border border-brand-line bg-white"
         (click)="tabla.siguiente()"
         [disabled]="tabla.paginaActual() >= tabla.paginas()"
         title="Página siguiente"
@@ -82,7 +82,7 @@ export class PaginacionComponent {
   template: `
     @if (tabla.cantidadSeleccionada() > 0) {
       <div class="seleccion-bar" role="status">
-        <span class="font-medium text-gray-900 tabular">{{ tabla.cantidadSeleccionada() }} {{ tabla.cantidadSeleccionada() === 1 ? "seleccionado" : "seleccionados" }}</span>
+        <span class="font-medium text-text tabular">{{ tabla.cantidadSeleccionada() }} {{ tabla.cantidadSeleccionada() === 1 ? "seleccionado" : "seleccionados" }}</span>
         <span class="text-gray-300">·</span>
         @if (tabla.exportable) {
           <button type="button" class="btn-text py-0.5 text-[12px]" (click)="tabla.exportarExcel()">

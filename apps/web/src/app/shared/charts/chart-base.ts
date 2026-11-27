@@ -20,18 +20,18 @@ import { formatoEje } from "./escala";
 // Solo lo que usamos: mantiene el bundle pequeño (tree-shaking de Chart.js).
 Chart.register(LineController, LineElement, PointElement, BarController, BarElement, DoughnutController, ArcElement, CategoryScale, LinearScale, Filler, Tooltip);
 
-Chart.defaults.font.family = "Roboto, ui-sans-serif, system-ui, sans-serif";
-Chart.defaults.font.size = 11;
+Chart.defaults.font.family = "'Albert Sans', ui-sans-serif, system-ui, sans-serif";
+Chart.defaults.font.size = 12;
 // Nitidez al imprimir o guardar en PDF (el gráfico se copia como imagen).
 Chart.defaults.devicePixelRatio = Math.max(2, typeof window === "undefined" ? 1 : window.devicePixelRatio || 1);
-Chart.defaults.color = "#475a7d";
+Chart.defaults.color = "#6B5573";
 
 export const TOKENS = {
-  texto: "#2c2b2d",
-  muted: "#475a7d",
-  grilla: "#e9e0eb",
+  texto: "#3A1F45",
+  muted: "#6B5573",
+  grilla: "#EEE7F1",
   superficie: "#ffffff",
-  crosshair: "#6b7fa6",
+  crosshair: "#6B5573",
 };
 
 /** Tooltip claro: valor en negrita arriba, detalle debajo (spec de interacción). */

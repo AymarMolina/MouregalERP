@@ -1,3 +1,4 @@
+import { AvisosService } from "../../core/avisos/avisos.service";
 import { linkAbrirMaps } from "@erp/shared";
 import { Component, OnInit, computed, inject, signal } from "@angular/core";
 import { descargarExcel } from "../../shared/tabla/excel";
@@ -20,6 +21,7 @@ type Columna = { titulo: string; vacio: string; pedidos: PedidoDelivery[] };
   templateUrl: "./delivery.component.html",
 })
 export class DeliveryComponent implements OnInit {
+  private readonly avisosFlotantes = inject(AvisosService);
   private readonly api = inject(DeliveryApi);
   private readonly auth = inject(AuthService);
 
@@ -128,6 +130,7 @@ export class DeliveryComponent implements OnInit {
       await this.cargar(false);
     } catch (err) {
       this.error.set(mensajeError(err, "No se pudo despachar el pedido."));
+      this.avisosFlotantes.error(mensajeError(err, "No se pudo despachar el pedido."));
     } finally {
       this.trabajando.set(null);
     }
@@ -141,9 +144,11 @@ export class DeliveryComponent implements OnInit {
     try {
       await this.api.entregar(p.id);
       this.aviso.set(`${p.codigo} entregado.`);
+      this.avisosFlotantes.exito(`${p.codigo} entregado.`);
       await this.cargar(false);
     } catch (err) {
       this.error.set(mensajeError(err, "No se pudo marcar como entregado."));
+      this.avisosFlotantes.error(mensajeError(err, "No se pudo marcar como entregado."));
     } finally {
       this.trabajando.set(null);
     }
@@ -154,8 +159,10 @@ export class DeliveryComponent implements OnInit {
     try {
       await navigator.clipboard.writeText(url);
       this.aviso.set("Link copiado al portapapeles.");
+      this.avisosFlotantes.exito("Link copiado al portapapeles.");
     } catch {
       this.aviso.set(url);
+      this.avisosFlotantes.exito(url);
     }
   }
 

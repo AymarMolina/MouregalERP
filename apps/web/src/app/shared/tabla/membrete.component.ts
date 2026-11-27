@@ -24,7 +24,7 @@ import { MARCA, fechaGenerado } from "./excel";
         <p>{{ generado }}</p>
       </div>
     </header>
-    <div class="mb-7 mt-6 h-[3px] rounded-full bg-gradient-to-r from-[#4e345a] via-[#b584b9] to-[#f4edf5]"></div>
+    <div class="mb-7 mt-6 h-[3px] rounded-full bg-gradient-to-r from-[#4e345a] via-[#b584b9] to-[#F4EBF7]"></div>
   `,
 })
 export class MembreteComponent {

@@ -1,3 +1,4 @@
+import { AvisosService } from "../../core/avisos/avisos.service";
 import { descargarExcel } from "../../shared/tabla/excel";
 import { Component, OnInit, computed, inject, signal } from "@angular/core";
 import { IconComponent } from "../../shared/icon/icon.component";
@@ -53,6 +54,7 @@ const ETIQUETA_OC: Record<EstadoOc, string> = {
   templateUrl: "./compras.component.html",
 })
 export class ComprasComponent implements OnInit {
+  private readonly avisosFlotantes = inject(AvisosService);
   private readonly api = inject(ComprasApi);
   private readonly fb = inject(FormBuilder);
 
@@ -187,6 +189,7 @@ export class ComprasComponent implements OnInit {
       return await accion();
     } catch (err) {
       this.error.set(mensajeError(err, fallo));
+      this.avisosFlotantes.error(mensajeError(err, fallo));
       return undefined;
     } finally {
       this.trabajando.set(false);
@@ -245,6 +248,7 @@ export class ComprasComponent implements OnInit {
     this.pestana.set("ordenes");
     this.abrirOrden(orden);
     this.aviso.set(`Orden #${orden.numero} creada en borrador. Revísala y márcala como enviada.`);
+    this.avisosFlotantes.exito(`Orden #${orden.numero} creada en borrador. Revísala y márcala como enviada.`);
   }
 
   // ---------- Órdenes ----------
@@ -295,6 +299,7 @@ export class ComprasComponent implements OnInit {
     if (!actualizada) return;
     this.abrirOrden(actualizada);
     this.aviso.set(`Orden #${o.numero}: ${ETIQUETA_OC[estado].toLowerCase()}.`);
+    this.avisosFlotantes.exito(`Orden #${o.numero}: ${ETIQUETA_OC[estado].toLowerCase()}.`);
     await this.cargarOrdenes();
   }
 
@@ -317,6 +322,7 @@ export class ComprasComponent implements OnInit {
     if (!actualizada) return;
     this.abrirOrden(actualizada);
     this.aviso.set(`Recepción registrada: el stock y el costo promedio se actualizaron en el Kardex.`);
+    this.avisosFlotantes.exito(`Recepción registrada: el stock y el costo promedio se actualizaron en el Kardex.`);
     await Promise.all([this.cargarOrdenes(), this.cargarSugeridas()]);
   }
 
@@ -351,6 +357,7 @@ export class ComprasComponent implements OnInit {
     if (!p) return;
     this.proveedorForm.reset();
     this.aviso.set(`Proveedor "${p.nombre}" creado.`);
+    this.avisosFlotantes.exito(`Proveedor "${p.nombre}" creado.`);
     await this.cargarProveedores();
   }
 

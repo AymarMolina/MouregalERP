@@ -45,7 +45,7 @@ const r2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
   template: `
     <div class="space-y-3">
       @for (l of lineas(); track $index; let i = $index) {
-        <div class="rounded-xl border border-gray-200 p-3" [class.bg-sidebar]="lineas().length > 1">
+        <div class="rounded-xl border border-brand-line p-3" [class.bg-sidebar]="lineas().length > 1">
           <div class="flex flex-wrap items-center gap-2">
             @for (m of metodos; track m.valor) {
               <button

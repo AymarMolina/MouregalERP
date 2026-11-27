@@ -57,13 +57,13 @@ interface Kpi {
   host: { class: "block" },
   template: `
     @let d = datos();
-    <article #hoja class="hoja rounded-xl border border-gray-200/80 bg-white px-10 py-9 text-[#2c2b2d]">
+    <article #hoja class="hoja rounded-xl border border-brand-line/80 bg-white px-10 py-9 text-[#3A1F45]">
       <app-membrete [titulo]="titulo()" [periodo]="periodo()" />
 
       <!-- KPIs -->
       <section class="no-cortar grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6 print:grid-cols-6 print:gap-2">
         @for (k of kpis(); track k.etiqueta) {
-          <div class="rounded-r-lg border-l-[3px] border-[#b584b9] bg-[#f4edf5] px-4 py-3">
+          <div class="rounded-r-lg border-l-[3px] border-[#b584b9] bg-[#F4EBF7] px-4 py-3">
             <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-[#73607c]">{{ k.etiqueta }}</p>
             <p class="mt-1 font-display text-[20px] font-semibold leading-tight tabular-nums text-[#4e345a] print:text-[17px]">{{ k.valor }}</p>
             @if (k.cambio !== null) {

@@ -1,3 +1,4 @@
+import { AvisosService } from "../../core/avisos/avisos.service";
 import { Component, HostListener, OnInit, computed, inject, signal } from "@angular/core";
 import { toSignal } from "@angular/core/rxjs-interop";
 import { IconComponent } from "../../shared/icon/icon.component";
@@ -46,6 +47,7 @@ const CANAL_INFO: Record<Canal, { etiqueta: string; icono: NombreIcono }> = {
   templateUrl: "./pedido-nuevo.component.html",
 })
 export class PedidoNuevoComponent implements OnInit {
+  private readonly avisosFlotantes = inject(AvisosService);
   private readonly productosService = inject(ProductosService);
   private readonly distritosService = inject(DistritosService);
   private readonly insumosService = inject(InsumosService);
@@ -473,6 +475,7 @@ export class PedidoNuevoComponent implements OnInit {
       await this.router.navigate(["/pedidos", pedido.id]);
     } catch (err) {
       this.error.set(mensajeError(err, "No se pudo crear el pedido. Revisa los datos e intenta de nuevo."));
+      this.avisosFlotantes.error(mensajeError(err, "No se pudo crear el pedido. Revisa los datos e intenta de nuevo."));
       // El stock pudo cambiar mientras se llenaba el formulario.
       await this.actualizarResumen();
     } finally {

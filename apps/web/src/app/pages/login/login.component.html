@@ -1,11 +1,11 @@
 <!--
   Paleta Mouregal (branding):
   acento   #b584b9 #b48dbb #a382ac #9b73a1
-  claros   #f4edf5 #ffffff
-  oscuros  #000000 #161616 #2c2b2d #434143 #4e345a
+  claros   #F4EBF7 #ffffff
+  oscuros  #000000 #161616 #3A1F45 #434143 #4e345a
   apagados #987f9c #73607c #6d5d72
 -->
-<div class="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#2c2b2d] px-4 py-10">
+<div class="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#3A1F45] px-4 py-10">
   <!-- Fondo: video en bucle + velo para que la tarjeta mantenga contraste -->
   <video
     #fondo
@@ -52,7 +52,7 @@
           <button
             type="button"
             (click)="avisar('recuperar')"
-            class="text-[13px] font-medium text-[#9b73a1] transition hover:text-[#4e345a]"
+            class="text-[13px] font-medium text-[#4A2A55] underline-offset-2 transition hover:underline"
           >
             ¿No recuerdas la contraseña?
           </button>
@@ -93,7 +93,7 @@
       <button
         type="submit"
         [disabled]="loading()"
-        class="flex h-10 w-full items-center justify-center gap-2 rounded-md bg-[#9b73a1] text-[14px] font-semibold text-[#ffffff] shadow-[0_1px_2px_rgba(78,52,90,0.3),inset_0_1px_0_rgba(255,255,255,0.15)] transition hover:bg-[#73607c] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[#b584b9]/45 disabled:cursor-not-allowed disabled:opacity-70"
+        class="flex h-10 w-full items-center justify-center gap-2 rounded-md bg-[#C2185B] text-[14px] font-semibold text-[#ffffff] shadow-[0_1px_2px_rgba(78,52,90,0.3),inset_0_1px_0_rgba(255,255,255,0.15)] transition hover:bg-[#A3134C] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[#b584b9]/45 disabled:cursor-not-allowed disabled:opacity-70"
       >
         @if (loading()) {
           <span class="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"></span>
@@ -106,7 +106,7 @@
 
     <p class="mt-8 text-center text-[13px] text-[#6d5d72]">
       ¿Eres nuevo en Mouregal?
-      <button type="button" (click)="avisar('registro')" class="font-medium text-[#9b73a1] transition hover:text-[#4e345a]">
+      <button type="button" (click)="avisar('registro')" class="font-medium text-[#4A2A55] underline-offset-2 transition hover:underline">
         Crea una cuenta
       </button>
     </p>

@@ -94,7 +94,7 @@
           @for (p of tabla.filas(); track p.id) {
             <tr [class.fila-sel]="tabla.marcado(p)" [class.bg-brand-soft]="seleccionado()?.id === p.id">
               <td class="col-check"><app-check-fila [tabla]="tabla" [fila]="p" [etiqueta]="'Seleccionar ' + p.nombre" /></td>
-              <td class="font-medium text-gray-900">{{ p.nombre }}</td>
+              <td class="font-medium text-text">{{ p.nombre }}</td>
               <td class="text-right">{{ tallaDe(p, "S")?.precioBase }}</td>
               <td class="text-right text-muted">{{ tallaDe(p, "S")?.margen }}</td>
               <td class="text-right">{{ tallaDe(p, "M")?.precioBase }}</td>

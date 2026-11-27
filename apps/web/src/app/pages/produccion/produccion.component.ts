@@ -1,3 +1,4 @@
+import { AvisosService } from "../../core/avisos/avisos.service";
 import { Component, OnInit, computed, inject, signal } from "@angular/core";
 import { FotosPedidoComponent } from "../../shared/fotos/fotos-pedido.component";
 import { IconComponent } from "../../shared/icon/icon.component";
@@ -31,6 +32,7 @@ interface LineaConsumo {
   templateUrl: "./produccion.component.html",
 })
 export class ProduccionComponent implements OnInit {
+  private readonly avisosFlotantes = inject(AvisosService);
   private readonly pedidosService = inject(PedidosService);
   private readonly consultasService = inject(ConsultasService);
   private readonly usuariosService = inject(UsuariosService);
@@ -242,6 +244,7 @@ export class ProduccionComponent implements OnInit {
       this.cerrar();
     } catch (err) {
       this.error.set(mensajeError(err, "No se pudo confirmar el consumo."));
+      this.avisosFlotantes.error(mensajeError(err, "No se pudo confirmar el consumo."));
     } finally {
       this.guardando.set(false);
     }
@@ -257,6 +260,7 @@ export class ProduccionComponent implements OnInit {
       this.cerrar();
     } catch (err) {
       this.error.set(mensajeError(err, "No se pudo pasar a en camino."));
+      this.avisosFlotantes.error(mensajeError(err, "No se pudo pasar a en camino."));
     }
   }
 
@@ -268,6 +272,7 @@ export class ProduccionComponent implements OnInit {
       await this.consultasService.resolver(consulta.id, { estado, respuesta: this.resolverForm.value.respuesta! });
     } catch (err) {
       this.error.set(mensajeError(err, "No se pudo resolver la consulta."));
+      this.avisosFlotantes.error(mensajeError(err, "No se pudo resolver la consulta."));
       return;
     }
     this.resolverForm.reset();

@@ -1,9 +1,7 @@
 <!--
-  Marco con la estructura de la Intranet de NeuroLee:
-  barra superior blanca a todo el ancho (logo, buscador, ayuda, usuario),
-  menú lateral oscuro con grupos y marca dorada en el ítem activo,
-  y el contenido sobre blanco con migas arriba.
-  Los colores son los de Mouregal (azul marino), no los de NeuroLee.
+  Marco con el diseño Mouregal (2026-11-26): barra superior blanca (logo, buscador,
+  ayuda, usuario), menú lateral morado (#4A2A55) con grupos e ítem activo #64407A,
+  contenido sobre blanco y avisos flotantes arriba a la derecha.
 -->
 <div class="min-h-screen bg-white">
   <!-- Barra superior -->
@@ -22,7 +20,7 @@
 
     <a routerLink="/" class="flex shrink-0 items-center gap-2.5" title="Inicio">
       <img src="logo-mouregal.png" alt="Mouregal · Flores y Detalles Deluxe" width="160" height="120" class="h-10 w-auto" />
-      <span class="hidden font-display text-[15px] font-medium text-gray-500 sm:inline">ERP</span>
+      <span class="hidden font-marca text-[15px] font-bold text-brand sm:inline">ERP</span>
     </a>
 
     <form class="search ml-6 hidden md:flex md:w-80 md:max-w-none md:flex-none" role="search" data-tour="buscador" (submit)="irA($event)">
@@ -79,16 +77,16 @@
             {{ iniciales() }}
           </span>
           <span class="hidden min-w-0 text-left leading-tight sm:block">
-            <span class="block max-w-[10rem] truncate font-semibold text-gray-900">{{ user()?.nombre }}</span>
-            <span class="block text-xs capitalize text-gray-600">{{ user()?.rol }}</span>
+            <span class="block max-w-[10rem] truncate font-semibold text-text">{{ user()?.nombre }}</span>
+            <span class="block text-xs capitalize text-muted">{{ user()?.rol }}</span>
           </span>
-          <app-icon name="abajo" [size]="16" class="text-gray-600" />
+          <app-icon name="abajo" [size]="16" class="text-muted" />
         </button>
 
         @if (menuUsuario()) {
           <div role="menu" class="absolute right-0 top-[calc(100%+6px)] w-60 rounded-xl border border-brand-line bg-white p-1.5 shadow-pop">
-            <div class="px-3 pb-2 pt-1.5 text-xs text-gray-600">
-              <div class="truncate font-medium text-gray-900">{{ user()?.email }}</div>
+            <div class="px-3 pb-2 pt-1.5 text-xs text-muted">
+              <div class="truncate font-medium text-text">{{ user()?.email }}</div>
             </div>
             <div class="my-1 border-t border-brand-line"></div>
             <button type="button" role="menuitem" class="menu-item" (click)="logout()">
@@ -115,7 +113,7 @@
       <nav class="h-full overflow-y-auto px-3 py-4" data-tour="nav" aria-label="Menú principal">
         @for (group of groups(); track group.label) {
           <div class="mb-4">
-            <div class="px-3 pb-1.5 text-[12px] font-semibold text-white/95">{{ group.label }}</div>
+            <div class="px-3 pb-1.5 text-[12px] font-medium text-nav-muted">{{ group.label }}</div>
             @for (item of group.items; track item.path) {
               <a [routerLink]="item.path" routerLinkActive="nav-item-activo" class="nav-item">
                 <app-icon [name]="item.icon" [size]="17" />
@@ -150,7 +148,7 @@
             <span>{{ seccionActual() }}</span>
             <span aria-hidden="true">/</span>
           }
-          <span class="font-medium text-gray-900">{{ paginaActual() }}</span>
+          <span class="font-medium text-text">{{ paginaActual() }}</span>
         </nav>
       }
 
@@ -158,3 +156,5 @@
     </main>
   </div>
 </div>
+
+<app-avisos />

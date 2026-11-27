@@ -22,8 +22,8 @@ export interface DatoResumen {
     <div class="fixed inset-0 z-50 flex justify-center overflow-y-auto bg-gray-900/40 p-4 backdrop-blur-[2px] sm:p-8" (click)="cerrar.emit()">
       <div role="dialog" aria-modal="true" [attr.aria-label]="'Vista previa: ' + titulo()" class="flex h-fit w-full max-w-5xl flex-col" (click)="$event.stopPropagation()">
         <!-- Barra de acciones -->
-        <div class="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-gray-200/80 bg-white px-4 py-2.5">
-          <p class="font-medium text-gray-900">Vista previa · <span class="text-muted">{{ filas().length }} {{ filas().length === 1 ? "fila" : "filas" }}</span></p>
+        <div class="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-brand-line/80 bg-white px-4 py-2.5">
+          <p class="font-medium text-text">Vista previa · <span class="text-muted">{{ filas().length }} {{ filas().length === 1 ? "fila" : "filas" }}</span></p>
           <div class="flex items-center gap-2">
             <button type="button" class="btn-secondary" [disabled]="!filas().length" (click)="descargarExcel()">
               <app-icon name="excel" [size]="15" class="text-green-700" /> Descargar Excel
@@ -36,13 +36,13 @@ export interface DatoResumen {
         </div>
 
         <!-- Hoja: esto es lo que se imprime -->
-        <article #hoja class="hoja rounded-xl border border-gray-200/80 bg-white px-10 py-9 text-[#2c2b2d]">
+        <article #hoja class="hoja rounded-xl border border-brand-line/80 bg-white px-10 py-9 text-[#3A1F45]">
           <app-membrete [titulo]="titulo()" [periodo]="periodo()" />
 
           @if (resumen().length) {
             <div class="mb-7 grid grid-cols-2 gap-3 sm:grid-cols-4">
               @for (d of resumen(); track d.etiqueta) {
-                <div class="rounded-r-lg border-l-[3px] border-[#b584b9] bg-[#f4edf5] px-4 py-2.5">
+                <div class="rounded-r-lg border-l-[3px] border-[#b584b9] bg-[#F4EBF7] px-4 py-2.5">
                   <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-[#73607c]">{{ d.etiqueta }}</p>
                   <p class="mt-0.5 font-display text-[18px] font-semibold tabular-nums text-[#4e345a]">{{ d.valor }}</p>
                 </div>
@@ -81,7 +81,7 @@ export interface DatoResumen {
               }
             </table>
           } @else {
-            <p class="py-10 text-center text-gray-500">No hay datos en este período.</p>
+            <p class="py-10 text-center text-muted">No hay datos en este período.</p>
           }
 
           <footer class="mt-10 flex items-center justify-between gap-4 border-t border-[#ece4ee] pt-3 text-[10px] text-[#987f9c]">

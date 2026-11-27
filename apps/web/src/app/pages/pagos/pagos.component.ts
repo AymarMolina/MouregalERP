@@ -1,3 +1,4 @@
+import { AvisosService } from "../../core/avisos/avisos.service";
 import { Component, OnInit, computed, inject, signal } from "@angular/core";
 import { toSignal } from "@angular/core/rxjs-interop";
 import { CobroComponent, type EstadoCobro } from "../../shared/cobro/cobro.component";
@@ -24,6 +25,7 @@ import {
   templateUrl: "./pagos.component.html",
 })
 export class PagosComponent implements OnInit {
+  private readonly avisosFlotantes = inject(AvisosService);
   private readonly api = inject(PagosApi);
   private readonly fb = inject(FormBuilder);
 
@@ -119,12 +121,14 @@ export class PagosComponent implements OnInit {
     try {
       await accion();
       this.aviso.set(ok);
+      this.avisosFlotantes.exito(ok);
       const id = this.seleccionadoId();
       await this.cargar();
       // Si el pedido dejó de tener saldo y se filtran solo con saldo, se cierra el panel.
       if (id && !this.filas().some((f) => f.id === id)) this.seleccionadoId.set(null);
     } catch (err) {
       this.error.set(mensajeError(err, fallo));
+      this.avisosFlotantes.error(mensajeError(err, fallo));
     } finally {
       this.trabajando.set(false);
     }
@@ -171,8 +175,10 @@ export class PagosComponent implements OnInit {
     try {
       await navigator.clipboard.writeText(url);
       this.aviso.set("Link copiado al portapapeles.");
+      this.avisosFlotantes.exito("Link copiado al portapapeles.");
     } catch {
       this.aviso.set(url);
+      this.avisosFlotantes.exito(url);
     }
   }
 }

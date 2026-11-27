@@ -134,7 +134,7 @@
               <li class="flex items-start gap-3 rounded-xl bg-brand-band px-3 py-2.5">
                 <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-brand"><app-icon name="consulta" [size]="16" /></span>
                 <div class="min-w-0 flex-1">
-                  <a [routerLink]="['/pedidos', c.pedidoId]" class="font-medium text-gray-900 hover:underline">Consulta · {{ c.codigo }}</a>
+                  <a [routerLink]="['/pedidos', c.pedidoId]" class="font-medium text-text hover:underline">Consulta · {{ c.codigo }}</a>
                   <div class="truncate text-xs text-muted" [title]="c.descripcion">{{ c.descripcion }}</div>
                 </div>
               </li>
@@ -143,7 +143,7 @@
               <li class="flex items-start gap-3 rounded-xl bg-red-50/70 px-3 py-2.5">
                 <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-negativo"><app-icon name="alerta" [size]="16" /></span>
                 <div class="min-w-0 flex-1">
-                  <div class="font-medium text-gray-900">{{ s.nombre }}</div>
+                  <div class="font-medium text-text">{{ s.nombre }}</div>
                   <div class="text-xs text-muted">
                     Stock {{ cantidad(s.stockActual) }} {{ s.unidadBase }} · mínimo {{ cantidad(s.stockMinimo) }}
                   </div>
@@ -157,7 +157,7 @@
               </li>
             }
           </ul>
-          <div class="mt-4 grid shrink-0 grid-cols-2 gap-3 border-t border-gray-100 pt-4">
+          <div class="mt-4 grid shrink-0 grid-cols-2 gap-3 border-t border-brand-divisor pt-4">
             <div class="rounded-xl bg-brand-band px-3 py-2.5">
               <div class="font-display text-2xl font-semibold tabular-nums text-brand-dark">{{ d.consultasAbiertas.length }}</div>
               <div class="text-xs text-muted">{{ d.consultasAbiertas.length === 1 ? "Consulta abierta" : "Consultas abiertas" }}</div>
@@ -188,11 +188,11 @@
               [class.border-transparent]="!primero"
             >
               <div class="mb-2 flex items-center justify-between text-xs text-muted">
-                <span>Pedido <span class="font-semibold text-gray-700">{{ p.codigo }}</span></span>
+                <span>Pedido <span class="font-semibold text-text">{{ p.codigo }}</span></span>
                 <span class="tabular-nums">Hoy, {{ hora(p.horaEntrega) }}</span>
               </div>
               <div class="mb-1 flex items-center justify-between gap-2">
-                <span class="truncate font-display text-[16px] font-medium text-gray-900">{{ p.cliente }}</span>
+                <span class="truncate font-display text-[16px] font-medium text-text">{{ p.cliente }}</span>
                 <span [class]="'badge ' + claseEstado[p.estado]">{{ etiquetaEstado[p.estado] }}</span>
               </div>
               <div class="mb-3 text-xs text-muted">
@@ -202,12 +202,12 @@
                   Recibe {{ p.nombreReceptor }} · {{ p.distrito }}
                 }
               </div>
-              <div class="flex items-center justify-end gap-1.5 text-[13px] text-gray-600">
+              <div class="flex items-center justify-end gap-1.5 text-[13px] text-muted">
                 @if (saldo(p) > 0) {
                   <span class="mr-auto text-xs font-medium text-negativo">Saldo {{ soles(saldo(p)) }}</span>
                 }
                 Total
-                <span class="font-display text-[16px] font-semibold text-gray-900">{{ soles(p.total) }}</span>
+                <span class="font-display text-[16px] font-semibold text-text">{{ soles(p.total) }}</span>
               </div>
             </a>
           } @empty {
@@ -237,7 +237,7 @@
         </div>
         <div class="toolbar">
           <label class="search">
-            <app-icon name="buscar" [size]="16" class="pointer-events-none absolute left-2.5 text-gray-400" />
+            <app-icon name="buscar" [size]="16" class="pointer-events-none absolute left-2.5 text-muted" />
             <input
               type="search"
               placeholder="Buscar #, cliente, receptor o distrito"
@@ -268,12 +268,12 @@
                 <tr [class.fila-sel]="tabla.marcado(p)">
                   <td class="col-check"><app-check-fila [tabla]="tabla" [fila]="p" [etiqueta]="'Seleccionar pedido ' + p.codigo" /></td>
                   <td>
-                    <a [routerLink]="['/pedidos', p.id]" class="font-semibold text-gray-900 hover:underline">{{ p.codigo }}</a>
+                    <a [routerLink]="['/pedidos', p.id]" class="font-semibold text-text hover:underline">{{ p.codigo }}</a>
                     <div class="text-xs capitalize text-muted">{{ p.canal }}</div>
                   </td>
                   <td class="tabular-nums">{{ hora(p.horaEntrega) }}</td>
                   <td>
-                    <div class="text-gray-900">{{ p.cliente }}</div>
+                    <div class="text-text">{{ p.cliente }}</div>
                     @if (p.nombreReceptor) {
                       <div class="text-xs text-muted">Recibe {{ p.nombreReceptor }}</div>
                     }
@@ -288,8 +288,8 @@
                     }
                   </td>
                   <td><span [class]="'badge ' + claseEstado[p.estado]">{{ etiquetaEstado[p.estado] }}</span></td>
-                  <td class="text-right tabular-nums text-gray-900">{{ soles(p.total) }}</td>
-                  <td class="text-right tabular-nums" [class.font-medium]="saldo(p) > 0" [class.text-gray-900]="saldo(p) > 0" [class.text-muted]="saldo(p) === 0">
+                  <td class="text-right tabular-nums text-text">{{ soles(p.total) }}</td>
+                  <td class="text-right tabular-nums" [class.font-medium]="saldo(p) > 0" [class.text-text]="saldo(p) > 0" [class.text-muted]="saldo(p) === 0">
                     {{ saldo(p) > 0 ? soles(saldo(p)) : "—" }}
                   </td>
                   <td>

@@ -43,7 +43,7 @@ export class BarChartComponent implements AfterViewInit, OnDestroy {
   }
   @Input() titulo = "";
   @Input() alto = 200;
-  @Input() color = "#1e3a6e";
+  @Input() color = "#7E4E90";
   @Input() enteros = true;
   @Input() horizontal = false;
   @Input() formato: (v: number) => string = (v) => v.toLocaleString("es-PE");
@@ -77,7 +77,7 @@ export class BarChartComponent implements AfterViewInit, OnDestroy {
           {
             data: datos.map((d) => d.valor),
             backgroundColor: this.color,
-            hoverBackgroundColor: "#334a73",
+            hoverBackgroundColor: "#4A2A55",
             borderRadius: 4,
             borderSkipped: "start",
             maxBarThickness: 24,

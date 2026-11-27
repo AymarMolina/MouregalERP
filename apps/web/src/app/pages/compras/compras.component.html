@@ -76,7 +76,7 @@
               <tr [class.fila-sel]="f.marcada">
                 <td class="col-check"><input type="checkbox" class="checkbox" [(ngModel)]="f.marcada" (ngModelChange)="refrescarFilas()" [attr.aria-label]="'Marcar ' + f.sugerida.nombre" /></td>
                 <td>
-                  <div class="font-medium text-gray-900">{{ f.sugerida.nombre }}</div>
+                  <div class="font-medium text-text">{{ f.sugerida.nombre }}</div>
                   <div class="text-xs text-muted">{{ f.sugerida.codigo }} · {{ f.sugerida.unidadBase }}</div>
                 </td>
                 <td class="text-right" [class.text-accent-2]="f.sugerida.stockActual < f.sugerida.stockMinimo">
@@ -163,14 +163,14 @@
               @for (o of tablaOrdenes.filas(); track o.id) {
                 <tr class="cursor-pointer" [class.fila-sel]="tablaOrdenes.marcado(o)" [class.bg-brand-soft]="orden()?.id === o.id" (click)="verOrden(o.id)">
                   <td class="col-check"><app-check-fila [tabla]="tablaOrdenes" [fila]="o" [etiqueta]="'Seleccionar orden #' + o.numero" /></td>
-                  <td class="font-semibold text-gray-900">#{{ o.numero }}</td>
+                  <td class="font-semibold text-text">#{{ o.numero }}</td>
                   <td>
-                    <div class="text-gray-900">{{ o.proveedor }}</div>
+                    <div class="text-text">{{ o.proveedor }}</div>
                     <div class="text-xs text-muted">{{ o.lineas }} línea(s)</div>
                   </td>
                   <td class="whitespace-nowrap">{{ o.fecha }}</td>
                   <td><span [class]="'badge ' + claseOc[o.estado]">{{ etiquetaOc[o.estado] }}</span></td>
-                  <td class="whitespace-nowrap text-right tabular-nums text-gray-900">{{ soles(o.total) }}</td>
+                  <td class="whitespace-nowrap text-right tabular-nums text-text">{{ soles(o.total) }}</td>
                   <td (click)="$event.stopPropagation()">
                     <app-row-menu [etiqueta]="'Acciones de la orden #' + o.numero">
                       <button type="button" class="btn-action" (click)="verOrden(o.id)" aria-label="Ver orden"><app-icon name="pedido" [size]="15" /></button>
@@ -338,7 +338,7 @@
           @for (p of tablaProveedores.filas(); track p.id) {
             <tr [class.fila-sel]="tablaProveedores.marcado(p)" [class.opacity-60]="!p.activo">
               <td class="col-check"><app-check-fila [tabla]="tablaProveedores" [fila]="p" [etiqueta]="'Seleccionar ' + p.nombre" /></td>
-              <td class="font-medium text-gray-900">{{ p.nombre }}</td>
+              <td class="font-medium text-text">{{ p.nombre }}</td>
               <td>
                 @if (p.numIdentidad) {
                   <span class="text-muted">{{ etiquetaIdentidad[p.tipoIdentidad] }}</span> {{ p.numIdentidad }}

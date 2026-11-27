@@ -17,7 +17,8 @@ import type { Punto } from "./escala";
  * Todos dan ≥ 3:1 sobre blanco y se distinguen por claridad, no solo por tono
  * (daltonismo). Los bordes blancos separan las porciones vecinas.
  */
-export const COLORES_DONA = ["#0b1530", "#1e3a6e", "#34508a", "#5b74a6", "#7f93bd"];
+// Paleta categórica de marca validada para daltonismo (la misma de reporte-ventas).
+export const COLORES_DONA = ["#8a4fa3", "#eb6834", "#1baf7a", "#eda100", "#2a78d6"];
 
 /**
  * Dona de una serie con Chart.js: anillo con bordes blancos, tooltip claro y

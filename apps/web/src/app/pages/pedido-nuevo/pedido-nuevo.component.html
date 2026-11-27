@@ -39,7 +39,7 @@
               >
                 Paso {{ s.n }}{{ listo ? " · listo" : "" }}
               </span>
-              <span class="block truncate font-semibold" [class.text-brand-dark]="activo" [class.text-gray-600]="!activo">{{ s.titulo }}</span>
+              <span class="block truncate font-semibold" [class.text-brand-dark]="activo" [class.text-muted]="!activo">{{ s.titulo }}</span>
               <span class="hidden truncate text-[13px] text-muted md:block">{{ s.detalle }}</span>
             </span>
           </button>
@@ -84,7 +84,7 @@
                     [class.border-accent]="form.value.canal === c"
                     [class.bg-accent]="form.value.canal === c"
                     [class.text-white]="form.value.canal === c"
-                    [class.border-gray-200]="form.value.canal !== c"
+                    [class.border-brand-line]="form.value.canal !== c"
                     [class.text-brand-dark]="form.value.canal !== c"
                   >
                     <app-icon [name]="canalInfo[c].icono" [size]="20" />
@@ -217,7 +217,7 @@
 
             @if (!productos().length) {
               <p
-                class="mt-5 rounded-xl border border-dashed border-gray-200 px-4 py-10 text-center text-muted"
+                class="mt-5 rounded-xl border border-dashed border-brand-line px-4 py-10 text-center text-muted"
               >
                 No hay productos activos en el catálogo.
               </p>
@@ -237,10 +237,10 @@
                       ? 'Aún no tiene precio ni receta: complétalo en Configuración → Recetas'
                       : ''
                   "
-                  class="group flex flex-col overflow-hidden rounded-xl border border-gray-200/80 bg-white text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30 enabled:hover:border-gray-300 enabled:hover:shadow-pop disabled:cursor-not-allowed"
+                  class="group flex flex-col overflow-hidden rounded-xl border border-brand-line/80 bg-white text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30 enabled:hover:border-brand-input enabled:hover:shadow-pop disabled:cursor-not-allowed"
                 >
                   <div
-                    class="relative aspect-[4/5] w-full overflow-hidden bg-gray-50"
+                    class="relative aspect-[4/5] w-full overflow-hidden bg-brand-band"
                   >
                     @if (p.imagenUrl) {
                       <img
@@ -258,13 +258,13 @@
                     }
                     @if (precio === null) {
                       <span
-                        class="absolute left-2.5 top-2.5 rounded-full border border-gray-200 bg-white/95 px-2.5 py-0.5 text-[13px] font-medium text-gray-700 backdrop-blur"
+                        class="absolute left-2.5 top-2.5 rounded-full border border-brand-line bg-white/95 px-2.5 py-0.5 text-[13px] font-medium text-text backdrop-blur"
                         >Falta precio y receta</span
                       >
                     }
                   </div>
                   <div
-                    class="flex items-end justify-between gap-2 border-t border-gray-100 p-3"
+                    class="flex items-end justify-between gap-2 border-t border-brand-divisor p-3"
                   >
                     <div class="min-w-0">
                       <div
@@ -289,7 +289,7 @@
                     </div>
                     @if (precio !== null) {
                       <span
-                        class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-gray-200 text-brand-dark transition-colors group-hover:border-brand-dark group-hover:bg-brand-dark group-hover:text-white"
+                        class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-brand-line text-brand-dark transition-colors group-hover:border-brand-dark group-hover:bg-brand-dark group-hover:text-white"
                         aria-hidden="true"
                       >
                         <app-icon name="nuevo" [size]="16" />
@@ -609,7 +609,7 @@
               </div>
               @if (adelanto() > 0 && saldo() > 0) {
                 <p class="mt-2 text-[13px] text-muted">
-                  Paga {{ soles(adelanto()) }} ahora y queda debiendo <strong class="text-gray-900">{{ soles(saldo()) }}</strong>.
+                  Paga {{ soles(adelanto()) }} ahora y queda debiendo <strong class="text-text">{{ soles(saldo()) }}</strong>.
                 </p>
               }
 
@@ -637,7 +637,7 @@
                 <p class="mt-2 text-[13px] text-red-700">{{ errorPago() }}</p>
               }
 
-              <div class="mt-5 border-t border-gray-100 pt-4">
+              <div class="mt-5 border-t border-brand-divisor pt-4">
                 @if (!mostrarDescuento()) {
                   <button type="button" class="btn-text -ml-2" (click)="mostrarDescuento.set(true)">
                     <app-icon name="nuevo" [size]="14" /> Aplicar descuento
@@ -687,7 +687,7 @@
       <aside class="lg:sticky lg:top-6">
         <div class="card overflow-hidden p-0" data-tour="nuevo-carrito">
           <div
-            class="flex items-center justify-between border-b border-gray-100 px-5 py-4"
+            class="flex items-center justify-between border-b border-brand-divisor px-5 py-4"
           >
             <h2 class="panel-title text-[19px] flex items-center gap-2">
               <app-icon name="bolsa" [size]="18" /> Tu pedido
@@ -703,7 +703,7 @@
           <div class="space-y-4 p-5">
             @if (!carrito().length) {
               <div
-                class="flex flex-col items-center gap-2 rounded-xl border border-dashed border-gray-200 px-4 py-10 text-center text-muted"
+                class="flex flex-col items-center gap-2 rounded-xl border border-dashed border-brand-line px-4 py-10 text-center text-muted"
               >
                 <span class="seccion-icono h-11 w-11"
                   ><app-icon name="bolsa" [size]="20"
@@ -716,7 +716,7 @@
                 }
               </div>
             } @else {
-              <ul class="-my-1 divide-y divide-gray-100">
+              <ul class="-my-1 divide-y divide-brand-divisor">
                 @for (item of carrito(); track $index; let i = $index) {
                   @let linea = resumen()?.items?.[i];
                   <li class="group flex items-start gap-3 py-3">
@@ -784,7 +784,7 @@
                     </div>
                   }
                   <div
-                    class="flex items-baseline justify-between border-t border-gray-200 pt-3"
+                    class="flex items-baseline justify-between border-t border-brand-line pt-3"
                   >
                     <dt class="font-semibold">Total</dt>
                     <dd
@@ -795,7 +795,7 @@
                   </div>
                   <div class="grid grid-cols-2 gap-2 pt-1">
                     <div
-                      class="rounded-lg border border-gray-200 bg-white px-3 py-2"
+                      class="rounded-lg border border-brand-line bg-white px-3 py-2"
                     >
                       <dt
                         class="text-[12.5px] uppercase tracking-wider text-muted"
@@ -807,7 +807,7 @@
                       </dd>
                     </div>
                     <div
-                      class="rounded-lg border border-gray-200 bg-white px-3 py-2"
+                      class="rounded-lg border border-brand-line bg-white px-3 py-2"
                     >
                       <dt
                         class="text-[12.5px] uppercase tracking-wider text-muted"
@@ -915,16 +915,16 @@
     (click)="cerrarProducto()"
   >
     <div
-      class="flex max-h-[94vh] w-full max-w-3xl text-[15px] flex-col overflow-hidden rounded-t-2xl border border-gray-200 bg-surface shadow-pop sm:rounded-2xl"
+      class="flex max-h-[94vh] w-full max-w-3xl text-[15px] flex-col overflow-hidden rounded-t-2xl border border-brand-line bg-surface shadow-pop sm:rounded-2xl"
       (click)="$event.stopPropagation()"
       role="dialog"
       aria-modal="true"
       [attr.aria-label]="p.nombre"
     >
       <!-- Cabecera -->
-      <div class="flex items-center gap-4 border-b border-gray-100 p-4 sm:p-5">
+      <div class="flex items-center gap-4 border-b border-brand-divisor p-4 sm:p-5">
         <div
-          class="h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-gray-200/80 bg-gray-50"
+          class="h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-brand-line/80 bg-brand-band"
         >
           @if (p.imagenUrl) {
             <img
@@ -975,7 +975,7 @@
           >
             <div>
               <div class="etiqueta">Tamaño</div>
-              <div class="grid grid-cols-3 gap-1 rounded-xl bg-gray-100 p-1">
+              <div class="grid grid-cols-3 gap-1 rounded-xl bg-brand-soft p-1">
                 @for (t of tallas; track t) {
                   @let op = opcionTalla(t);
                   <button
@@ -992,7 +992,7 @@
                     <span
                       class="font-display text-[22px] font-semibold leading-tight"
                       [class.text-brand-dark]="c.talla === t"
-                      [class.text-gray-500]="c.talla !== t"
+                      [class.text-muted]="c.talla !== t"
                       >{{ t }}</span
                     >
                     <span class="text-[13px] text-muted tabular">{{
@@ -1009,7 +1009,7 @@
             <div>
               <div class="etiqueta">Cantidad</div>
               <div
-                class="flex items-center rounded-xl border border-gray-200 p-1"
+                class="flex items-center rounded-xl border border-brand-line p-1"
               >
                 <button
                   type="button"
@@ -1292,7 +1292,7 @@
 
       <!-- Pie: total y agregar -->
       @if (cotizacion(); as c) {
-        <div class="border-t border-gray-100 bg-sidebar p-4 sm:p-5">
+        <div class="border-t border-brand-divisor bg-sidebar p-4 sm:p-5">
           <div
             class="mb-3 flex flex-wrap items-center gap-1.5 text-[13px] text-muted"
           >

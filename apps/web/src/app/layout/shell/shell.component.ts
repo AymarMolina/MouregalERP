@@ -4,12 +4,13 @@ import { filter } from "rxjs";
 import { AuthService } from "../../core/auth/auth.service";
 import { ConexionService } from "../../core/offline/conexion.service";
 import { TourService } from "../../core/tour/tour.service";
+import { AvisosComponent } from "../../shared/avisos/avisos.component";
 import { IconComponent } from "../../shared/icon/icon.component";
 import { NAV_GROUPS } from "../nav-items";
 
 @Component({
   selector: "app-shell",
-  imports: [RouterLink, RouterLinkActive, RouterOutlet, IconComponent],
+  imports: [RouterLink, RouterLinkActive, RouterOutlet, IconComponent, AvisosComponent],
   templateUrl: "./shell.component.html",
 })
 export class ShellComponent {

@@ -118,19 +118,19 @@
                 <tr [class.fila-sel]="tablaCobros.marcado(f)">
                   <td class="col-check"><app-check-fila [tabla]="tablaCobros" [fila]="f" [etiqueta]="'Seleccionar cobro del pedido ' + f.codigo" /></td>
                   <td class="tabular">{{ fechaHora(f.pagadoAt) }}</td>
-                  <td><a [routerLink]="['/pedidos', f.pedidoId]" class="font-semibold text-gray-900 hover:underline">{{ f.codigo }}</a></td>
+                  <td><a [routerLink]="['/pedidos', f.pedidoId]" class="font-semibold text-text hover:underline">{{ f.codigo }}</a></td>
                   <td>{{ f.cliente }}</td>
                   <td class="capitalize">{{ f.tipo }}</td>
                   <td class="capitalize">{{ f.metodo }}</td>
                   <td>{{ etiquetaEstado[f.estadoPedido] }}</td>
-                  <td class="text-right font-medium text-gray-900">{{ soles(f.monto) }}</td>
+                  <td class="text-right font-medium text-text">{{ soles(f.monto) }}</td>
                 </tr>
               } @empty {
                 <tr><td colspan="8" class="py-10 text-center text-muted">Sin cobros confirmados en el rango.</td></tr>
               }
             </tbody>
             @if (c.filas.length) {
-              <tfoot class="font-semibold text-gray-900">
+              <tfoot class="font-semibold text-text">
                 <tr>
                   <td></td>
                   <td class="px-4 py-2.5" colspan="6">Total</td>
@@ -186,7 +186,7 @@
             }
           </tbody>
           @if (m.filas.length) {
-            <tfoot class="font-semibold text-gray-900">
+            <tfoot class="font-semibold text-text">
               <tr>
                 <td></td>
                 <td class="px-4 py-2.5" colspan="3">Total</td>
@@ -238,14 +238,14 @@
                 <td class="text-right">{{ soles(f.valorProduccion) }}</td>
                 <td class="text-right">{{ cantidad(f.cantidadCancelacion) }} {{ f.unidadBase }}</td>
                 <td class="text-right">{{ soles(f.valorCancelacion) }}</td>
-                <td class="text-right font-semibold text-gray-900">{{ soles(f.valorTotal) }}</td>
+                <td class="text-right font-semibold text-text">{{ soles(f.valorTotal) }}</td>
               </tr>
             } @empty {
               <tr><td colspan="7" class="py-10 text-center text-muted">Sin merma en el rango.</td></tr>
             }
           </tbody>
           @if (m.filas.length) {
-            <tfoot class="font-semibold text-gray-900">
+            <tfoot class="font-semibold text-text">
               <tr>
                 <td></td>
                 <td class="px-4 py-2.5">Total</td>
@@ -356,7 +356,7 @@
             }
           </tbody>
           @if (e.filas.length) {
-            <tfoot class="font-semibold text-gray-900">
+            <tfoot class="font-semibold text-text">
               <tr>
                 <td></td>
                 <td class="px-4 py-2.5" colspan="2">Total</td>
