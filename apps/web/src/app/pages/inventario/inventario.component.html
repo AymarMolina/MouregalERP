@@ -5,6 +5,7 @@
       <p class="page-subtitle">Insumos, stock mínimo, costo promedio y saldo de apertura.</p>
     </div>
     <div class="flex items-center gap-2" data-tour="inv-acciones">
+      <button type="button" class="btn-secondary" (click)="ajusteDe.set(kardexDe()?.id ?? '')">Ajustar por conteo</button>
       <label class="btn-secondary cursor-pointer">
         Cargar apertura (CSV)
         <input type="file" accept=".csv,text/csv" class="hidden" (change)="onArchivoApertura($event)" />
@@ -386,3 +387,7 @@
     </div>
   }
 </div>
+
+@if (ajusteDe() !== null) {
+  <app-ajuste-conteo [insumos]="insumos()" [inicial]="ajusteDe()" (cerrar)="ajusteDe.set(null)" (guardado)="ajusteDe.set(null); cargar()" />
+}
