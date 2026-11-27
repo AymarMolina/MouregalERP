@@ -80,9 +80,13 @@ input[type="number"] {
   .panel-subtitle {
     @apply mt-0.5 text-[14px] text-muted;
   }
+  /* Subtítulo bajo el título de página (17 px, como en la maqueta). */
+  .page-subtitle {
+    @apply mt-1.5 text-[17px] leading-snug text-muted;
+  }
   /* Cabecera de página (estructura NeuroLee): sin caja, separada del contenido por una línea. */
   .page-header {
-    @apply mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-brand-line pb-5;
+    @apply mb-6 flex flex-wrap items-end justify-between gap-3;
   }
 
   /* ---------- KPI ---------- */
@@ -275,7 +279,7 @@ input[type="number"] {
 
   /* ---------- Marco (estructura NeuroLee) ---------- */
   .nav-item {
-    @apply relative mb-0.5 flex items-center gap-3 rounded-lg px-3 py-2.5 text-[14px] font-medium text-nav-text transition-colors hover:bg-white/[0.08] hover:text-white;
+    @apply relative mb-0.5 flex items-center gap-3 rounded-lg px-2.5 py-2 text-[14px] text-nav-text transition-colors hover:bg-white/[0.08] hover:text-white;
   }
   /* Ítem activo: fondo un poco más claro, letra blanca y la marca dorada a la izquierda. */
   .nav-item-activo {

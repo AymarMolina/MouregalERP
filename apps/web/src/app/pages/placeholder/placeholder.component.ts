@@ -3,7 +3,7 @@ import { Component, Input } from "@angular/core";
 @Component({
   selector: "app-placeholder",
   template: `
-    <div class="p-6">
+    <div class="px-4 pb-14 pt-6 sm:px-10">
       <div class="page-header">
         <div>
           <h1 class="page-title">{{ titulo }}</h1>

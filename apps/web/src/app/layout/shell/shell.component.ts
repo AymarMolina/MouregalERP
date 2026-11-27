@@ -107,6 +107,12 @@ export class ShellComponent {
     ev.preventDefault();
     const q = this.busqueda().trim().toLowerCase();
     if (!q) return;
+    // Número de pedido (NO-0031, 31, #31): va a la lista con la búsqueda puesta.
+    if (/^#?([a-z]{2}-)?\d+$/.test(q)) {
+      this.busqueda.set("");
+      void this.router.navigate(["/pedidos"], { queryParams: { q: q.replace(/^#/, "").toUpperCase() } });
+      return;
+    }
     const item = this.groups()
       .flatMap((g) => g.items)
       .find((i) => i.label.toLowerCase().includes(q));

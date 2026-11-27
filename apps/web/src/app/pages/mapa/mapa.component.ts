@@ -61,11 +61,11 @@ const PASOS: Paso[] = [
   selector: "app-mapa",
   imports: [RouterLink],
   template: `
-    <div class="p-6">
+    <div class="px-4 pb-14 pt-6 sm:px-10">
       <div class="page-header">
         <div>
           <h1 class="page-title">Mapa del flujo</h1>
-          <p class="panel-subtitle">Del pedido a la entrega en 7 partes. Entra a cada módulo desde aquí.</p>
+          <p class="page-subtitle">Del pedido a la entrega en 7 partes. Entra a cada módulo desde aquí.</p>
         </div>
       </div>
 

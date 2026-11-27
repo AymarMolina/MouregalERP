@@ -1,8 +1,8 @@
-<div class="p-4 sm:p-6">
+<div class="px-4 pb-14 pt-6 sm:px-10">
   <div class="page-header">
     <div>
       <h1 class="page-title">Producción</h1>
-      <p class="panel-subtitle">Pedidos por armar, en armado y listos para despacho. Se actualiza cada 15 segundos.</p>
+      <p class="page-subtitle">Pedidos por armar, en armado y listos para despacho. Se actualiza cada 15 segundos.</p>
     </div>
     <button type="button" class="btn-secondary" data-tour="prod-excel" (click)="exportarExcel()" [disabled]="loading()" title="Hoja de producción: un renglón por producto">
       <app-icon name="excel" [size]="16" class="text-green-700" /> Excel
